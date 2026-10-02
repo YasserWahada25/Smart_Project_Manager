@@ -1,0 +1,73 @@
+<mat-sidenav-container class="container">
+  <mat-sidenav
+    #drawer
+    class="sidenav"
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="!isHandset()"
+    [attr.role]="isHandset() ? 'dialog' : 'navigation'"
+  >
+    <mat-toolbar class="sidenav-header">Menu</mat-toolbar>
+    <mat-nav-list>
+      @for (item of navItems; track item.path) {
+        <a
+          mat-list-item
+          [routerLink]="item.path"
+          routerLinkActive
+          #link="routerLinkActive"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [activated]="link.isActive"
+          (click)="isHandset() && drawer.close()"
+        >
+          <mat-icon matListItemIcon aria-hidden="true">{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="toolbar">
+      @if (isHandset()) {
+        <button mat-icon-button type="button" aria-label="Open the menu" (click)="drawer.toggle()">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <a routerLink="/" class="brand">
+        <mat-icon aria-hidden="true">dashboard_customize</mat-icon>
+        <span>{{ appName }}</span>
+      </a>
+
+      <span class="spacer"></span>
+
+      @if (user(); as current) {
+        <button
+          mat-button
+          type="button"
+          class="user-button"
+          [matMenuTriggerFor]="userMenu"
+          aria-label="Account menu"
+        >
+          <mat-icon>account_circle</mat-icon>
+          @if (!isHandset()) {
+            <span class="user-name">{{ current.firstName }}</span>
+          }
+        </button>
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <div class="menu-header" role="presentation">
+            <span class="menu-name">{{ current.firstName }} {{ current.lastName }}</span>
+            <span class="menu-role">{{ roleLabel() }}</span>
+          </div>
+          <mat-divider />
+          <button mat-menu-item type="button" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>Log out</span>
+          </button>
+        </mat-menu>
+      }
+    </mat-toolbar>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

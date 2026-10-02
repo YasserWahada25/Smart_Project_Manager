@@ -1,0 +1,27 @@
+.roles {
+  border: none;
+  margin: 4px 0 8px;
+  padding: 0;
+
+  legend {
+    font: var(--mat-sys-label-large);
+    margin-bottom: 4px;
+  }
+
+  mat-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+.role-label {
+  display: block;
+  font: var(--mat-sys-body-large);
+}
+
+.role-hint {
+  display: block;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

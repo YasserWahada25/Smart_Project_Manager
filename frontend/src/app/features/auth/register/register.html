@@ -1,0 +1,100 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title><h1>Create an account</h1></mat-card-title>
+    <mat-card-subtitle>Join your team on Smart Project Manager</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    @if (errorMessage(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="row">
+        <mat-form-field appearance="outline">
+          <mat-label>First name</mat-label>
+          <input matInput formControlName="firstName" autocomplete="given-name" />
+          @if (form.controls.firstName.invalid) {
+            <mat-error>{{ error('firstName') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Last name</mat-label>
+          <input matInput formControlName="lastName" autocomplete="family-name" />
+          @if (form.controls.lastName.invalid) {
+            <mat-error>{{ error('lastName') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" autocomplete="email" />
+        @if (form.controls.email.invalid) {
+          <mat-error>{{ error('email') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          [type]="hidePassword() ? 'password' : 'text'"
+          formControlName="password"
+          autocomplete="new-password"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+          (click)="hidePassword.set(!hidePassword())"
+        >
+          <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+        </button>
+        <mat-hint>At least 8 characters, with a letter and a digit</mat-hint>
+        @if (form.controls.password.invalid) {
+          <mat-error>{{ error('password') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Confirm password</mat-label>
+        <input
+          matInput
+          [type]="hidePassword() ? 'password' : 'text'"
+          formControlName="confirmPassword"
+          autocomplete="new-password"
+        />
+        @if (form.controls.confirmPassword.invalid) {
+          <mat-error>{{ error('confirmPassword') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <fieldset class="roles">
+        <legend>I am a</legend>
+        <mat-radio-group formControlName="role" aria-label="Account type">
+          @for (role of roles; track role.value) {
+            <mat-radio-button [value]="role.value">
+              <span class="role-label">{{ role.label }}</span>
+              <span class="role-hint">{{ role.hint }}</span>
+            </mat-radio-button>
+          }
+        </mat-radio-group>
+      </fieldset>
+
+      <button mat-flat-button type="submit" class="submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <mat-spinner diameter="20" aria-label="Creating the account" />
+        } @else {
+          Create my account
+        }
+      </button>
+    </form>
+  </mat-card-content>
+
+  <mat-card-footer>
+    <p class="switch">Already have an account? <a routerLink="/login">Sign in</a></p>
+  </mat-card-footer>
+</mat-card>

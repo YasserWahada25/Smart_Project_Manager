@@ -1,0 +1,72 @@
+.intro {
+  margin-bottom: 24px;
+
+  h1 {
+    font: var(--mat-sys-headline-medium);
+    margin: 0 0 8px;
+  }
+
+  p {
+    margin: 0;
+    max-width: 640px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  .signed-in {
+    margin-bottom: 12px;
+    font: var(--mat-sys-label-large);
+  }
+}
+
+.status-card {
+  max-width: 640px;
+}
+
+.rows {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+  }
+
+  &.down mat-icon,
+  &.down .state {
+    color: var(--mat-sys-error);
+  }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.label {
+  font: var(--mat-sys-title-small);
+}
+
+.detail {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.state {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-primary);
+}
+
+.checked-at {
+  margin: 12px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

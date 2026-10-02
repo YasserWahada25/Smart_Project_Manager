@@ -1,0 +1,352 @@
+# Architecture
+
+> Current state: **Express.js backend complete for the non-AI features** (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: setup and authentication (TASK 12–13); other feature screens and AI service not created yet.
+> This document describes the target architecture; sections are updated with the actual implementation as tasks are completed.
+
+## 1. Global architecture
+
+```
+                 USER
+                   |
+                   v
+           Angular Frontend            (browser, port 4200 in dev)
+                   |
+               REST API (JSON over HTTP, JWT bearer token)
+                   |
+                   v
+          Express.js Backend           (Node.js, port 3000)
+                   |
+          +--------+--------+
+          |                 |
+          v                 v
+       MongoDB         AI Service      (Python / FastAPI, port 8000)
+       (Mongoose)           |
+                  +---------+---------+
+                  v                   v
+          Machine Learning          LLM
+           (if required)       (if required)
+```
+
+## 2. Components and responsibilities
+
+| Component          | Responsibility | Status |
+|--------------------|----------------|--------|
+| Angular frontend   | User interface, routing, forms, guards, HTTP calls to the backend. | Setup done (shell, routing, error handling, system status page) |
+| Express.js backend | Main REST API: authentication, authorization, business rules, validation, persistence, orchestration of AI calls. | Complete for non-AI features |
+| MongoDB            | Main application database. | 7 collections (users, projects, sprints, tasks, comments, activities, notifications) |
+| FastAPI AI service | Stateless AI operations (generation, recommendation, prediction). Does not access MongoDB directly. | Not created |
+
+## 3. Communication rules
+
+1. The frontend communicates **only** with the Express backend.
+2. The Express backend is the only component that reads/writes MongoDB.
+3. When an AI feature is requested, the backend gathers the needed data from MongoDB, calls the AI service, **validates** the response, then persists/returns it.
+4. The AI service is never exposed directly to the browser.
+
+## 4. Architectural decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Separate AI service (FastAPI) | The Python ecosystem (Pandas, Scikit-learn, LLM SDKs) is best suited for AI; isolation keeps the main API independent of AI failures and allows separate scaling. |
+| Backend as AI gateway | Centralizes authentication, authorization and validation; secrets (e.g. LLM API keys) stay server-side. |
+| MongoDB + Mongoose | Flexible document model for projects/tasks with embedded lists (technologies, skills); schema validation through Mongoose. |
+| JWT authentication | Stateless authentication suited to a REST API consumed by a SPA. |
+
+## 5. Target structures
+
+Folders are created only when a task needs them.
+
+### 5.1 Frontend (Angular)
+
+Target:
+
+```
+frontend/src/app/
+├── core/        singleton services, guards, interceptors
+├── shared/      reusable components, pipes, models
+├── features/    auth, users, projects, teams, sprints, tasks, kanban, dashboard, ai
+└── layouts/
+```
+
+Implemented (TASK 12–13):
+
+```
+frontend/
+├── src/
+│   ├── app/
+│   │   ├── core/
+│   │   │   ├── app.constants.ts            APP_NAME
+│   │   │   ├── auth/                       auth.service, auth.interceptor, auth.guards, token-storage, jwt, auth.models
+│   │   │   ├── models/user.ts              User, Role, ROLE_LABELS, Skill
+│   │   │   ├── http/api-error.interceptor.ts  HttpErrorResponse → ApiError + global toast
+│   │   │   ├── models/api-error.ts         ApiError (status, code, message, details)
+│   │   │   ├── models/system-status.ts     HealthReport / SystemStatus
+│   │   │   ├── routing/app-title.strategy.ts  "<page> · Smart Project Manager"
+│   │   │   └── services/                   health.service.ts, toast.service.ts
+│   │   ├── shared/components/              loading-state, error-state
+│   │   ├── shared/forms/                   password validators (same policy as the backend), form error helpers
+│   │   ├── testing/                        test data & fake AuthService (excluded from the build)
+│   │   ├── layouts/main-layout/            toolbar (user menu, logout) + responsive side navigation
+│   │   ├── layouts/auth-layout/            centered layout of the public pages
+│   │   ├── features/
+│   │   │   ├── auth/login, auth/register   sign in / create an account (reactive forms)
+│   │   │   ├── home/                       welcome + system status (frontend → API → MongoDB)
+│   │   │   └── not-found/                  404 page
+│   │   ├── app.config.ts                   providers (router, HttpClient + interceptor, title, icons)
+│   │   ├── app.routes.ts                   lazy-loaded routes inside MainLayout
+│   │   └── app.ts                          root component (<router-outlet>)
+│   ├── environments/                       environment.ts / environment.development.ts (apiUrl)
+│   ├── styles.scss                         Material 3 theme (azure/blue), toast styles
+│   └── index.html
+├── proxy.conf.json                         dev server: /api → http://localhost:3000
+├── angular.json, eslint.config.js, .prettierrc
+└── package.json
+```
+
+#### Frontend technical choices
+
+| Choice | Reason |
+|--------|--------|
+| Angular 22, **standalone components**, **zoneless** change detection, **signals** | Current Angular defaults: no NgModules, less boilerplate, fine-grained updates |
+| `OnPush` + signals in components | Predictable rendering, works with zoneless |
+| **Lazy-loaded routes** (`loadComponent`) inside a `MainLayout` shell | Each page is downloaded on first visit; the initial bundle only contains the shell |
+| **Angular Material 3** (azure/blue theme, Material Symbols icons) | Consistent, accessible, responsive components; colors from `--mat-sys-*` variables |
+| **Dev proxy** (`proxy.conf.json`) and `apiUrl = '/api/v1'` in every environment | The browser only talks to its own origin (no CORS in dev); the same URL works behind a reverse proxy in production |
+| **Functional HTTP interceptor** `apiErrorInterceptor` | Every HTTP error becomes an `ApiError` mirroring the backend error format; network/5xx errors show a toast automatically, 4xx are handled by the page (validation messages). A request can opt out with the `SKIP_ERROR_TOAST` context token |
+| Shared `LoadingState` / `ErrorState` components | Same loading and error presentation on every page (with "Try again") |
+| Responsive layout (`BreakpointObserver`) | Side menu always visible on desktop, drawer + menu button on handsets |
+| angular-eslint with template **accessibility** rules, Prettier | Code quality and accessibility checked by `npm run lint` |
+
+#### Frontend authentication
+
+| Piece | Role |
+|-------|------|
+| `AuthService` | Session (token + user) in signals: `currentUser`, `isAuthenticated`, `hasRole()`; `login()`, `register()`, `logout()`. Restores the session synchronously from storage at startup (expired tokens are discarded), then re-validates it in the background with `GET /auth/me`. Schedules an automatic logout when the token expires |
+| `TokenStorage` | `localStorage` keys `spm.auth.token` / `spm.auth.user`; works in memory only if storage is unavailable |
+| `authInterceptor` | Adds `Authorization: Bearer <token>` to requests for `/api/v1` only (never to other origins). A 401 on an authenticated request (expired token, password changed, account deactivated) ends the session: toast + redirect to `/login?returnUrl=…` |
+| `authGuard` | Application pages: requires a session, otherwise `/login?returnUrl=<page>` |
+| `guestGuard` | `/login`, `/register`: signed-in users are sent home |
+| `roleGuard(...roles)` | Restricts a page to roles (used from the administration screens). UX only: the backend enforces the same rules |
+| `safeReturnUrl()` | Only internal paths are accepted after login (no open redirect: `//host`, `https://`, `\\`, `:` refused) |
+
+Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayout`; everything else is under `MainLayout` protected by `authGuard`. (An empty-path parent for the public pages would also match `/` and, with `guestGuard`, cause an infinite redirect loop for signed-in users — this was caught by the routing tests.)
+
+**Token storage choice:** the backend issues a Bearer JWT (no cookie), so the token is kept in `localStorage` to survive page reloads. Risk: a successful XSS could read it. Mitigations: Angular escapes all template bindings (no `innerHTML` is used), the token expires (`JWT_EXPIRES_IN`), it is invalidated by a password change, and it is only sent to our own API. An httpOnly cookie would remove this risk but requires CSRF protection on the backend (possible future improvement).
+
+#### Frontend ↔ backend communication
+
+```
+Browser ──► http://localhost:4200 (ng serve)
+              ├── /            Angular application (SPA, deep links served by index.html)
+              └── /api/*  ──►  proxy ──► http://localhost:3000/api/*  (Express)
+```
+
+`HealthService.check()` calls `GET /api/v1/health`: 200 → backend and database up; 503 (sent by the backend when MongoDB is down) → backend up, database down; anything else (e.g. 502 from the proxy when the backend is stopped) → backend unreachable.
+
+### 5.2 Backend (Express.js)
+
+Target:
+
+```
+backend/src/
+├── config/        environment & database configuration
+├── controllers/   HTTP request/response handling
+├── middleware/    authentication, authorization, error handling
+├── models/        Mongoose schemas
+├── routes/        REST route definitions
+├── services/      business logic
+├── validators/    request validation (express-validator)
+├── utils/
+└── app.js
+```
+
+Implemented (TASK 02–11):
+
+```
+backend/
+├── src/
+│   ├── config/
+│   │   ├── env.js               loads backend/.env (dotenv), parses & validates configuration
+│   │   └── database.js          connect / disconnect / connection status (Mongoose)
+│   ├── controllers/
+│   │   ├── health.controller.js
+│   │   ├── auth.controller.js   register, login, me
+│   │   ├── user.controller.js   admin: list, get, update status, update role
+│   │   ├── profile.controller.js own profile, password, skills
+│   │   ├── project.controller.js projects & members
+│   │   ├── sprint.controller.js sprints
+│   │   ├── task.controller.js   tasks, board, my tasks
+│   │   ├── comment.controller.js task comments
+│   │   ├── activity.controller.js project / task history
+│   │   ├── notification.controller.js own notifications
+│   │   └── dashboard.controller.js dashboards & global search
+│   ├── middleware/
+│   │   ├── authenticate.js      verifies the Bearer JWT, loads req.user from MongoDB
+│   │   ├── authorize.js         authorize(...roles) → 403 if role not allowed
+│   │   ├── validate.js          runs express-validator rules → 400 with field details
+│   │   ├── notFound.js          unknown route → 404 ApiError
+│   │   └── errorHandler.js      centralized error → JSON response mapping
+│   ├── models/
+│   │   ├── plugins/toJSON.plugin.js common JSON shape (id, no _id/__v, hidden fields)
+│   │   ├── user.model.js        User schema (+ embedded skills), ROLES, SKILL_LEVELS, password hashing
+│   │   ├── project.model.js     Project schema, PROJECT_STATUSES
+│   │   ├── sprint.model.js      Sprint schema, lifecycle transitions
+│   │   ├── task.model.js        Task schema, workflow transitions, story points
+│   │   ├── comment.model.js     Comment schema
+│   │   ├── activity.model.js    Activity schema, ACTIVITY_TYPES
+│   │   └── notification.model.js Notification schema (TTL 90 days)
+│   ├── routes/
+│   │   ├── index.js             API router mounted on /api/v1
+│   │   ├── health.routes.js
+│   │   ├── auth.routes.js       /auth/register, /auth/login, /auth/me
+│   │   ├── user.routes.js       /users (ADMIN only)
+│   │   ├── profile.routes.js    /profile (any authenticated user, own data only)
+│   │   ├── developer.routes.js  /developers (PM, ADMIN)
+│   │   ├── project.routes.js    /projects (+ /:id/members, /:id/sprints, /:id/tasks, /:id/board)
+│   │   ├── sprint.routes.js     /sprints/:id
+│   │   ├── task.routes.js       /tasks/assigned, /tasks/:id (+ /comments, /activities)
+│   │   ├── comment.routes.js    /comments/:id
+│   │   ├── notification.routes.js /notifications
+│   │   └── dashboard.routes.js  /dashboard, /search (+ /projects/:id/dashboard in project.routes)
+│   ├── scripts/
+│   │   └── createAdmin.js       CLI: npm run create-admin
+│   ├── services/
+│   │   ├── health.service.js    builds the health report
+│   │   ├── auth.service.js      registration & login logic
+│   │   ├── token.service.js     JWT sign / verify (HS256)
+│   │   ├── user.service.js      user listing/administration, admin bootstrap
+│   │   ├── profile.service.js   profile update, password change, skills replacement
+│   │   ├── projectAccess.service.js project visibility / manager / archived rules
+│   │   ├── project.service.js   project CRUD & members
+│   │   ├── sprint.service.js    sprint CRUD, lifecycle & statistics
+│   │   ├── task.service.js      task CRUD, workflow, assignment, board, my tasks, task history
+│   │   ├── comment.service.js   comments & moderation
+│   │   ├── activity.service.js  record() + listeners, history queries
+│   │   ├── notification.service.js activity → notifications, inbox operations
+│   │   ├── dashboard.service.js indicators (aggregations), workload, platform figures
+│   │   └── search.service.js    global search in visible projects
+│   ├── validators/
+│   │   ├── auth.validator.js    register & login rules
+│   │   ├── user.validator.js    list filters, status & role update rules
+│   │   ├── profile.validator.js profile, password change & skills rules
+│   │   ├── project.validator.js project & member rules
+│   │   ├── sprint.validator.js  sprint rules
+│   │   ├── task.validator.js    task, filter, status & assignment rules
+│   │   ├── comment.validator.js comment & activity rules
+│   │   ├── notification.validator.js notification rules
+│   │   ├── dashboard.validator.js project dashboard & search rules
+│   │   ├── common.validator.js  reusable rules (ids, pagination, text, dates, string lists)
+│   │   └── password.policy.js   password rules shared by registration and admin bootstrap
+│   ├── utils/
+│   │   ├── ApiError.js          operational HTTP error (status, code, message, details)
+│   │   ├── logger.js            console logger, silent in tests
+│   │   ├── pagination.js        shared pagination limits & response metadata
+│   │   ├── regex.js             escaped regex builders for search
+│   │   └── ids.js               sameId() comparison helper
+│   ├── app.js                   createApp(): builds the Express app (no listen)
+│   └── server.js                entry point: config check → DB connect → listen → graceful shutdown
+├── tests/                       Jest + Supertest (in-memory MongoDB)
+├── eslint.config.js
+├── .env.example
+└── package.json
+```
+
+#### Layering
+
+`route → controller → service → (model)`: routes only map URLs to controllers; controllers handle HTTP (status code, JSON); services hold logic and are reusable; models (Mongoose) will hold persistence.
+
+#### Request pipeline (`app.js`)
+
+1. `helmet()` — security headers (removes `X-Powered-By`, adds `X-Content-Type-Options`, `X-Frame-Options`, CSP, …)
+2. `cors({ origin: CORS_ORIGIN })` — only the configured frontend origin(s) are allowed
+3. `express.json({ limit: '1mb' })` — JSON body parsing with size limit
+4. API routes under `/api/v1`
+5. `notFound` — any unmatched route becomes a 404 `ApiError`
+6. `errorHandler` — converts every error into the standard JSON error format (see [api.md](api.md))
+
+Express 5 forwards errors thrown in async handlers to the error handler automatically.
+
+#### Startup sequence (`server.js`)
+
+1. Load and validate configuration (`config/env.js` → `validateConfig()`); fail fast if `MONGODB_URI` is missing or `PORT` is invalid.
+2. Connect to MongoDB (server selection timeout 10 s); on failure, log and exit with code 1.
+3. Start the HTTP server.
+4. On `SIGINT`/`SIGTERM`: stop accepting connections, close the MongoDB connection, exit (forced exit after 10 s).
+
+`app.js` and `server.js` are separated so tests can import the app without opening a port or a real database connection.
+
+#### Authentication and authorization flow
+
+```
+POST /auth/login ──► validate(loginRules) ──► auth.service.login
+                                                 ├─ find user by email (+password)
+                                                 ├─ bcrypt.compare (dummy hash if email unknown)
+                                                 ├─ isActive check
+                                                 └─ token.service.sign → { token, user }
+
+GET /<protected> ──► authenticate ──► authorize(ROLES...) ──► controller
+                       ├─ "Authorization: Bearer <jwt>" required      ├─ 403 if req.user.role not allowed
+                       ├─ jwt.verify (HS256 only, signature + exp)
+                       └─ User.findById(sub), must exist and be active → req.user
+```
+
+Role permissions are enforced with `authorize(...)` on each business route as it is created (projects, sprints, tasks…). The role is always taken from MongoDB, never from the token.
+
+**Registration policy:** public registration can create `DEVELOPER` (default) or `PROJECT_MANAGER` accounts. A project manager will only manage the projects they create (to be enforced in the project management task), so self-registration as PM does not give access to other users' data. `ADMIN` accounts cannot be self-registered: the first one is created from the command line (`npm run create-admin`, credentials read from `backend/.env`), then any admin can promote other users through `PATCH /api/v1/users/:id/role`.
+
+#### Project-level access control
+
+`services/projectAccess.service.js` centralizes the rules reused by every project-related feature (projects, then sprints, tasks, comments…):
+
+- `visibleProjectsFilter(user)` — MongoDB filter: all projects for `ADMIN`, otherwise `manager = user OR members contains user`;
+- `findViewableProject(id, user)` — 404 if the project does not exist **or** the user cannot see it (no information leak);
+- `findManagedProject(id, user)` — additionally 403 if the user is not the project's manager, 409 if the project is archived.
+
+Role checks (`authorize`) answer "may this kind of user call this endpoint?"; these ownership checks answer "may this user act on this project?".
+
+#### Activity history
+
+Services call `activityService.record({ project, actor, type, task, sprint, targetUser, details })` after each successful change. The call never throws (a failure is logged), and registered listeners (`onActivity`) are notified of each new activity — this is the single integration point used by notifications: `createApp()` registers `notificationService.registerActivityListener()` (idempotent), which turns each relevant activity into notifications for the people concerned. A listener failure is logged and isolated.
+
+#### User administration
+
+`/api/v1/users/*` is protected at router level by `authenticate` + `authorize(ADMIN)`. An admin cannot change their own status or role, which guarantees at least one active admin at all times. Accounts are deactivated, never deleted, to keep future references (project members, task assignees, comments) valid.
+
+### 5.3 AI service (FastAPI)
+
+```
+ai-service/app/
+├── routes/     API endpoints
+├── services/   AI logic
+├── schemas/    Pydantic request/response models
+├── models/     persisted ML models
+├── ml/         training code
+├── prompts/    LLM prompts
+└── main.py
+```
+
+## 6. Security architecture
+
+| Measure | Status |
+|---------|--------|
+| Environment-based configuration (no secrets in code, `.env` git-ignored) | Implemented |
+| `helmet` security headers | Implemented |
+| CORS restricted to configured frontend origin(s) | Implemented |
+| JSON body size limit (1 MB) | Implemented |
+| Centralized error handling; unexpected errors return a generic 500 message (no stack trace or internal detail leaked) | Implemented |
+| bcrypt password hashing (cost 12 by default, configurable 4–15) | Implemented |
+| Password hash never returned (`select: false` + `toJSON` transform) | Implemented |
+| JWT authentication middleware (HS256 only, `alg: none` and other algorithms rejected, secret ≥ 32 chars enforced at startup) | Implemented |
+| User reloaded from DB on each request (deactivation / role change effective immediately) | Implemented |
+| Role-based authorization middleware | Implemented (applied to business routes as they are added) |
+| Request validation (express-validator); only validated fields reach the services (`matchedData`) — blocks mass assignment and NoSQL operator injection (`{ "$ne": null }`) | Implemented |
+| Identical login error for unknown email and wrong password + constant-time-ish comparison (dummy hash) — prevents account enumeration | Implemented |
+| ADMIN role cannot be self-assigned at registration; first admin created from the CLI | Implemented |
+| User administration restricted to ADMIN; admin cannot deactivate/demote themselves | Implemented |
+| Search input escaped before building the MongoDB regex (no ReDoS / regex injection) | Implemented |
+| Login rate limiting / account lockout | Not implemented (future improvement) |
+| Tokens issued before a password change are rejected (`passwordChangedAt` vs JWT `iat`) | Implemented |
+| Password change requires the current password; new password must differ and follow the policy | Implemented |
+| Profile endpoints only act on the token's own user (no user id in the URL → no IDOR) | Implemented |
+| Validation of array items without `bail()` (express-validator wildcard quirk) + same rules enforced again by the Mongoose schema | Implemented |
+| Token revocation on logout (logout = client discards token) | Not implemented (stateless JWT; future improvement) |

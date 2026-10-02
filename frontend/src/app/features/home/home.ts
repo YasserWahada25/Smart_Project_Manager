@@ -1,0 +1,88 @@
+import { DatePipe } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+
+import { APP_NAME } from '../../core/app.constants';
+import { AuthService } from '../../core/auth/auth.service';
+import { ApiError } from '../../core/models/api-error';
+import { ROLE_LABELS } from '../../core/models/user';
+import { ServiceState, SystemStatus } from '../../core/models/system-status';
+import { HealthService } from '../../core/services/health.service';
+import { ErrorState } from '../../shared/components/error-state/error-state';
+import { LoadingState } from '../../shared/components/loading-state/loading-state';
+
+interface StatusRow {
+  label: string;
+  detail: string;
+  state: ServiceState;
+}
+
+/**
+ * Landing page. Shows whether the whole chain works: Angular → Express API → MongoDB.
+ * (Replaced by the dashboard once authentication and the dashboard UI exist.)
+ */
+@Component({
+  selector: 'app-home',
+  imports: [DatePipe, MatCardModule, MatIconModule, MatButtonModule, LoadingState, ErrorState],
+  templateUrl: './home.html',
+  styleUrl: './home.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class Home {
+  private readonly healthService = inject(HealthService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  protected readonly appName = APP_NAME;
+  protected readonly user = inject(AuthService).currentUser;
+  protected readonly roleLabel = computed(() => {
+    const user = this.user();
+    return user ? ROLE_LABELS[user.role] : '';
+  });
+  protected readonly loading = signal(true);
+  protected readonly status = signal<SystemStatus | null>(null);
+  protected readonly errorMessage = signal<string | null>(null);
+
+  constructor() {
+    this.refresh();
+  }
+
+  protected rows(status: SystemStatus): StatusRow[] {
+    return [
+      { label: 'Frontend', detail: 'Angular application', state: 'up' },
+      { label: 'Backend API', detail: 'Node.js + Express.js', state: status.backend },
+      { label: 'Database', detail: 'MongoDB', state: status.database },
+    ];
+  }
+
+  protected refresh(): void {
+    this.loading.set(true);
+    this.errorMessage.set(null);
+
+    this.healthService
+      .check()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (status) => {
+          this.status.set(status);
+          this.loading.set(false);
+        },
+        error: (error: unknown) => {
+          this.status.set(null);
+          this.errorMessage.set(
+            error instanceof ApiError ? error.message : 'An unexpected error occurred.',
+          );
+          this.loading.set(false);
+        },
+      });
+  }
+}
