@@ -86,12 +86,17 @@ describe('SprintList', () => {
     expect(button(planned, 'Start')).toBeDefined();
     expect(button(planned, 'Delete')).toBeDefined();
     expect(element().textContent).toContain('New sprint');
+    const aiLink = [...element().querySelectorAll('a')].find((a) =>
+      a.textContent?.includes('Plan with AI'),
+    );
+    expect(aiLink?.getAttribute('href')).toBe('/ai-plan');
   });
 
   it('is read-only for the other users', async () => {
     await render(testUser({ id: 'd1', role: 'DEVELOPER' }));
 
     expect(element().textContent).not.toContain('New sprint');
+    expect(element().textContent).not.toContain('Plan with AI');
     expect(button(cards()[2], 'Start')).toBeUndefined();
     expect(cards()[2].querySelector('a')).not.toBeNull();
   });
@@ -167,6 +172,8 @@ describe('SprintList', () => {
     await render(testUser(), []);
 
     expect(element().textContent).toContain('No sprint yet.');
-    expect(element().textContent).toContain('Create a sprint to plan the work of the team.');
+    expect(element().textContent).toContain(
+      'Create a sprint, or let the AI plan the sprints from the specification.',
+    );
   });
 });

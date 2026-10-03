@@ -49,6 +49,21 @@ def test_explicit_metadata_is_read_and_removed_from_the_title():
     assert (postponed.priority, postponed.points, postponed.excluded) == ("LOW", 3, True)
 
 
+def test_several_markers_in_one_bracket():
+    requirements = by_title(
+        "# Catalog\n"
+        "- Browse products by category with pagination (Must, 5 pts)\n"
+        "- Export the catalog to CSV [Won't have; 2 jours]\n"
+        "- Search products by name (fast, accurate)\n"
+    )
+    browse = requirements["Browse products by category with pagination"]
+    assert (browse.priority, browse.points) == ("HIGH", 5)
+    export = requirements["Export the catalog to CSV"]
+    assert (export.priority, export.points, export.excluded) == ("LOW", 3, True)
+    # A bracket that is not only made of markers stays in the text.
+    assert "Search products by name (fast, accurate)" in requirements
+
+
 def test_user_story_keeps_the_story_and_its_criteria():
     story = by_title(SPECIFICATION_FR)["Rechercher un livre par titre ou auteur"]
     assert story.text.startswith("En tant que lecteur, je veux rechercher")

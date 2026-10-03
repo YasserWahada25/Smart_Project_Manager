@@ -6,7 +6,7 @@ University mini-project — *AI for Software Engineering*.
 
 Smart Project Manager is a web platform that helps software teams manage projects, teams, sprints, tasks, priorities, deadlines and workload. An AI module assists the team with automatic task generation, developer recommendation and sprint delay-risk prediction.
 
-> **Project status:** the Express.js REST API is complete for all non-AI features (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: **every non-AI feature has its screens** (authentication, profile & skills, user administration, projects & teams, sprints, tasks, Kanban board, comments, activity history, notifications, dashboards with charts, global search). Next: the AI service (Python / FastAPI), then delivery (Docker, demo data, CI).
+> **Project status:** the Express.js REST API and the Angular frontend cover every non-AI feature (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). The **FastAPI AI service** runs the first AI feature, **AI-01 "Plan with AI"**: the manager pastes or uploads the specification, the AI (OpenAI, or a local analyzer with a Naive Bayes classifier) proposes the sprints and tasks, the manager reviews them and applies the plan. Next: AI-02 developer recommendation, AI-03 sprint delay risk, AI-04 manager assistant, then delivery (Docker, demo data, CI).
 > See [Development progress](#development-progress) for what is actually implemented.
 
 ---
@@ -57,9 +57,9 @@ Details: [docs/architecture.md](docs/architecture.md).
 
 ```
 .
-├── frontend/          Angular application          (all non-AI screens)
-├── backend/           Express.js REST API           (all non-AI features)
-├── ai-service/        FastAPI AI service            (not created yet)
+├── frontend/          Angular application          (all screens, incl. "Plan with AI")
+├── backend/           Express.js REST API           (all features + AI gateway)
+├── ai-service/        FastAPI AI service            (health, AI-01 planning)
 ├── docs/              Project documentation
 ├── docker-compose.yml Docker orchestration          (not created yet)
 ├── .env.example       Environment variable template
@@ -73,10 +73,10 @@ Folders are created by the task that needs them.
 
 | Tool             | Version used / required                     |
 |------------------|---------------------------------------------|
-| Node.js          | 20.19+ (developed with 24.16.0)              |
+| Node.js          | 22.22.3+ or 24.15+ for the frontend (backend: 20.19+); developed with 24.16.0 |
 | npm              | 10+ (developed with 11.13.0)                 |
-| Angular CLI      | 22.x                                         |
-| Python           | 3.11+ (required from the AI service task)    |
+| Angular CLI      | 22.x (needs Node.js 22.22.3+ or 24.15+)      |
+| Python           | 3.11+ (developed with 3.14.8, checked with 3.12.5) |
 | MongoDB          | 7+ (local install or Docker)                 |
 | Docker / Compose | Docker 29+ (required from the Docker task)   |
 
@@ -131,7 +131,29 @@ Open http://localhost:4200: you are sent to the sign-in page. Create an account 
 | `npm run lint`          | ESLint (angular-eslint, incl. template accessibility rules) |
 | `npm run format`        | Prettier |
 
-AI service instructions will be added when it is implemented.
+### AI service (FastAPI)
+
+Called only by the backend. Requires Python 3.11+.
+
+```bash
+cd ai-service
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r requirements-dev.txt   # Linux/macOS: .venv/bin/python
+cp .env.example .env    # set AI_SERVICE_TOKEN (same value in backend/.env); OPENAI_API_KEY is optional
+.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000
+```
+
+Generate the shared token with `python -c "import secrets; print(secrets.token_hex(32))"` and put it in **both** `ai-service/.env` and `backend/.env` (`AI_SERVICE_TOKEN`). Without `OPENAI_API_KEY`, the local analyzer is used and no data leaves your machine.
+
+Check it is running: `GET http://localhost:8000/api/v1/health` → `200 {"status":"ok", ...}`; the home page of the application then shows the AI service as operational. Project managers find **Plan with AI** on the Sprints tab of their projects.
+
+| Command (from `ai-service/`) | Purpose |
+|-------------------------|---------|
+| `.venv/Scripts/python.exe -m pytest -q` | Tests (pytest, OpenAI mocked) |
+| `.venv/Scripts/python.exe -m flake8 app tests` | Lint |
+| `.venv/Scripts/python.exe -m app.ml.task_type_model` | Re-train the task type classifier and print its metrics |
+
+Details: [docs/deployment.md](docs/deployment.md#33-ai-service-fastapi), [docs/ai.md](docs/ai.md).
 
 ## Development progress
 
@@ -177,7 +199,7 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 |---------|--------------------------------------------------------------|--------|
 | TASK 20 | FastAPI AI service setup (structure, health, service token, Pydantic, pytest) | Done |
 | TASK 21 | Backend ↔ AI gateway (HTTP client, timeouts, error handling, AI status) | Done |
-| TASK 22 | AI-01 Sprint & task planning from the specification (OpenAI + local analyzer fallback, complexity estimation, review then apply, UI) | In progress |
+| TASK 22 | AI-01 Sprint & task planning from the specification (OpenAI + local analyzer fallback, complexity estimation, review then apply, UI) | Done |
 | TASK 23 | AI-02 Developer recommendation (scoring, endpoint, backend route, UI) | Planned |
 | TASK 24 | AI-03 Sprint delay risk prediction (dataset, ML model, metrics, endpoint, backend route, UI) | Planned |
 | TASK 25 | AI-04 Manager assistant chat (OpenAI tool calling on the project data, changes applied only after the manager confirms, sprint summary) | Planned |
@@ -200,12 +222,13 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 | [docs/database.md](docs/database.md)             | MongoDB design (collections, schemas, indexes)   |
 | [docs/api.md](docs/api.md)                       | REST API reference                               |
 | [docs/ai.md](docs/ai.md)                         | AI features, ML models                           |
-| [docs/prompts.md](docs/prompts.md)               | Part A: development prompts between the supervisor and the AI agent (in French); Part B: LLM prompts of the application (planned) |
+| [docs/prompts.md](docs/prompts.md)               | Part A: development prompts between the supervisor and the AI agents (in French); Part B: LLM prompts of the application (AI-01) |
 | [docs/testing.md](docs/testing.md)               | Test strategy and results                        |
 | [docs/deployment.md](docs/deployment.md)         | Environment, Docker, deployment                  |
 | [docs/demo.md](docs/demo.md)                     | Functional demonstration scenario                |
 | [docs/bilan.md](docs/bilan.md)                   | Progress report, updated after each task, and log of the supervisor ↔ AI agent exchanges (in French) |
-| [docs/handoff.md](docs/handoff.md)               | Resume point for the next agent: rules, exact state of TASK 22, remaining steps, commands, pitfalls |
+| [docs/handoff.md](docs/handoff.md)               | Resume point for the next agent: rules, current state, next task, commands, pitfalls |
+| [docs/livrables/](docs/livrables/README.md)      | One deliverable per task (in French): files added / modified and the supervisor prompts that led to the feature |
 
 ### Technical report mapping
 

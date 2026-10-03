@@ -78,6 +78,13 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/sprints/sprint-list/sprint-list').then((m) => m.SprintList),
           },
+          // AI-01, manager only (the page itself checks ProjectContext.canEdit).
+          {
+            path: 'ai-plan',
+            title: 'Plan with AI',
+            loadComponent: () =>
+              import('./features/ai-plan/ai-plan-page/ai-plan-page').then((m) => m.AiPlanPage),
+          },
           {
             path: 'tasks',
             title: 'Tasks',

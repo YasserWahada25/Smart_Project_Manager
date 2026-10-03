@@ -1,6 +1,6 @@
 # REST API Documentation
 
-> Current state: **health, authentication, user administration, own profile, projects & team, developer directory, sprints, tasks & Kanban board, comments, activity history, notifications, dashboards, global search.** The Express REST API is feature-complete for the non-AI requirements.
+> Current state: **health, authentication, user administration, own profile, projects & team, developer directory, sprints, tasks & Kanban board, comments, activity history, notifications, dashboards, global search, AI status and AI-01 planning (§ 1.17).** The FastAPI AI service is documented in § 2.
 > Endpoints are added to this document only once they exist in the code.
 
 ## 1. Express.js backend (main API)
@@ -672,6 +672,7 @@ Read-only, append-only log of what happened in a project, recorded automatically
 | `TASK_ASSIGNED` / `TASK_UNASSIGNED` | (re)assignment / unassignment | `title` | `task`, `targetUser` |
 | `TASK_STATUS_CHANGED` | workflow transition | `title`, `from`, `to` | `task` |
 | `COMMENT_ADDED` | comment posted | `title`, `commentId` | `task` |
+| `AI_PLAN_APPLIED` | AI-01 plan applied (§ 1.17) | `sprints`, `tasks` (counts created), `method` (`llm` / `local` / `null`) | |
 
 `details` keeps a snapshot (title, name) so entries stay readable after the task or sprint is deleted. Writing the history never makes the main operation fail (errors are logged).
 
@@ -774,21 +775,140 @@ Case-insensitive "contains" search in the projects the caller can see: project *
 }
 ```
 
+### 1.17 AI (backend gateway to the AI service)
+
+The backend is the only caller of the AI service (`AI_SERVICE_URL`, shared secret `AI_SERVICE_TOKEN` sent as `X-AI-Service-Token`, timeout `AI_TIMEOUT_MS`, default 90 000 ms). AI failures become backend errors:
+
+| Status | Code | When |
+|--------|------|------|
+| 503 | `AI_UNAVAILABLE` | `AI_SERVICE_TOKEN` not set, or the AI service is unreachable |
+| 504 | `AI_TIMEOUT` | No answer within `AI_TIMEOUT_MS` |
+| 400 | `BAD_REQUEST` | The AI service refused the submitted content (unreadable file, scanned PDF, no requirement found…): its message is returned |
+| 502 | `AI_ERROR` | The AI service failed or returned something that does not match the contract |
+
+#### `GET /api/v1/ai/status` — any authenticated user
+
+Never fails: reports whether the AI service answers and which analyzer it will use (shown on the home page and the "Plan with AI" page).
+
+```json
+{ "available": true, "llm": { "provider": "openai", "configured": false, "model": null } }
+{ "available": false, "reason": "NOT_CONFIGURED", "llm": null }
+```
+
+`reason`: `NOT_CONFIGURED` (no token), `UNREACHABLE`, `TIMEOUT`. `llm.configured` is true when `OPENAI_API_KEY` is set in the AI service (the key itself is never returned).
+
+#### `POST /api/v1/projects/:id/ai/plan` — project manager, project not archived
+
+AI-01: proposes sprints and tasks from the specification. **Nothing is stored.** `multipart/form-data` (or JSON without file):
+
+| Field | Rules |
+|-------|-------|
+| `text` | Pasted specification, ≤ 200 000 characters (optional if a file is sent) |
+| `file` | One file, `.txt` `.md` `.pdf` `.docx`, ≤ 5 MB (413 / 415 otherwise); kept in memory, never written to disk |
+| `startDate` | `YYYY-MM-DD`, optional — default: today, the project start date if later, or the day after the last sprint of the project |
+| `sprintLengthDays` | Integer 5–30, default 14 |
+| `capacityPerSprint` | Story points per sprint, integer 3–200, default 20 |
+
+Text + file text must reach 20 characters (400 otherwise). The project is checked (403 / 404) **before** the file is read.
+
+```json
+{
+  "plan": {
+    "method": "local",
+    "model": "local analyzer (rules + naive Bayes type classifier)",
+    "warnings": ["The last sprint ends on 2027-02-14, after the project deadline (2027-01-31): …"],
+    "sprints": [
+      {
+        "name": "Sprint 1", "objective": "Deliver: Authentication, Payment",
+        "startDate": "2026-10-05", "endDate": "2026-10-18",
+        "tasks": [
+          { "title": "Pay by card with Stripe", "description": "Pay by card with Stripe",
+            "type": "FEATURE", "priority": "HIGH", "complexity": 5,
+            "requiredSkills": ["Stripe", "Node.js", "Payments"], "epic": "Payment" }
+        ]
+      }
+    ],
+    "backlog": [],
+    "stats": { "taskCount": 8, "sprintCount": 3, "totalPoints": 31, "epics": ["Authentication", "Payment", "Catalog"] },
+    "options": { "startDate": "2026-10-05", "sprintLengthDays": 14, "capacityPerSprint": 13 },
+    "source": { "filename": "cahier-des-charges.docx", "characters": 1200 }
+  }
+}
+```
+
+`method`: `llm` (OpenAI) or `local` (local analyzer, also used when OpenAI fails — a warning says why). Sprint names continue the numbering of the existing sprints. The AI answer is validated strictly before being returned (otherwise 502 `AI_ERROR`).
+
+#### `POST /api/v1/projects/:id/ai/plan/apply` — project manager, project not archived
+
+Creates the plan reviewed (and possibly edited) by the manager: **PLANNED** sprints and **TODO**, unassigned tasks, all or nothing (if an insert fails, everything already inserted is removed). JSON body:
+
+```json
+{
+  "method": "local",
+  "sprints": [
+    { "name": "Sprint 1", "objective": "Deliver: Authentication", "startDate": "2026-10-05", "endDate": "2026-10-18",
+      "tasks": [ { "title": "Sign up with email", "description": "", "type": "FEATURE", "priority": "HIGH",
+                   "complexity": 5, "requiredSkills": ["Angular"] } ] }
+  ],
+  "backlog": [ { "title": "Dark mode", "description": "", "type": "IMPROVEMENT", "priority": "LOW", "complexity": 2, "requiredSkills": [] } ]
+}
+```
+
+Rules: ≤ 20 sprints, 1–100 tasks in total, sprint name ≤ 100 characters, objective ≤ 1 000, `endDate` ≥ `startDate`; task fields as in § 1.11 (title ≤ 200, description ≤ 5 000, enums, story points 1/2/3/5/8/13, ≤ 20 unique skills of ≤ 50 characters); `method` optional (`llm` / `local`). An `epic` field is ignored (not stored). → **201**:
+
+```json
+{ "sprints": [ { "id": "...", "name": "Sprint 1", "status": "PLANNED", "...": "..." } ], "tasksCreated": 8, "backlogTasks": 1 }
+```
+
+One `AI_PLAN_APPLIED` activity is recorded (no notification: the tasks are unassigned).
+
 ## 2. FastAPI AI service (internal API)
 
-Called only by the Express backend, never by the browser.
+Called only by the Express backend, never by the browser. Base URL `AI_SERVICE_URL` (default `http://localhost:8000`). Interactive documentation (Swagger UI) at `/docs` while the service runs.
 
-### 2.1 Planned endpoints
+- **Authentication**: every `/api/v1/ai/*` route requires the header `X-AI-Service-Token: <AI_SERVICE_TOKEN>` (same value in `backend/.env` and `ai-service/.env`, ≥ 32 characters, compared in constant time) → 401 `UNAUTHORIZED` otherwise. `/api/v1/health` is public.
+- **Errors**: same format as the backend, `{"error": {"status", "code", "message", "details"}}`; request validation errors → 400 `BAD_REQUEST` with `details[{field, message}]`; unexpected errors → 500 without internal details.
+
+### 2.1 Endpoints
 
 | Method | Path | Feature | Status |
 |--------|------|---------|--------|
-| GET  | `/api/v1/health` | Health check | Planned |
-| POST | `/api/v1/ai/tasks/generate` | AI-01 Task generation | Planned |
-| POST | `/api/v1/ai/developers/recommend` | AI-02 Developer recommendation | Planned |
-| POST | `/api/v1/ai/sprints/predict-risk` | AI-03 Sprint delay risk | Planned |
-| POST | `/api/v1/ai/tasks/estimate` | Optional: complexity estimation | Optional |
+| GET  | `/api/v1/health` | Health check + analyzer in use | Done (TASK 20) |
+| POST | `/api/v1/ai/documents/extract` | AI-01: text of a specification file | Done (TASK 22) |
+| POST | `/api/v1/ai/projects/plan` | AI-01: sprints and tasks from a specification | Done (TASK 22) |
+| POST | `/api/v1/ai/developers/recommend` | AI-02 Developer recommendation | Planned (TASK 23) |
+| POST | `/api/v1/ai/sprints/predict-risk` | AI-03 Sprint delay risk | Planned (TASK 24) |
 | POST | `/api/v1/ai/sprints/summary` | Optional: sprint summary | Optional |
 
-### 2.2 Endpoints
+### 2.2 Details
 
-None yet.
+#### `GET /api/v1/health`
+
+```json
+{ "status": "ok", "service": "smart-project-manager-ai", "llm": { "provider": "openai", "configured": false, "model": null } }
+```
+
+`configured` / `model`: whether `OPENAI_API_KEY` is set and the model used; the key is never returned.
+
+#### `POST /api/v1/ai/documents/extract`
+
+`multipart/form-data`, field `file` (`.txt` `.md` `.pdf` `.docx`, ≤ `MAX_UPLOAD_BYTES`, 5 MB). Returns the plain text with its structure kept as Markdown (headings `# …`, list items `- …`, table rows `a | b`), cut at `MAX_DOCUMENT_CHARS` (100 000):
+
+```json
+{ "filename": "cahier.docx", "text": "# Authentication\n- Sign up with email\n…", "characters": 1200, "truncated": false }
+```
+
+Errors: 413 (too large), 415 (other extension), 422 (empty, corrupted, password-protected or image-only PDF), 400 (no `file` field).
+
+#### `POST /api/v1/ai/projects/plan`
+
+```json
+{
+  "text": "# Authentication\n- Sign up with email (Must)\n…",
+  "project": { "name": "Shop", "description": "Online shop", "technologies": ["Angular", "Node.js"], "deadline": "2027-01-31" },
+  "options": { "startDate": "2026-10-05", "sprintLengthDays": 14, "capacityPerSprint": 20 },
+  "teamSkills": ["Angular", "Stripe"]
+}
+```
+
+`text` 20–200 000 characters; `project.name` 1–100, `description` ≤ 2 000, ≤ 30 technologies; `deadline` optional; options as in § 1.17; ≤ 200 team skills. Response: `method`, `model`, `warnings`, `sprints` (each with `totalPoints`, named `Sprint 1…`), `backlog`, `stats` — the backend validates it, renames the sprints after the existing ones and adds `options` and `source` (§ 1.17). 422 when no requirement can be found in the text. Approach, rules and limits: [ai.md](ai.md) § 4.1; LLM prompt: [prompts.md](prompts.md) Part B.

@@ -64,7 +64,8 @@ export class Home {
       { label: 'Database', detail: 'MongoDB', state: status.database },
     ];
     const ai = this.aiStatus();
-    if (ai) rows.push({ label: 'AI service', detail: aiDetail(ai), state: ai.available ? 'up' : 'down' });
+    if (ai)
+      rows.push({ label: 'AI service', detail: aiDetail(ai), state: ai.available ? 'up' : 'down' });
     return rows;
   }
 

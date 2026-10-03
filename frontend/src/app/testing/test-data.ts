@@ -2,6 +2,7 @@
 import { computed, signal } from '@angular/core';
 
 import { AuthService } from '../core/auth/auth.service';
+import { AiPlan, PlanTask } from '../core/models/ai-plan';
 import { Project, ProjectMember } from '../core/models/project';
 import { Sprint } from '../core/models/sprint';
 import { Task } from '../core/models/task';
@@ -104,6 +105,57 @@ export function testTask(overrides: Partial<Task> = {}): Task {
     createdBy: { id: 'u1', firstName: 'Sara', lastName: 'Manager', email: 'sara@example.com' },
     createdAt: '2026-10-02T09:00:00.000Z',
     updatedAt: '2026-10-02T09:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function testPlanTask(overrides: Partial<PlanTask> = {}): PlanTask {
+  return {
+    title: 'Sign in with email',
+    description: 'As a customer, I want to sign in with my email.',
+    type: 'FEATURE',
+    priority: 'HIGH',
+    complexity: 5,
+    requiredSkills: ['Angular'],
+    epic: 'Authentication',
+    ...overrides,
+  };
+}
+
+/** Plan proposed by the local analyzer: 2 sprints (2 + 1 tasks) and 1 backlog task. */
+export function testPlan(overrides: Partial<AiPlan> = {}): AiPlan {
+  return {
+    method: 'local',
+    model: 'naive-bayes-v3',
+    warnings: ['The project deadline is passed by the last sprint.'],
+    sprints: [
+      {
+        name: 'Sprint 1',
+        objective: 'Authentication',
+        startDate: '2026-10-05',
+        endDate: '2026-10-18',
+        tasks: [
+          testPlanTask(),
+          testPlanTask({ title: 'Reset the password', priority: 'MEDIUM', complexity: 3 }),
+        ],
+      },
+      {
+        name: 'Sprint 2',
+        objective: 'Catalog',
+        startDate: '2026-10-19',
+        endDate: '2026-11-01',
+        tasks: [testPlanTask({ title: 'Browse products', epic: 'Catalog', complexity: 8 })],
+      },
+    ],
+    backlog: [testPlanTask({ title: 'Dark mode', priority: 'LOW', complexity: 2, epic: 'UI' })],
+    stats: {
+      taskCount: 4,
+      sprintCount: 2,
+      totalPoints: 16,
+      epics: ['Authentication', 'Catalog', 'UI'],
+    },
+    options: { startDate: '2026-10-05', sprintLengthDays: 14, capacityPerSprint: 20 },
+    source: { filename: 'cahier.docx', characters: 1200 },
     ...overrides,
   };
 }

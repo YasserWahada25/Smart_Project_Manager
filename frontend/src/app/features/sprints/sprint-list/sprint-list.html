@@ -1,10 +1,16 @@
 <div class="toolbar">
   <h2>Sprints</h2>
   @if (canEdit()) {
-    <button mat-flat-button type="button" (click)="openForm()">
-      <mat-icon>add</mat-icon>
-      New sprint
-    </button>
+    <div class="toolbar-actions">
+      <a mat-stroked-button routerLink="../ai-plan">
+        <mat-icon>auto_awesome</mat-icon>
+        Plan with AI
+      </a>
+      <button mat-flat-button type="button" (click)="openForm()">
+        <mat-icon>add</mat-icon>
+        New sprint
+      </button>
+    </div>
   }
 </div>
 
@@ -127,7 +133,7 @@
       <li class="empty">
         No sprint yet.
         @if (canEdit()) {
-          Create a sprint to plan the work of the team.
+          Create a sprint, or let the AI plan the sprints from the specification.
         }
       </li>
     }

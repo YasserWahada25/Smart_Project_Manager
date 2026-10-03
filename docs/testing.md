@@ -1,6 +1,6 @@
 # Testing
 
-> Current state: **backend tests implemented** (Jest + Supertest + in-memory MongoDB). Frontend and AI service tests: not yet (services not created).
+> Current state: **backend** (Jest + Supertest + in-memory MongoDB, 325 tests), **frontend** (Vitest, 329 tests) and **AI service** (pytest, 103 tests) suites in place; end-to-end checks against the real services after each feature (TASK 22: 17/17).
 > Results are recorded here only after tests have actually been executed.
 
 ## 1. Strategy
@@ -9,7 +9,7 @@
 |---------|-----------|---------|--------|
 | Backend (Express.js) | Unit tests (config, middleware, model), API tests (Supertest), authentication and authorization tests | Jest 30, Supertest 7, mongodb-memory-server 11 | In place |
 | Frontend (Angular) | Component, service, interceptor and routing tests (form-validation tests with the forms) | Vitest 4 + jsdom through the Angular CLI unit-test builder, `HttpTestingController`, `RouterTestingHarness` | In place |
-| AI service (FastAPI) | Endpoint tests, prediction validation, malformed input, model loading, malformed LLM response | pytest + FastAPI `TestClient` | Planned |
+| AI service (FastAPI) | Endpoint tests (token, validation, errors), text extraction from in-memory documents, requirement parser, task enricher, sprint planner, ML model (training, persistence, metrics), OpenAI client and fallback with a mocked HTTP transport (no real OpenAI call) | pytest 9 + FastAPI `TestClient`, `httpx.MockTransport` | In place |
 
 ### 1.1 Backend test database
 
@@ -51,7 +51,19 @@ npm run lint             # ESLint
 cd frontend
 npm run test:ci          # single run (npm test = watch mode)
 npm run lint
+npm run format:check     # Prettier
 npm run build            # production build (type checking + budgets)
+```
+
+Requires Node.js 22.22.3+ or 24.15+ (Angular CLI 22).
+
+### AI service
+
+```bash
+cd ai-service
+.venv/Scripts/python.exe -m pytest -q                 # add --basetemp <folder> if the system temp folder is not writable
+.venv/Scripts/python.exe -m flake8 app tests
+.venv/Scripts/python.exe -m app.ml.task_type_model    # re-train + cross-validation metrics
 ```
 
 ## 3. Backend test inventory
@@ -78,6 +90,9 @@ npm run build            # production build (type checking + budgets)
 | `tests/notifications.test.js` | API (in-memory MongoDB) | Generated from activity: member added, task assigned/unassigned, status change (to manager only, not the author), comment (to assignee), sprint started (to members), member removed; author never notified; storage failure does not fail the action. Endpoints: newest first with `unreadCount` and actor, pagination, mark one read (`readAt`), `unread=true` filter, unread counter, read-all, delete, other users' notifications 404, validation 400, 401 without token. TTL index of 90 days present |
 | `tests/dashboard.test.js` | API (in-memory MongoDB) | Manager: project counts by status, task totals (completed, blocked, overdue, by status, by priority), active sprint with `daysRemaining` and story-point progress, workload sorted by open points (no `myTasks`/`platform`). Developer: own projects + `myTasks`, no workload. Admin: all projects + platform user counts by role. User without projects: zeros. 401 without token. Project dashboard: project info (`daysRemaining`, member count), sprint counts, active sprint, every member in the workload (incl. 0), outsider 404, invalid id 400 |
 | `tests/search.test.js` | API (in-memory MongoDB) | Case-insensitive search in project name and task title/description, only in visible projects; populated task project; per-type limit with total; regex characters as text; `q` missing/too short/too long and limit > 20 → 400 |
+
+| `tests/aiClient.test.js` | Unit + API | AI client (TASK 21): service token and JSON body sent; 503 when not configured or unreachable; 504 on timeout; content refused by the AI service → 400 with its details; 5xx, refused token or invalid body → 502. `GET /ai/status`: 401 without token, available with the LLM state, reasons when unavailable (never an error) |
+| `tests/aiPlan.test.js` | API (in-memory MongoDB, mocked AI client) | AI-01 (TASK 22). **Plan:** specification, project context and team skills sent; uploaded file extracted and joined to the pasted text; default options; missing / short text, invalid options, unsupported file (415) refused; reserved to the manager of an active project; duplicate skills of the AI answer removed; AI refusal forwarded (400), AI down (503); invalid AI answers → 502; default start date (today, project start, day after the last sprint). **Apply:** PLANNED sprints + TODO tasks + one `AI_PLAN_APPLIED` activity; every field validated; empty plan, too many tasks or sprints, dates in the wrong order refused; nothing left when the creation fails midway; manager only |
 
 `tests/user.model.test.js` also covers (TASK 05): duplicate skill names and unknown levels rejected by the schema, > 50 skills rejected, `passwordChangedAt` set on change but not at creation, `isTokenIssuedBeforePasswordChange` boundaries.
 | `tests/user.model.test.js` | Unit (in-memory MongoDB) | Defaults (DEVELOPER, active, timestamps); password hashed on save and checked by `comparePassword`; no re-hash when another field changes; password not selected by default; JSON without `password`/`_id`/`__v`; unknown role rejected; unique email index (case-insensitive through lowercase) |
@@ -137,6 +152,24 @@ npm run build            # production build (type checking + budgets)
 | `features/auth/login/login.spec.ts` | Validation messages without API call, login + navigation to returnUrl, external returnUrl ignored, explicit messages for 401 and 403, password visibility toggle |
 | `features/auth/register/register.spec.ts` | Password policy and confirmation messages, confirmation re-checked when the password changes, developer by default + success toast + navigation, project manager choice, 409 → "already registered" on the email field, backend 400 details on fields, other errors above the form |
 
+| `features/ai-plan/ai-plan.service.spec.ts` | AI-01 (TASK 22): multipart form (text, file, start date, options), empty text / missing file / automatic date not sent, AI errors left to the page (no global toast), reviewed plan posted as JSON |
+| `features/ai-plan/ai-plan-page/ai-plan-page.spec.ts` | Analyzer shown (local: the document stays on the servers; OpenAI: it is sent to OpenAI); generation disabled when the AI service is down; ≥ 20 characters or a file; file type and size checked before upload; option ranges; spinner then error with the input kept; review (method, stats, warnings, sprint names, points vs capacity, backlog); edit + move (Material menu harness) + delete + remove a sprint → exact apply payload (no epic), toast, navigation to the Sprints tab; add a sprint (next number and dates); invalid plan refused before sending; backend field errors shown on the matching fields; Back keeps the input; reserved to the manager of a non-archived project |
+
+`core/models/activity.spec.ts` also covers `AI_PLAN_APPLIED` ("created 12 tasks in 3 sprints with the AI planner", singular, backlog only); `sprint-list.spec.ts` the "Plan with AI" link (manager only).
+
+### AI service test inventory (`ai-service/tests/`)
+
+| File | What is verified |
+|------|------------------|
+| `test_service.py` | Health says which analyzer will be used (a configured LLM is reported without the key); settings: token ≥ 32 characters, blank key = no LLM; AI routes require the backend token; unknown route in the backend error format |
+| `test_text_extraction.py` | `.txt` and `.md`, Windows-encoded (cp1252) text, `.docx` (headings, lists, tables kept), `.pdf`; long text truncated; rejected files; PDF without text rejected |
+| `test_requirement_parser.py` | French and English specifications: epics from headings, context and out-of-scope sections skipped, explicit metadata (MoSCoW, points, days, several markers in one bracket), user stories with acceptance criteria, sub-items, numbered headings, tables (with and without header), requirement sentences, duplicates, sentence fallback, nothing usable → 422, at most 100, language detection |
+| `test_task_enricher.py` | Inferred priority and story points; skills (team spelling, project stack, at most 5, no partial-word matches); explicit values combined with inferred ones; BUG only when a correction is explicit |
+| `test_sprint_planner.py` | Packing by priority within the capacity, gaps filled by the same priority, a lower priority never before a higher one, dates / names / objective, oversized task alone with a warning, at most 20 sprints then backlog (+ excluded tasks), deadline warning, no task → no sprint |
+| `test_ml.py` | Normalisation (case, accents), features (stop words dropped, lexicon cues), Naive Bayes learns and survives serialisation, unknown words ignored, cross-validation metrics per class, type prediction, low confidence → FEATURE, model trained when the file is missing |
+| `test_llm_client.py` | Strict structured-output request, retry without temperature, HTTP / format errors → `LlmError`, timeout and network errors, the API key never logged |
+| `test_planning_api.py` | Token required on both routes; plan with the local analyzer; plan with the (mocked) LLM; invalid or failed LLM answer → local fallback with a warning; long document truncated for the LLM; request validation; no requirement → 422; extraction of a Word document, unsupported / too large files, missing file |
+
 `layouts/main-layout/main-layout.spec.ts` and `features/home/home.spec.ts` also cover the user menu (name, role, logout) and the greeting.
 
 ## 4. Test execution log
@@ -189,6 +222,12 @@ npm run build            # production build (type checking + budgets)
 | 2026-10-03 | TASK 19 | Frontend | `npm run test:ci` | 50 files, 307 tests passed |
 | 2026-10-03 | TASK 19 | Frontend | `npm run lint` / `npm run format:check` / `npm run build` | Pass / pass / success; initial bundle 344.0 kB raw / 95.6 kB transferred; Chart.js only in the lazy dashboard chunks (dashboard-page 7 kB, project-dashboard 5 kB + shared Chart.js chunk) |
 | 2026-10-03 | TASK 19 | Frontend | `npm audit --omit=dev` | 0 vulnerabilities (chart.js 4.5.1 added) |
+| 2026-10-03 | TASK 20–22 | AI service | `pytest -q` / `flake8 app tests` | 102 tests passed / clean (previous agent, Python 3.14.8) |
+| 2026-10-03 | TASK 21–22 | Backend | `npm test` / `npm run lint` / `npm audit --omit=dev` | 22 suites, 325 tests passed / 0 errors / 0 vulnerabilities (multer 2.4.0 added) |
+| 2026-10-03 | TASK 22 | Frontend | `npm run test:ci` | 52 files, 329 tests passed (+22: AI plan service and page, activity type, Sprints link) |
+| 2026-10-03 | TASK 22 | Frontend | `npm run lint` / `npm run format:check` / `npm run build` | Pass / pass / success; initial bundle 344.7 kB raw / 95.8 kB transferred (the AI plan page is lazy-loaded). Run with Node 24.21 (the machine's Node 22.21.1 is refused by Angular CLI 22) |
+| 2026-10-03 | TASK 22 | AI service | `pytest -q` / `flake8 app tests` / `python -m app.ml.task_type_model` | 103 tests passed (+1: several markers in one bracket) / clean / accuracy 0.916, macro F1 0.921 (Python 3.12.5, new virtual environment) |
+| 2026-10-03 | TASK 22 | Backend | `npm test` / `npm run lint` / `npm audit --omit=dev` | 22 suites, 325 tests passed / 0 errors / 0 vulnerabilities (backend unchanged by the end of TASK 22) |
 
 ### Manual verification (TASK 02)
 
@@ -313,5 +352,29 @@ Through the dev proxy, with a throw-away project manager and developer (`@smoke.
 - backend fix: deleting a project deletes its notifications (1 before, 0 after).
 
 **Test timeout:** `src/app/testing/test-setup.ts` (`angular.json` → `test.options.setupFiles`) sets a 15 s timeout: with 50 spec files running in parallel, a few tests driven by Material harnesses took more than the default 5 s on a loaded machine.
+
+### End-to-end verification (TASK 22, AI-01)
+
+Real backend (port 3000, supervisor's process) + real AI service (`uvicorn`, port 8000, **no OpenAI key → local analyzer**) + local MongoDB `smart_project_manager`, scripted HTTP scenario with a throw-away manager and developer (`@smoke.test`). **17/17 checks passed:**
+
+1. register a manager and a developer; 2. developer skills (Angular, Stripe), project created, developer added;
+3. `GET /ai/status` → available, `llm.configured: false`;
+4. plan from pasted text (multipart, 3 epics, Must/Should/Could, a bug, documentation, an out-of-scope section) → 200 in < 50 ms, `method: local`, 8 tasks in 3 sprints;
+5. every task valid (types, priorities, Fibonacci points), sprints `Sprint 1…`, 14 days from the chosen start date;
+6. capacity respected (12, 11, 8 points for a capacity of 13), out-of-scope section skipped;
+7. team skills used (`Stripe` on the payment task), bug typed `BUG`, documentation typed `DOCUMENTATION`; 7b. `(Must, 5 pts)` read as HIGH / 5 points and removed from the title;
+8. plan from a `.docx` file whose name contains `é` (name kept); 9. plan from a `.pdf` file + pasted text;
+10. refused: text too short (400), `.exe` (415), sprint length 40 (400); 11. developer member → 403;
+12. apply refused (end before start, empty plan) → 400, nothing created;
+13. apply the edited plan (renamed sprint, edited title, a task moved to the backlog) → 201;
+14. sprints PLANNED with the new name, tasks TODO and unassigned, edits kept, backlog task without sprint;
+15. one `AI_PLAN_APPLIED` activity `{ sprints: 3, tasks: 8, method: "local" }`;
+16. a new proposal continues the numbering (`Sprint 4`) and starts the day after the last sprint.
+
+Cleanup: tasks, sprints and project deleted through the API, the 4 `@smoke.test` accounts deleted in `smart_project_manager` (0 left); no other database touched.
+
+**Finding fixed in this task:** check 7b first failed — `(Must, 5 pts)` left `(Must` in the title and the priority at MEDIUM, because MoSCoW tags and points were only recognised in separate brackets. The parser now reads several markers in one bracket (`_metadata_group`, new pytest case).
+
+Not verified: the OpenAI path against the real API (no key on the development machine; covered by mocked tests), and the page in a real browser by the supervisor (covered by component tests).
 
 Not verified: graceful shutdown on `SIGTERM` (Windows does not deliver POSIX signals to Node processes the same way; to be verified in the Docker task).

@@ -194,10 +194,10 @@ Index `{ task: 1, createdAt: 1 }`: comments of a task in chronological order. Co
 |-------|------|-------------|-------|
 | `project` | ObjectId → `projects` | required | |
 | `actor` | ObjectId → `users` | required | Who did it |
-| `type` | String | required, enum (16 types, see api.md §1.13) | |
+| `type` | String | required, enum (17 types, see api.md §1.13; `AI_PLAN_APPLIED` added by TASK 22) | |
 | `task`, `sprint` | ObjectId | optional | Related entity (may have been deleted since) |
 | `targetUser` | ObjectId → `users` | optional | Affected user (member added/removed, assignee) |
-| `details` | Mixed | default `{}` | Small snapshot: `{ title }`, `{ from, to }`, `{ fields }` |
+| `details` | Mixed | default `{}` | Small snapshot: `{ title }`, `{ from, to }`, `{ fields }`, `{ sprints, tasks, method }` (AI plan applied) |
 | `createdAt` | Date | auto (no `updatedAt`: append-only) | |
 
 **Indexes:** `{ project: 1, createdAt: -1 }` (project history), `{ task: 1, createdAt: -1 }` (task history).

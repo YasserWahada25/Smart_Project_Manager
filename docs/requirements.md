@@ -1,7 +1,7 @@
 # Requirements
 
 > Status legend: **Planned** = specified, not implemented · **In progress** · **Done** = implemented and tested.
-> Current state: FR-01 Authentication, FR-02 User management, FR-03 User profiles, FR-04 Developer skills, FR-05 Project management, FR-06 Team management, FR-07 Sprint management, FR-08 Task management, the FR-09 Kanban board, FR-10 Comments, FR-11 Activity history, FR-12 Notifications, FR-13 Dashboard and FR-14 Search implemented in the backend (API) and in the Angular user interface. FR-15 (AI features) is planned.
+> Current state: FR-01 Authentication, FR-02 User management, FR-03 User profiles, FR-04 Developer skills, FR-05 Project management, FR-06 Team management, FR-07 Sprint management, FR-08 Task management, the FR-09 Kanban board, FR-10 Comments, FR-11 Activity history, FR-12 Notifications, FR-13 Dashboard and FR-14 Search implemented in the backend (API) and in the Angular user interface. FR-15 (AI features): AI-01 done (TASK 22), AI-02, AI-03 and AI-04 planned.
 
 ## 1. Project context
 
@@ -20,9 +20,10 @@ Software teams have to juggle projects, sprints, tasks, priorities, deadlines an
 1. Centralize project, team, sprint and task management in one web platform.
 2. Visualize task progression (Kanban board) and project health (dashboard).
 3. Use AI to:
-   - generate structured tasks from a project/feature description (AI-01);
+   - generate the sprints and structured tasks of a project from its specification (AI-01);
    - recommend the most suitable developer for a task (AI-02);
-   - predict the delay risk of a sprint (AI-03).
+   - predict the delay risk of a sprint (AI-03);
+   - assist the manager through a chat that proposes changes applied after confirmation (AI-04, added by the supervisor).
 4. Deliver a secure, tested, documented and containerizable application.
 
 ## 4. Actors and roles
@@ -60,7 +61,7 @@ Software teams have to juggle projects, sprints, tasks, priorities, deadlines an
 | FR-12 | Notifications                   | Notify users of relevant events. | Done (API + UI: unread badge, notifications page) |
 | FR-13 | Dashboard                       | Project indicators and charts. | Done (API + UI: global dashboard by role and project dashboard, Chart.js charts, workload, accounts); AI risk indicators planned with AI-03 |
 | FR-14 | Search and filters              | Search/filter projects and tasks. | Done (API + UI: list filters, developer search by skill, task filters, global search page and toolbar field) |
-| FR-15 | AI features                     | AI-01, AI-02, AI-03 (see [ai.md](ai.md)). | Planned |
+| FR-15 | AI features                     | AI-01, AI-02, AI-03, AI-04 (see [ai.md](ai.md)). | In progress — **AI-01 done** (API + UI "Plan with AI": specification pasted or uploaded → sprints and tasks reviewed by the manager then created; OpenAI or local analyzer); AI-02, AI-03, AI-04 planned |
 
 ### 5.1 Project
 

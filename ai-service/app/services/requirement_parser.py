@@ -109,6 +109,10 @@ _DAYS = re.compile(
     r"(\d{1,3}(?:[.,]\d+)?)\s*(j|jours?|jh|j/h|days?|h|heures?|hours?)\s*[\])]",
     re.IGNORECASE,
 )
+# Several markers in one bracket: "(Must, 5 pts)", "[Should; 3 jours]".
+_GROUP = re.compile(r"\s*[\[(]([^()\[\]]{1,80})[\])]")
+_POINTS_PART = re.compile(r"(\d{1,3})\s*(?:pts?|points?|sp|story points?)", re.IGNORECASE)
+_DAYS_PART = re.compile(r"(\d{1,3}(?:[.,]\d+)?)\s*(j|jours?|jh|j/h|days?|h|heures?|hours?)", re.IGNORECASE)
 _DAYS_LABEL = re.compile(
     r"[\[(,;–—-]?\s*\b(?:estimation|estimate|charge|dur[ée]e|duration|effort)\s*[:=]\s*"
     r"(\d{1,3}(?:[.,]\d+)?)\s*(j|jours?|jh|j/h|days?|h|heures?|hours?)\b\s*[\])]?",
@@ -523,9 +527,33 @@ def _make(raw: str, epic: str) -> Requirement | None:
     )
 
 
+def _metadata_group(text: str) -> tuple[str, str | None, bool, int | None]:
+    """First bracket made only of markers ("(Must, 5 pts)"), removed from the text."""
+    for match in _GROUP.finditer(text):
+        parts = [part.strip() for part in re.split(r"[,;|]", match.group(1))]
+        if len(parts) < 2:
+            continue
+        priority, excluded, points = None, False, None
+        for part in parts:
+            found, is_excluded = _priority_from_word(part)
+            points_match = _POINTS_PART.fullmatch(part)
+            days_match = _DAYS_PART.fullmatch(part)
+            if found and priority is None:
+                priority, excluded = found, is_excluded
+            elif points_match and points is None:
+                points = _snap_points(int(points_match.group(1)))
+            elif days_match and points is None:
+                points = _points_from_days(float(days_match.group(1).replace(",", ".")), days_match.group(2))
+            else:
+                break
+        else:
+            return text[:match.start()] + text[match.end():], priority, excluded, points
+    return text, None, False, None
+
+
 def _extract_metadata(text: str) -> tuple[str, str | None, bool, int | None]:
-    priority, excluded, points = None, False, None
-    for pattern in (_TAG, _PRIORITY_LABEL):
+    text, priority, excluded, points = _metadata_group(text)
+    for pattern in () if priority else (_TAG, _PRIORITY_LABEL):
         match = pattern.search(text)
         if match:
             found, is_excluded = _priority_from_word(match.group(1))
@@ -533,7 +561,7 @@ def _extract_metadata(text: str) -> tuple[str, str | None, bool, int | None]:
                 priority, excluded = found, is_excluded
                 text = text[:match.start()] + text[match.end():]
                 break
-    for pattern in (_POINTS, _POINTS_LABEL):
+    for pattern in () if points else (_POINTS, _POINTS_LABEL):
         match = pattern.search(text)
         if match:
             points = _snap_points(int(match.group(1)))
