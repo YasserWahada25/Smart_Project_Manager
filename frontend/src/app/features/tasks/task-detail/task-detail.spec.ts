@@ -24,6 +24,7 @@ import {
   testUser,
 } from '../../../testing/test-data';
 import { ActivityService } from '../../activity/activity.service';
+import { RecommendDialog } from '../../ai-recommendation/recommend-dialog/recommend-dialog';
 import { CommentService } from '../../comments/comment.service';
 import { ProjectContext } from '../../projects/project-context';
 import { SprintService } from '../../sprints/sprint.service';
@@ -176,6 +177,31 @@ describe('TaskDetail', () => {
       'A task in IN_PROGRESS must keep an assignee: move it back to TODO first',
     );
     expect(await assignee.getValueText()).toBe('Lina Ben');
+  });
+
+  it('opens the AI recommendation (manager only) and shows the task assigned from it', async () => {
+    await render();
+    dialog.open.mockReturnValue({
+      afterClosed: () =>
+        of(
+          testTask({ assignee: { id: 'd2', firstName: 'Lina', lastName: 'Ben', email: 'l@b.c' } }),
+        ),
+    });
+
+    [...element().querySelectorAll('button')]
+      .find((b) => b.textContent?.includes('Recommend a developer'))!
+      .click();
+    await fixture.whenStable();
+
+    expect(dialog.open).toHaveBeenCalledWith(
+      RecommendDialog,
+      expect.objectContaining({ data: { taskId: 't1', taskTitle: 'Implement login page' } }),
+    );
+    expect(toast.success).toHaveBeenCalledWith('"Implement login page" assigned to Lina Ben.');
+
+    TestBed.resetTestingModule();
+    await render(testTask(), testUser({ id: 'd1', role: 'DEVELOPER' }));
+    expect(text()).not.toContain('Recommend a developer');
   });
 
   it('edits the task in the form dialog', async () => {

@@ -80,7 +80,7 @@ frontend/
 │   │   │   ├── http/api-error.interceptor.ts  HttpErrorResponse → ApiError + global toast
 │   │   │   ├── http/action-error.ts        message of a failed user action (null when already reported globally)
 │   │   │   ├── models/                     api-error, pagination, user, project, sprint, task, comment, activity
-│   │   │   │                               (+ describeActivity), notification, dashboard, system-status, ai-plan
+│   │   │   │                               (+ describeActivity), notification, dashboard, system-status, ai-plan, ai-recommendation, ai-risk
 │   │   │   ├── routing/app-title.strategy.ts  "<page> · Smart Project Manager"
 │   │   │   └── services/                   health, toast (snack bar loaded on demand), notification (unread count)
 │   │   ├── shared/components/              loading-state, error-state, confirm-dialog (+ ConfirmService),
@@ -109,6 +109,8 @@ frontend/
 │   │   │   │                               active-sprint-card (DashboardService, also used by the search)
 │   │   │   ├── search/                     search-page
 │   │   │   ├── ai-plan/                    ai-plan-page ("Plan with AI", child route of the project shell) (AiPlanService)
+│   │   │   ├── ai-recommendation/          recommend-dialog (AI-02, opened from the task page) (AiRecommendationService)
+│   │   │   ├── ai-risk/                    sprint-risk indicator (AI-03, on active sprint cards and the Sprints tab) (AiRiskService)
 │   │   │   └── not-found/                  404 page
 │   │   ├── app.config.ts                   providers (router + input binding, HttpClient + interceptors, title, icons)
 │   │   ├── app.routes.ts                   lazy-loaded routes inside MainLayout; project tabs are child routes
@@ -187,12 +189,12 @@ Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayou
 
 | Screen | Who / rules (mirroring the backend) | Content | API used |
 |--------|-------------------------------------|---------|----------|
-| Sprints tab | viewers; the manager creates, edits (open sprints), starts, completes, cancels (confirmations), deletes (PLANNED only) | Sprints in chronological order: dates, objective, progress in story points, task counts (done, blocked); links to the tasks and the board of the sprint | `GET /projects/:id/sprints`, `POST`, `PATCH /sprints/:id`, `PATCH /sprints/:id/status`, `DELETE /sprints/:id` |
+| Sprints tab | viewers; the manager creates, edits (open sprints), starts, completes, cancels (confirmations), deletes (PLANNED only) | Sprints in chronological order: dates, objective, progress in story points, task counts (done, blocked), **AI delay risk of the active sprint** (level, probability, factors); links to the tasks and the board of the sprint | `GET /projects/:id/sprints`, `POST`, `PATCH /sprints/:id`, `PATCH /sprints/:id/status`, `DELETE /sprints/:id` |
 | Plan with AI (`ai-plan`, TASK 22) | manager of a non-archived project (others see a message) | **Step 1**: specification textarea + file (`.txt .md .pdf .docx`, 5 MB, checked before upload), first sprint date (empty = automatic), sprint length, capacity in story points; the analyzer in use ("OpenAI <model>" — the document is sent to OpenAI — or "local") from `GET /ai/status`; spinner up to 90 s; errors shown on the page with the input kept. **Step 2 (review)**: method, stats, warnings; one card per sprint (editable name, dates, objective; points vs capacity), then the backlog; each task can be edited (title, description, type, priority, story points, skills), moved to another sprint or the backlog, or deleted; sprints can be removed (tasks → backlog) or added; "Apply the plan" validates, creates, shows a toast and opens the Sprints tab; "Back" keeps the input | `GET /ai/status`, `POST /projects/:id/ai/plan` (multipart), `POST /projects/:id/ai/plan/apply` |
 | Sprint form (dialog) | manager | Name, objective, start date (today) and end date (two weeks by default, ≥ start) | `POST /projects/:id/sprints`, `PATCH /sprints/:id` |
 | Tasks tab | viewers; the manager creates | Filters: title search (debounced), status, priority, type, assignee (or unassigned), sprint (or backlog), overdue; paginated table (status and priority badges, points, assignee, sprint, deadline / overdue); `?sprint=<id>` opens it filtered | `GET /projects/:id/tasks` |
 | Task form (dialog) | manager | Title, description, type, priority, complexity (1, 2, 3, 5, 8, 13 points), sprint (open sprints or backlog), deadline, required skills (chips), assignee (creation only: active members) | `POST /projects/:id/tasks`, `PATCH /tasks/:id` |
-| Task page | viewers; moves: manager and assignee; assignment, edition, deletion: manager | Details, blocked reason, "Move to" buttons limited to the allowed transitions (starting needs an assignee; blocking asks for an optional reason), assignee select, comments and history | `GET`, `PATCH`, `DELETE /tasks/:id`, `PATCH /tasks/:id/status`, `PATCH /tasks/:id/assignee` |
+| Task page | viewers; moves: manager and assignee; assignment, edition, deletion: manager | Details, blocked reason, "Move to" buttons limited to the allowed transitions (starting needs an assignee; blocking asks for an optional reason), assignee select, **"Recommend a developer"** (AI-02 dialog: ranked members with score bar, matching / missing skills, explanation, warnings, "Assign"), comments and history | `GET`, `PATCH`, `DELETE /tasks/:id`, `PATCH /tasks/:id/status`, `PATCH /tasks/:id/assignee`, `GET /tasks/:id/ai/recommendations` |
 | Board tab (Kanban) | viewers; moves: manager and assignee | Six columns (To do → Done + Blocked) with counts; cards: title, priority, points, deadline / overdue, blocked reason, assignee; "Move to" menu per card; scope: active sprint by default, `?sprint=`, another sprint, the backlog or all tasks | `GET /projects/:id/board`, `PATCH /tasks/:id/status` |
 | My tasks (`/my-tasks`, developers' menu) | the signed-in user | Assigned tasks, nearest deadline first, status filter, links to the task pages | `GET /tasks/assigned` |
 | Comments (task page) | manager and members comment (not administrators); the author edits; the author or the manager deletes (moderation); nothing in an archived project | Oldest first with "Show more", edited marker, inline edition | `GET` / `POST /tasks/:id/comments`, `PATCH` / `DELETE /comments/:id` |
@@ -252,7 +254,7 @@ backend/
 │   │   ├── activity.controller.js project / task history
 │   │   ├── notification.controller.js own notifications
 │   │   ├── dashboard.controller.js dashboards & global search
-│   │   ├── ai.controller.js     AI status
+│   │   ├── ai.controller.js     AI status, AI-02 recommendations, AI-03 sprint risk
 │   │   └── aiPlan.controller.js AI-01: load the managed project, generate, apply
 │   ├── middleware/
 │   │   ├── authenticate.js      verifies the Bearer JWT, loads req.user from MongoDB
@@ -278,8 +280,8 @@ backend/
 │   │   ├── profile.routes.js    /profile (any authenticated user, own data only)
 │   │   ├── developer.routes.js  /developers (PM, ADMIN)
 │   │   ├── project.routes.js    /projects (+ /:id/members, /:id/sprints, /:id/tasks, /:id/board)
-│   │   ├── sprint.routes.js     /sprints/:id
-│   │   ├── task.routes.js       /tasks/assigned, /tasks/:id (+ /comments, /activities)
+│   │   ├── sprint.routes.js     /sprints/:id (+ /ai/risk)
+│   │   ├── task.routes.js       /tasks/assigned, /tasks/:id (+ /comments, /activities, /ai/recommendations)
 │   │   ├── comment.routes.js    /comments/:id
 │   │   ├── notification.routes.js /notifications
 │   │   ├── dashboard.routes.js  /dashboard, /search (+ /projects/:id/dashboard in project.routes)
@@ -302,7 +304,9 @@ backend/
 │   │   ├── dashboard.service.js indicators (aggregations), workload, platform figures
 │   │   ├── search.service.js    global search in visible projects
 │   │   ├── aiClient.service.js  HTTP client of the AI service (token header, timeout, 503/504/400/502 mapping, status)
-│   │   └── aiPlan.service.js    AI-01: extract + plan, strict validation of the AI answer, all-or-nothing creation
+│   │   ├── aiPlan.service.js    AI-01: extract + plan, strict validation of the AI answer, all-or-nothing creation
+│   │   ├── aiRecommendation.service.js AI-02: members, workload and experience → AI service → validated ranking
+│   │   └── aiRisk.service.js    AI-03: sprint measures + velocity of past sprints → AI service → validated risk
 │   ├── validators/
 │   │   ├── auth.validator.js    register & login rules
 │   │   ├── user.validator.js    list filters, status & role update rules
@@ -393,7 +397,7 @@ Services call `activityService.record({ project, actor, type, task, sprint, targ
 
 ### 5.3 AI service (FastAPI)
 
-Implemented (TASK 20–22), Python 3.11+ (developed with 3.12 and 3.14):
+Implemented (TASK 20–24), Python 3.11+ (developed with 3.12 and 3.14):
 
 ```
 ai-service/
@@ -404,22 +408,31 @@ ai-service/
 │   ├── errors.py                ApiError + handlers: same error format as the backend
 │   ├── routes/
 │   │   ├── health.py            GET /api/v1/health (public)
-│   │   └── planning.py          POST /api/v1/ai/documents/extract, POST /api/v1/ai/projects/plan
-│   ├── schemas/                 Pydantic models: common (enums, limits), health, documents, planning, llm
+│   │   ├── planning.py          POST /api/v1/ai/documents/extract, POST /api/v1/ai/projects/plan
+│   │   ├── recommendation.py    POST /api/v1/ai/developers/recommend
+│   │   └── risk.py              POST /api/v1/ai/sprints/predict-risk
+│   ├── schemas/                 Pydantic models: common (enums, limits), health, documents, planning, llm, recommendation, risk
 │   ├── services/
 │   │   ├── text_extraction.py   .txt/.md/.pdf/.docx → text with Markdown-like structure
 │   │   ├── planning_service.py  hybrid analysis (OpenAI, else / on failure local) + sprint planning
 │   │   ├── llm_client.py        OpenAI Chat Completions, structured outputs, errors → LlmError
 │   │   ├── requirement_parser.py local analyzer 1: requirements, epics, explicit metadata
 │   │   ├── task_enricher.py     local analyzer 2: type (ML), priority, story points, skills
-│   │   └── sprint_planner.py    deterministic split into sprints (capacity, priority, ≤ 20 sprints)
+│   │   ├── sprint_planner.py    deterministic split into sprints (capacity, priority, ≤ 20 sprints)
+│   │   ├── developer_scoring.py AI-02 transparent scoring (skills, workload, experience) + explanation
+│   │   └── sprint_risk.py       AI-03 prediction: features, probability → level, factors, rules
 │   ├── prompts/project_plan.py  AI-01 system prompt, user prompt, JSON schema (docs/prompts.md Part B)
 │   └── ml/
 │       ├── data/task_types.csv  155 labelled FR/EN sentences (synthetic dataset)
+│       ├── data/sprint_risk.csv 2 000 simulated sprints (AI-03 synthetic dataset)
+│       ├── sprint_features.py   AI-03: the 7 features of a sprint (shared by simulator and prediction)
+│       ├── sprint_risk_data.py  AI-03: sprint simulator / dataset generator (seed 2026)
+│       ├── logistic_regression.py logistic regression (Newton / IRLS) + metrics (ROC AUC…)
+│       ├── sprint_risk_model.py AI-03: train / evaluate / save / load (python -m app.ml.sprint_risk_model)
 │       ├── lexicon.py           cue stems per task type, stop words
 │       ├── text_classifier.py   multinomial Naive Bayes in pure Python + cross-validation
 │       ├── task_type_model.py   train / evaluate / save / load (python -m app.ml.task_type_model)
-│       └── models/              task_type.json (generated, git-ignored)
+│       └── models/              task_type.json, sprint_risk.json (generated, git-ignored)
 ├── tests/                       pytest (in-memory documents, mocked OpenAI)
 ├── requirements.txt, requirements-dev.txt, pytest.ini, .flake8, .env.example
 ```

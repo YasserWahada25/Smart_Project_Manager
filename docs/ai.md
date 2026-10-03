@@ -1,6 +1,6 @@
 # AI Features and Models
 
-> Current state: **AI-01 (planning from the specification) is implemented** (TASK 22). AI-02, AI-03 and AI-04 are planned (TASK 23–25).
+> Current state: **AI-01 (planning from the specification, TASK 22), AI-02 (developer recommendation, TASK 23) and AI-03 (sprint delay risk, TASK 24) are implemented.** AI-04 is planned (TASK 25).
 > Each feature section is completed (approach, data, model, metrics, endpoint) when the feature is implemented.
 
 ## 1. Principles
@@ -15,8 +15,8 @@
 | ID    | Feature | Input | Output | Status |
 |-------|---------|-------|--------|--------|
 | AI-01 | Sprint & task planning from the specification (includes automatic task generation and complexity estimation) | Specification pasted and/or uploaded (.txt, .md, .pdf, .docx), project context, team skills, sprint options | Sprints (dates, objective) containing structured tasks: title, description, type, priority, required skills, story points; backlog; warnings | **Done** (TASK 22) |
-| AI-02 | Developer recommendation | Task required skills, developer skills, current workload, previous experience, availability (if implemented) | Recommended developer, compatibility score, matching skills, optional explanation | Planned |
-| AI-03 | Sprint delay risk prediction | Total/completed/remaining/blocked tasks, high-complexity tasks, days remaining, team size, team velocity | Risk level (`LOW`/`MEDIUM`/`HIGH`), probability, main contributing factors | Planned |
+| AI-02 | Developer recommendation | Task required skills (or skills found in its text), developer skills and levels, current workload, previous experience | Ranked developers: compatibility score 0–100, matching / missing skills, score breakdown, explanation | **Done** (TASK 23) |
+| AI-03 | Sprint delay risk prediction | Total/completed/blocked/unassigned tasks, open high-complexity tasks, story points, dates, team size, velocity of the previous sprints | Risk level (`LOW`/`MEDIUM`/`HIGH`), probability, main contributing factors | **Done** (TASK 24) |
 | AI-04 | Manager assistant (chat) | Manager message + project data (through backend tools) | Answers, and changes proposed then applied only after the manager confirms | Planned (TASK 25) |
 | OPT-1 | Task complexity estimation | — | — | Covered by AI-01 (story points per task) |
 | OPT-2 | Automatic sprint summary | — | — | Optional |
@@ -131,3 +131,86 @@ Why hybrid: an LLM understands free-form specifications best, but needs a paid k
 - Scanned PDFs (images only) are refused: no OCR.
 - When OpenAI is enabled, the specification (up to `LLM_MAX_DOCUMENT_CHARS`, 30 000 characters) is sent to OpenAI; the page says so before generation. The OpenAI path is covered by mocked tests only: no key was available during development.
 - The epic of a task is shown during the review and used for the sprint objective, but is not stored on the task (no field in the task model).
+
+### 4.2 AI-02 — Developer recommendation
+
+**Problem.** When a task is ready, the manager must choose who takes it: the developer with the right skills, who is not overloaded and who has already done similar work. AI-02 ranks the active members of the project for a task and explains each score; the manager assigns one in a click (the assignment stays the manager's decision).
+
+#### Approach: transparent scoring (rule-based)
+
+Why not a trained model: the platform has **no history of "good" assignments** to learn from (no labels), and a recommendation that decides who works on what must be **explainable** to the manager. A weighted score over measurable criteria is deterministic, testable and readable; its weights are documented and can be tuned. (Implemented in `ai-service/app/services/developer_scoring.py`.)
+
+```
+score = round(100 × (0.60 × skills + 0.25 × workload + 0.15 × experience))      each part in [0, 1]
+```
+
+| Part | Computation |
+|---|---|
+| **Skills** (60 %) | Mean, over the skills of the task, of the developer's level weight: BEGINNER 0.40, INTERMEDIATE 0.65, ADVANCED 0.85, EXPERT 1.0, + 0.05 per year of experience (at most + 0.15; capped at 1). A missing skill counts 0. On a task of **8 points or more**, a BEGINNER level counts half (0.20). When the task has no skill at all (none required, none found in its text), every developer gets 0.5 (neutral) |
+| **Workload** (25 %) | `1 − open story points / capacity` (0 when the capacity is reached). Open = assigned tasks not DONE, **in every project** (a developer busy elsewhere is not available), the task itself excluded. Capacity = 20 points (the default sprint capacity of AI-01) |
+| **Experience** (15 %) | DONE tasks of the developer that required at least one of the task skills: 5 or more = 1 (`n / 5`). Without task skills: any DONE task, 10 or more = 1 |
+
+- **Which skills**: the task's `requiredSkills`; if it has none, the team skills **named in its title or description** (e.g. "Write the Docker compose file" → Docker), with a warning; otherwise none (warning: the ranking relies on workload and experience).
+- **Skill matching** ignores case, accents and punctuation (`Node.js` = `nodejs` = `NodeJS`) and knows a few aliases (`JS` → JavaScript, `TS` → TypeScript, `Node` → Node.js, `Postgres` → PostgreSQL, `K8s` → Kubernetes, `Mongo` → MongoDB…). `C++` and `C#` stay distinct.
+- **Ties**: same score → the developer with fewer open points first, then by name.
+- **Output**: the top 5 developers with `score`, `matchingSkills`, `missingSkills`, `similarCompletedTasks`, `breakdown` (the three parts) and a generated `explanation` ("Has 2 of 2 skills: angular (beginner), NodeJS (intermediate); 0 open points (0 tasks) for a capacity of 20; 1 completed task with these skills."), plus warnings ("No member has all the skills of the task; nobody has: Node.js.").
+
+**Worked example** (verified end to end, task "Login page", 8 points, skills Angular + Node.js):
+
+| Developer | Skills | Open points | Similar DONE | Skills / workload / experience | Score |
+|---|---|---|---|---|---|
+| Bob | angular BEGINNER, NodeJS INTERMEDIATE | 0 | 1 | (0.20 + 0.65) / 2 = 0.425 / 1.0 / 0.2 | **54** |
+| Alice | Angular EXPERT, 3 years | 13 | 0 | (1.0 + 0) / 2 = 0.5 / 0.35 / 0 | 39 |
+| Carol | Python, Docker | 0 | 0 | 0 / 1.0 / 0 | 25 |
+
+#### Data flow and validation
+
+1. The backend (`backend/src/services/aiRecommendation.service.js`) loads the task (manager of a non-archived project only), the **active** members (deactivated accounts cannot be assigned), their workload and DONE tasks (MongoDB aggregations), and sends them to `POST /api/v1/ai/developers/recommend`. No member → empty answer with an explanation, without calling the AI service.
+2. The AI service validates the request (Pydantic: levels, story points, ≤ 100 candidates…) and returns the ranking.
+3. The backend checks the answer strictly (method, every id among the candidates, no duplicate, integer score 0–100, ratios 0–1, string lists) → otherwise **502** `AI_ERROR`; it adds the developers' public fields and `isAssignee`.
+4. The Angular dialog shows the ranking; **Assign** calls the existing `PATCH /tasks/:id/assignee` (same rules, activity and notification as a manual assignment).
+
+#### Limits
+
+- The weights (60 / 25 / 15), level weights and the 20-point capacity are expert choices, not learned; they are not validated against real assignment outcomes.
+- Skills are compared by name: synonyms outside the alias list (e.g. "Spring" vs "Spring Boot") do not match.
+- Availability (holidays, part time) is not modelled: the platform has no such data.
+- Experience counts DONE tasks with the same skill names, whatever their size or quality.
+
+### 4.3 AI-03 — Sprint delay risk prediction (Machine Learning)
+
+**Problem.** During a sprint, the manager wants to know early whether all the committed story points will be done by the end date, and why not. AI-03 gives the risk (`LOW` / `MEDIUM` / `HIGH`), the probability of a delay and the main factors, for every planned or active sprint. It is shown on the active sprints of both dashboards and of the Sprints tab (FR-13 "AI risk indicators").
+
+| Item | Value |
+|---|---|
+| Problem type | Binary classification: will story points be left at the end date (`delayed` = 1)? |
+| Dataset | `ai-service/app/ml/data/sprint_risk.csv`: **2 000 simulated sprints** (49.5 % delayed), generated by `app/ml/sprint_risk_data.py` (seed 2026). **Synthetic**: the platform has no sprint history yet |
+| Simulation | A team of 1–8 members with a hidden velocity per member (log-normal around 0.7 point/day) commits to 50–125 % of what it can deliver over a 7–21-day sprint, observed on a random day. Blocked tasks, open tasks of 8+ points and unassigned tasks reduce the velocity ("friction"). The past and future velocities get random noise (log-normal, σ 0.20 and 0.25), so the label is **not** a function of the features. The historical velocity known by the backend is the true one ± 20 %, missing for 30 % of the teams |
+| Features (7) | `elapsed_ratio` (time elapsed ÷ duration), `progress_gap` (elapsed ratio − share of points done; > 0 = behind), `pace_ratio` (points/day still needed ÷ usual pace, capped at 5; usual pace = velocity of the last 3 completed sprints, else the pace of this sprint, else the planned pace), `blocked_ratio`, `high_complexity_ratio`, `unassigned_ratio` (÷ open tasks), `load_per_member` (points per member and per remaining day, capped at 5) — `app/ml/sprint_features.py`, **shared by the simulator and the prediction** so they cannot diverge |
+| Preprocessing | Standardisation (z-score with the training means and standard deviations) |
+| Model | **Logistic regression**, L2 = 0.01, fitted by Newton's method (IRLS) in pure Python (`app/ml/logistic_regression.py`). Chosen because it is accurate enough here, fast, and **explainable**: each feature's contribution `w × z` (log-odds) gives the factors shown to the manager |
+| Training | Stratified split **75 % / 25 %** (seed 42): 1 500 train, 500 test; < 1 s. `python -m app.ml.sprint_risk_model`, also automatic when `app/ml/models/sprint_risk.json` is missing, outdated (`MODEL_VERSION = 1`) or the dataset changed |
+| **Results (test set, 500 sprints)** | **accuracy 0.864, precision 0.875, recall 0.847, F1 0.861, ROC AUC 0.934** (confusion: 210 TP, 30 FP, 222 TN, 38 FN) |
+| Baseline | Rule "late if `progress_gap` > 0.10": accuracy 0.696, precision 0.944, recall 0.411, F1 0.573 — the model finds twice as many late sprints for a similar false-alarm level |
+| Learned weights (standardised) | intercept 0.128; `pace_ratio` 2.353, `progress_gap` 1.688, `blocked_ratio` 0.791, `high_complexity_ratio` 0.379, `elapsed_ratio` −0.125 (all printed by the training command) |
+| Persistence | `app/ml/models/sprint_risk.json` (git-ignored, rebuilt automatically): means, standard deviations, weights, metrics, dataset hash, version |
+| Caveat | The metrics measure how well the model learned **the simulator**, not real projects. Once real sprints are completed, the dataset should be replaced by the platform's history (same features) and the model re-trained |
+
+#### Prediction (`app/services/sprint_risk.py`)
+
+- Probability < 0.35 → **LOW**, < 0.65 → **MEDIUM**, otherwise **HIGH**.
+- **Factors**: the features with the largest positive contribution (> 0.25 log-odds, at most 3; a MEDIUM or HIGH risk always names at least its main cause), described with the sprint's numbers, e.g. "Needs 3.9× the usual pace: 3.9 points/day for 7 remaining days (usual 1.0)", "Behind schedule: 50% of the time elapsed, 10% of the story points done", "2 blocked tasks (40% of the open tasks)".
+- **Obvious cases by rule** (`method: "rule"`, no model): no estimated task → LOW 0; every point done → LOW 0; end date passed with points left → HIGH 1.
+- Warnings: no active developer (a team of one is assumed); no completed sprint yet (pace estimated from the sprint itself).
+
+#### Data flow
+
+1. `GET /api/v1/sprints/:id/ai/risk` (any project viewer; planned or active sprints only — 409 otherwise): the backend (`aiRisk.service.js`) counts the sprint's tasks (total, done, blocked, open with 8+ points, open unassigned), story points, active team size and the velocity of the last 3 completed sprints (DONE points ÷ days), and sends them with today's date.
+2. The AI service validates the request (consistent counts, dates in order) and predicts.
+3. The backend validates the answer (level, probability 0–1, factors, numeric features, model name) → otherwise 502, then returns it with the measures. Nothing is stored: the risk is recomputed at each display.
+
+#### Limits
+
+- Synthetic training data (see caveat); the thresholds 0.35 / 0.65 are conventions.
+- The sprint is measured in story points: unestimated work is invisible; the velocity uses the last 3 completed sprints of the project, whatever the team changes.
+- Days are calendar days (weekends and holidays are not modelled).

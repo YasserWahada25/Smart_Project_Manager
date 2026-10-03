@@ -9,7 +9,14 @@ import { Sprint } from '../../../core/models/sprint';
 import { User } from '../../../core/models/user';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../shared/components/confirm-dialog/confirm-dialog';
-import { fakeAuthService, testProject, testSprint, testUser } from '../../../testing/test-data';
+import {
+  fakeAuthService,
+  testProject,
+  testRisk,
+  testSprint,
+  testUser,
+} from '../../../testing/test-data';
+import { AiRiskService } from '../../ai-risk/ai-risk.service';
 import { ProjectContext } from '../../projects/project-context';
 import { SprintFormDialog } from '../sprint-form-dialog/sprint-form-dialog';
 import { SprintService } from '../sprint.service';
@@ -21,6 +28,7 @@ describe('SprintList', () => {
   let confirm: { confirm: ReturnType<typeof vi.fn> };
   let toast: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
   let dialog: { open: ReturnType<typeof vi.fn> };
+  let risk: ReturnType<typeof vi.fn>;
 
   const sprints = [
     testSprint({ id: 's1', name: 'Sprint 1', status: 'COMPLETED' }),
@@ -33,6 +41,7 @@ describe('SprintList', () => {
     confirm = { confirm: vi.fn(() => of(true)) };
     toast = { success: vi.fn(), error: vi.fn() };
     dialog = { open: vi.fn() };
+    risk = vi.fn(() => of(testRisk()));
     TestBed.configureTestingModule({
       imports: [SprintList],
       providers: [
@@ -43,6 +52,7 @@ describe('SprintList', () => {
         { provide: ConfirmService, useValue: confirm },
         { provide: ToastService, useValue: toast },
         { provide: MatDialog, useValue: dialog },
+        { provide: AiRiskService, useValue: { risk } },
       ],
     });
     TestBed.inject(ProjectContext).project.set(testProject());
@@ -72,6 +82,10 @@ describe('SprintList', () => {
     expect(second).toContain('3 tasks · 1 done');
     expect(second).toContain('1 blocked');
     expect(cards()[1].querySelector('a')?.getAttribute('href')).toBe('/tasks?sprint=s2');
+    // AI-03 risk on the active sprint only.
+    expect(risk).toHaveBeenCalledTimes(1);
+    expect(risk).toHaveBeenCalledWith('s2');
+    expect(second.replace(/\s+/g, ' ')).toContain('Delay risk (AI): High (82%)');
   });
 
   it('offers the actions allowed by the sprint status to the project manager', async () => {

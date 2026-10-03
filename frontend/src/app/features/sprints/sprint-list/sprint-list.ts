@@ -21,6 +21,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { ErrorState } from '../../../shared/components/error-state/error-state';
 import { LoadingState } from '../../../shared/components/loading-state/loading-state';
+import { SprintRiskIndicator } from '../../ai-risk/sprint-risk/sprint-risk';
 import { ProjectContext } from '../../projects/project-context';
 import { SprintFormData, SprintFormDialog } from '../sprint-form-dialog/sprint-form-dialog';
 import { SprintService } from '../sprint.service';
@@ -53,6 +54,7 @@ const STATUS_CONFIRMATIONS: Partial<Record<SprintStatus, { title: string; messag
     MatProgressBarModule,
     LoadingState,
     ErrorState,
+    SprintRiskIndicator,
   ],
   templateUrl: './sprint-list.html',
   styleUrl: './sprint-list.scss',

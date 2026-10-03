@@ -29,6 +29,10 @@ import { ConfirmService } from '../../../shared/components/confirm-dialog/confir
 import { ErrorState } from '../../../shared/components/error-state/error-state';
 import { LoadingState } from '../../../shared/components/loading-state/loading-state';
 import { TaskHistory } from '../../activity/task-history/task-history';
+import {
+  RecommendDialog,
+  RecommendDialogData,
+} from '../../ai-recommendation/recommend-dialog/recommend-dialog';
 import { TaskComments } from '../../comments/task-comments/task-comments';
 import { ProjectContext } from '../../projects/project-context';
 import { SprintService } from '../../sprints/sprint.service';
@@ -183,6 +187,26 @@ export class TaskDetail {
             ? `"${updated.title}" assigned to ${fullName(updated.assignee)}.`
             : `"${updated.title}" is now unassigned.`,
         );
+      });
+  }
+
+  /** AI-02: ranked developers; the dialog closes with the task once one is assigned. */
+  protected recommend(): void {
+    const task = this.task();
+    if (!task) return;
+    this.dialog
+      .open<RecommendDialog, RecommendDialogData, Task>(RecommendDialog, {
+        data: { taskId: task.id, taskTitle: task.title },
+        width: '640px',
+        maxWidth: 'calc(100vw - 32px)',
+      })
+      .afterClosed()
+      .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))
+      .subscribe((updated) => {
+        this.changed(updated);
+        if (updated.assignee) {
+          this.toast.success(`"${updated.title}" assigned to ${fullName(updated.assignee)}.`);
+        }
       });
   }
 

@@ -11,6 +11,7 @@ const {
 } = require('../validators/task.validator');
 const commentController = require('../controllers/comment.controller');
 const activityController = require('../controllers/activity.controller');
+const aiController = require('../controllers/ai.controller');
 const { listCommentsRules, createCommentRules, taskActivitiesRules } = require('../validators/comment.validator');
 
 // Task-level routes. Creation, listing and the Kanban board are nested under /projects/:id.
@@ -29,5 +30,8 @@ router.delete('/:id', validate(taskIdRules), taskController.remove);
 router.get('/:id/comments', validate(listCommentsRules), commentController.listByTask);
 router.post('/:id/comments', validate(createCommentRules), commentController.create);
 router.get('/:id/activities', validate(taskActivitiesRules), activityController.listByTask);
+
+// AI-02: developers recommended for the task (project manager; nothing is stored)
+router.get('/:id/ai/recommendations', validate(taskIdRules), aiController.recommendDevelopers);
 
 module.exports = router;

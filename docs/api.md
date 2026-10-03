@@ -862,6 +862,59 @@ Rules: ≤ 20 sprints, 1–100 tasks in total, sprint name ≤ 100 characters, o
 
 One `AI_PLAN_APPLIED` activity is recorded (no notification: the tasks are unassigned).
 
+#### `GET /api/v1/tasks/:id/ai/recommendations` — project manager, project not archived
+
+AI-02: the active members of the project ranked for the task. **Nothing is stored**; assigning stays `PATCH /api/v1/tasks/:id/assignee`.
+
+```json
+{
+  "task": { "id": "...", "title": "Login page", "requiredSkills": ["Angular", "Node.js"] },
+  "method": "scoring",
+  "model": "transparent scoring v1 (skills 60 %, workload 25 %, experience 15 %)",
+  "skillsSource": "required",
+  "skills": ["Angular", "Node.js"],
+  "recommendations": [
+    {
+      "developer": { "id": "...", "firstName": "Bob", "lastName": "Martin", "email": "bob@example.com", "jobTitle": "" },
+      "score": 54,
+      "matchingSkills": ["angular", "NodeJS"], "missingSkills": [],
+      "openTasks": 0, "openPoints": 0, "similarCompletedTasks": 1,
+      "breakdown": { "skills": 0.425, "workload": 1, "experience": 0.2 },
+      "explanation": "Has 2 of 2 skills: angular (beginner), NodeJS (intermediate); 0 open points (0 tasks) for a capacity of 20; 1 completed task with these skills.",
+      "isAssignee": false
+    }
+  ],
+  "warnings": []
+}
+```
+
+At most 5 developers, best first. `skillsSource`: `required` (task skills), `inferred` (team skills found in the task title / description) or `none`. A project without active developer → `recommendations: []` with a warning (the AI service is not called). Errors: 403 (member, administrator), 404 (outsider), 409 (archived project), 503 / 504 / 502 as above. Scoring: [ai.md](ai.md) § 4.2.
+
+#### `GET /api/v1/sprints/:id/ai/risk` — project viewers
+
+AI-03: delay risk of a **planned or active** sprint (409 for a completed or cancelled one). Recomputed at each call, never stored.
+
+```json
+{
+  "sprint": { "id": "...", "name": "Sprint 2", "status": "ACTIVE", "startDate": "2026-09-26T00:00:00.000Z", "endDate": "2026-10-09T00:00:00.000Z" },
+  "asOf": "2026-10-03",
+  "riskLevel": "HIGH",
+  "probability": 1,
+  "method": "model",
+  "factors": [
+    { "code": "pace_ratio", "label": "Needs 3.9× the usual pace: 3.9 points/day for 7 remaining days (usual 1.0)", "impact": 6.1 },
+    { "code": "progress_gap", "label": "Behind schedule: 50% of the time elapsed, 10% of the story points done", "impact": 4.2 }
+  ],
+  "measures": { "total": 6, "done": 1, "blocked": 2, "highComplexityOpen": 2, "unassignedOpen": 1,
+                "totalPoints": 30, "donePoints": 3, "teamSize": 2, "historicalVelocity": 1 },
+  "features": { "elapsed_ratio": 0.5, "progress_gap": 0.4, "pace_ratio": 3.857, "...": 0 },
+  "model": { "name": "logistic regression (7 features, synthetic sprints)", "version": 1, "accuracy": 0.864, "rocAuc": 0.934, "f1": 0.861 },
+  "warnings": []
+}
+```
+
+`method`: `model` (logistic regression) or `rule` (no estimated task, all points done, end date passed). `historicalVelocity`: story points per day of the last 3 completed sprints of the project (`null` if none). Errors: 404 (outsider), 409 (closed sprint), 503 / 504 / 502. Model: [ai.md](ai.md) § 4.3.
+
 ## 2. FastAPI AI service (internal API)
 
 Called only by the Express backend, never by the browser. Base URL `AI_SERVICE_URL` (default `http://localhost:8000`). Interactive documentation (Swagger UI) at `/docs` while the service runs.
@@ -876,8 +929,8 @@ Called only by the Express backend, never by the browser. Base URL `AI_SERVICE_U
 | GET  | `/api/v1/health` | Health check + analyzer in use | Done (TASK 20) |
 | POST | `/api/v1/ai/documents/extract` | AI-01: text of a specification file | Done (TASK 22) |
 | POST | `/api/v1/ai/projects/plan` | AI-01: sprints and tasks from a specification | Done (TASK 22) |
-| POST | `/api/v1/ai/developers/recommend` | AI-02 Developer recommendation | Planned (TASK 23) |
-| POST | `/api/v1/ai/sprints/predict-risk` | AI-03 Sprint delay risk | Planned (TASK 24) |
+| POST | `/api/v1/ai/developers/recommend` | AI-02 Developer recommendation | Done (TASK 23) |
+| POST | `/api/v1/ai/sprints/predict-risk` | AI-03 Sprint delay risk | Done (TASK 24) |
 | POST | `/api/v1/ai/sprints/summary` | Optional: sprint summary | Optional |
 
 ### 2.2 Details
@@ -912,3 +965,31 @@ Errors: 413 (too large), 415 (other extension), 422 (empty, corrupted, password-
 ```
 
 `text` 20–200 000 characters; `project.name` 1–100, `description` ≤ 2 000, ≤ 30 technologies; `deadline` optional; options as in § 1.17; ≤ 200 team skills. Response: `method`, `model`, `warnings`, `sprints` (each with `totalPoints`, named `Sprint 1…`), `backlog`, `stats` — the backend validates it, renames the sprints after the existing ones and adds `options` and `source` (§ 1.17). 422 when no requirement can be found in the text. Approach, rules and limits: [ai.md](ai.md) § 4.1; LLM prompt: [prompts.md](prompts.md) Part B.
+
+#### `POST /api/v1/ai/developers/recommend`
+
+```json
+{
+  "task": { "title": "Login page", "description": "", "type": "FEATURE", "complexity": 8, "requiredSkills": ["Angular", "Node.js"] },
+  "candidates": [
+    { "id": "u1", "name": "Bob Martin",
+      "skills": [ { "name": "angular", "level": "BEGINNER" }, { "name": "NodeJS", "level": "INTERMEDIATE", "yearsOfExperience": 2 } ],
+      "openTasks": 0, "openPoints": 0, "completedTasks": 1, "completedSkills": { "Angular": 1 } }
+  ],
+  "options": { "workloadCapacity": 20, "limit": 5 }
+}
+```
+
+1–100 candidates (≤ 50 skills each, level `BEGINNER` / `INTERMEDIATE` / `ADVANCED` / `EXPERT`, years 0–60); `complexity` a story-point value; `workloadCapacity` 3–200 (default 20); `limit` 1–20 (default 5). Response: `method` (`scoring`), `model`, `skillsSource`, `skills`, `recommendations[{id, score, matchingSkills, missingSkills, similarCompletedTasks, breakdown{skills, workload, experience}, explanation}]`, `warnings` — the backend replaces `id` by the developer's public fields.
+
+#### `POST /api/v1/ai/sprints/predict-risk`
+
+```json
+{
+  "sprint": { "startDate": "2026-09-26", "endDate": "2026-10-09", "asOf": "2026-10-03" },
+  "tasks": { "total": 6, "done": 1, "blocked": 2, "highComplexityOpen": 2, "unassignedOpen": 1, "totalPoints": 30, "donePoints": 3 },
+  "team": { "size": 2, "historicalVelocity": 1.0 }
+}
+```
+
+Rules: `endDate` ≥ `startDate`; done values ≤ totals; blocked, high-complexity and unassigned counts ≤ open tasks; `historicalVelocity` ≥ 0 or `null`. Response: `riskLevel`, `probability`, `method`, `factors[{code, label, impact}]`, `features` (the 7 values), `model` (name, version, accuracy, rocAuc, f1), `warnings`.

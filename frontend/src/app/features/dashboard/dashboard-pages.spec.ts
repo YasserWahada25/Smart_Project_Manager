@@ -5,7 +5,8 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApiError } from '../../core/models/api-error';
 import { DashboardData } from '../../core/models/dashboard';
-import { fakeAuthService, testProject, testUser } from '../../testing/test-data';
+import { fakeAuthService, testProject, testRisk, testUser } from '../../testing/test-data';
+import { AiRiskService } from '../ai-risk/ai-risk.service';
 import { ProjectContext } from '../projects/project-context';
 import { DashboardPage } from './dashboard-page/dashboard-page';
 import { DashboardService } from './dashboard.service';
@@ -36,7 +37,11 @@ describe('DashboardPage', () => {
     get = vi.fn(() => (data instanceof Error ? throwError(() => data) : of(data)));
     TestBed.configureTestingModule({
       imports: [DashboardPage],
-      providers: [provideRouter([]), { provide: DashboardService, useValue: { get } }],
+      providers: [
+        provideRouter([]),
+        { provide: DashboardService, useValue: { get } },
+        { provide: AiRiskService, useValue: { risk: () => of(testRisk()) } },
+      ],
     });
     fixture = TestBed.createComponent(DashboardPage);
     await fixture.whenStable();
@@ -125,6 +130,7 @@ describe('ProjectDashboard', () => {
         ProjectContext,
         { provide: AuthService, useValue: fakeAuthService(testUser()) },
         { provide: DashboardService, useValue: { forProject } },
+        { provide: AiRiskService, useValue: { risk: () => of(testRisk()) } },
       ],
     });
     TestBed.inject(ProjectContext).project.set(testProject());
