@@ -1,6 +1,6 @@
 # Architecture
 
-> Current state: **Express.js backend complete for the non-AI features** (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: setup, authentication, profile, user administration, projects and teams (TASK 12–15); sprint/task/Kanban/notification/dashboard screens and AI service not created yet.
+> Current state: **Express.js backend complete for the non-AI features** (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: screens for every non-AI feature (TASK 12–19). AI service not created yet.
 > This document describes the target architecture; sections are updated with the actual implementation as tasks are completed.
 
 ## 1. Global architecture
@@ -68,7 +68,7 @@ frontend/src/app/
 └── layouts/
 ```
 
-Implemented (TASK 12–15):
+Implemented (TASK 12–19):
 
 ```
 frontend/
@@ -77,30 +77,40 @@ frontend/
 │   │   ├── core/
 │   │   │   ├── app.constants.ts            APP_NAME
 │   │   │   ├── auth/                       auth.service, auth.interceptor, auth.guards, token-storage, jwt, auth.models
-│   │   │   ├── models/user.ts              User, Role, ROLES / ROLE_LABELS, Skill, SKILL_LEVELS / SKILL_LEVEL_LABELS
-│   │   │   ├── models/pagination.ts        Paginated<T> ({ data, pagination } lists of the backend)
-│   │   │   ├── models/project.ts           Project, ProjectStatus (+ labels), ProjectMember, Developer, ProjectInput, PROJECT_LIMITS
 │   │   │   ├── http/api-error.interceptor.ts  HttpErrorResponse → ApiError + global toast
 │   │   │   ├── http/action-error.ts        message of a failed user action (null when already reported globally)
-│   │   │   ├── models/api-error.ts         ApiError (status, code, message, details)
-│   │   │   ├── models/system-status.ts     HealthReport / SystemStatus
+│   │   │   ├── models/                     api-error, pagination, user, project, sprint, task, comment, activity
+│   │   │   │                               (+ describeActivity), notification, dashboard, system-status
 │   │   │   ├── routing/app-title.strategy.ts  "<page> · Smart Project Manager"
-│   │   │   └── services/                   health.service.ts, toast.service.ts (snack bar loaded on demand)
-│   │   ├── shared/components/              loading-state, error-state, confirm-dialog (+ ConfirmService)
+│   │   │   └── services/                   health, toast (snack bar loaded on demand), notification (unread count)
+│   │   ├── shared/components/              loading-state, error-state, confirm-dialog (+ ConfirmService),
+│   │   │                                   tag-input (chips), chart (Chart.js canvas)
 │   │   ├── shared/forms/                   password validators (same policy as the backend), integer / tag list / "not before" date validators, form error helpers (backend field messages, incl. array paths)
-│   │   ├── shared/data/paged-list.ts       PagedList: paginated list state (items, total, loading, error; latest query wins)
-│   │   ├── testing/                        test data & fake AuthService (excluded from the build)
-│   │   ├── layouts/main-layout/            toolbar (user menu: My profile, Log out) + responsive side navigation filtered by role
+│   │   ├── shared/data/                    PagedList (filters + pagination, latest query wins), LoadMoreList ("Load more" feeds)
+│   │   ├── shared/dates.ts                 today / YYYY-MM-DD helpers
+│   │   ├── testing/                        test data, fake AuthService, test setup (excluded from the build)
+│   │   ├── layouts/main-layout/            toolbar (search, notifications bell, user menu) + side navigation filtered by role
 │   │   ├── layouts/auth-layout/            centered layout of the public pages
 │   │   ├── features/
 │   │   │   ├── auth/login, auth/register   sign in / create an account (reactive forms)
 │   │   │   ├── home/                       welcome + system status (frontend → API → MongoDB)
 │   │   │   ├── profile/                    My profile: account, personal information, skills, password (ProfileService)
 │   │   │   ├── users/                      user administration for ADMIN (UserAdminService, user-list)
-│   │   │   ├── projects/                   project-list, project-detail, project-form, add-members-dialog (ProjectService, DeveloperService)
+│   │   │   ├── projects/                   project-list, project-form, project-shell (header + tabs, ProjectContext),
+│   │   │   │                               project-overview, add-members-dialog (ProjectService, DeveloperService)
+│   │   │   ├── sprints/                    sprint-list (tab), sprint-form-dialog (SprintService)
+│   │   │   ├── tasks/                      task-list (tab), task-detail, task-form-dialog, block-reason-dialog,
+│   │   │   │                               my-tasks, task badges (TaskService, TaskWorkflow)
+│   │   │   ├── kanban/                     kanban-board (tab)
+│   │   │   ├── comments/                   task-comments (CommentService)
+│   │   │   ├── activity/                   activity-list, task-history, project-activity (tab) (ActivityService)
+│   │   │   ├── notifications/              notification-list
+│   │   │   ├── dashboard/                  dashboard-page, project-dashboard (tab), task-charts, workload-table,
+│   │   │   │                               active-sprint-card (DashboardService, also used by the search)
+│   │   │   ├── search/                     search-page
 │   │   │   └── not-found/                  404 page
-│   │   ├── app.config.ts                   providers (router, HttpClient + interceptor, title, icons)
-│   │   ├── app.routes.ts                   lazy-loaded routes inside MainLayout (admin pages behind roleGuard)
+│   │   ├── app.config.ts                   providers (router + input binding, HttpClient + interceptors, title, icons)
+│   │   ├── app.routes.ts                   lazy-loaded routes inside MainLayout; project tabs are child routes
 │   │   └── app.ts                          root component (<router-outlet>; preloads the toast code after the first render)
 │   ├── environments/                       environment.ts / environment.development.ts (apiUrl)
 │   ├── styles.scss                         Material 3 theme (azure/blue), toast styles
@@ -125,6 +135,8 @@ frontend/
 | angular-eslint with template **accessibility** rules, Prettier | Code quality and accessibility checked by `npm run lint` |
 | **Snack bar loaded on demand** (`ToastService`) | No toast is needed to display the first page: `MatSnackBar` and the CDK overlay are loaded by a dynamic `import()` and preloaded right after the first render (so a "cannot reach the server" toast still works if the network drops later). Initial bundle: 500.8 kB → 341.6 kB (125.8 → 94.4 kB transferred) |
 | `PagedList` for list pages | One implementation of "filters → paginated request → items/total/loading/error" where only the latest query is displayed (`switchMap`); used by the users, projects and developer-directory lists |
+| `LoadMoreList` for feeds | Comments, histories and notifications are read page by page with a "Load more" button; a reset ignores the responses to older requests |
+| **Chart.js** (bar charts only, registered pieces only, loaded with the dashboards) | Counts per status / priority compare magnitudes: horizontal bars in one hue (`#2a78d6`, validated ≥ 3:1 contrast on the light surface with the data-viz palette checker), ≤ 24 px thick, 4 px rounded data end, recessive grid, hover tooltip, no legend for a single series; the values are also displayed as text next to each chart (accessible table view) |
 | Native date inputs (`<input type="date">`) | Their value is already the `YYYY-MM-DD` format of the API (no date adapter to load); backend dates (midnight UTC) are displayed with the `UTC` time zone so the calendar day never shifts |
 
 #### Frontend authentication
@@ -166,7 +178,30 @@ Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayou
 | "Add developers" dialog | project manager | Developer directory (active developers): search on name/email and exact skill (each field debounced), pagination, "Add" per developer, members marked "In the team"; the dialog stays open to add several developers and the project page is updated after each addition | `GET /developers`, `POST /projects/:id/members` |
 
 - **Who can do what** mirrors the backend rules (only the manager who created the project modifies it; administrators and members see it read-only; an archived project only accepts a status change). The backend still enforces every rule (403 / 404 / 409), and its messages are shown in toasts (`actionErrorMessage`).
-- The `ProjectDetail` page reloads when its `:id` route parameter changes (the router reuses the component between projects).
+- The project page shell reloads when its `:id` route parameter changes (the router reuses the component between projects).
+
+#### Project page: shell and tabs (TASK 16–19)
+
+`/projects/:id` is a **shell** (`ProjectShell`: header with name, status and the manager's actions, read-only banner when archived, tab bar) whose tabs are **child routes**: `''` Overview, `sprints`, `tasks`, `tasks/:taskId` (task page), `board`, `activity`, `dashboard`. The shell provides a `ProjectContext` (current project, `isManager`, `isArchived`, `canEdit`, active members, `canChangeStatus(task)`) injected by every tab, so the project is loaded once and the permissions are computed in one place.
+
+| Screen | Who / rules (mirroring the backend) | Content | API used |
+|--------|-------------------------------------|---------|----------|
+| Sprints tab | viewers; the manager creates, edits (open sprints), starts, completes, cancels (confirmations), deletes (PLANNED only) | Sprints in chronological order: dates, objective, progress in story points, task counts (done, blocked); links to the tasks and the board of the sprint | `GET /projects/:id/sprints`, `POST`, `PATCH /sprints/:id`, `PATCH /sprints/:id/status`, `DELETE /sprints/:id` |
+| Sprint form (dialog) | manager | Name, objective, start date (today) and end date (two weeks by default, ≥ start) | `POST /projects/:id/sprints`, `PATCH /sprints/:id` |
+| Tasks tab | viewers; the manager creates | Filters: title search (debounced), status, priority, type, assignee (or unassigned), sprint (or backlog), overdue; paginated table (status and priority badges, points, assignee, sprint, deadline / overdue); `?sprint=<id>` opens it filtered | `GET /projects/:id/tasks` |
+| Task form (dialog) | manager | Title, description, type, priority, complexity (1, 2, 3, 5, 8, 13 points), sprint (open sprints or backlog), deadline, required skills (chips), assignee (creation only: active members) | `POST /projects/:id/tasks`, `PATCH /tasks/:id` |
+| Task page | viewers; moves: manager and assignee; assignment, edition, deletion: manager | Details, blocked reason, "Move to" buttons limited to the allowed transitions (starting needs an assignee; blocking asks for an optional reason), assignee select, comments and history | `GET`, `PATCH`, `DELETE /tasks/:id`, `PATCH /tasks/:id/status`, `PATCH /tasks/:id/assignee` |
+| Board tab (Kanban) | viewers; moves: manager and assignee | Six columns (To do → Done + Blocked) with counts; cards: title, priority, points, deadline / overdue, blocked reason, assignee; "Move to" menu per card; scope: active sprint by default, `?sprint=`, another sprint, the backlog or all tasks | `GET /projects/:id/board`, `PATCH /tasks/:id/status` |
+| My tasks (`/my-tasks`, developers' menu) | the signed-in user | Assigned tasks, nearest deadline first, status filter, links to the task pages | `GET /tasks/assigned` |
+| Comments (task page) | manager and members comment (not administrators); the author edits; the author or the manager deletes (moderation); nothing in an archived project | Oldest first with "Show more", edited marker, inline edition | `GET` / `POST /tasks/:id/comments`, `PATCH` / `DELETE /comments/:id` |
+| History (task page) and Activity tab | viewers | Timeline "<actor> <what happened>" built by `describeActivity()` (16 event types, labels instead of codes); filter by event type on the project | `GET /tasks/:id/activities`, `GET /projects/:id/activities` |
+| Notifications (`/notifications`) and toolbar bell | the signed-in user | Badge with the unread count, refreshed every 60 s (silently) and after each change; list with unread ones highlighted, "Unread only", open = mark as read + go to the task or project, "Mark all as read", delete | `GET /notifications`, `/notifications/unread-count`, `PATCH …/read`, `PATCH /notifications/read-all`, `DELETE /notifications/:id` |
+| Dashboard (`/dashboard`) | everyone (the backend adapts the content to the role) | Key figures, tasks by status and by priority (charts + values), active sprints (progress, days left / late), team workload (managers, administrators), my tasks (developers), accounts by role (administrators) | `GET /dashboard` |
+| Dashboard tab | viewers | Deadline (days left), team size, task figures and charts, sprints by status, active sprint, workload of every member | `GET /projects/:id/dashboard` |
+| Search (`/search?q=`) and toolbar field | everyone | Projects (name, description) and tasks (title, description) of the projects the user can see; at least 2 characters; the query is kept in the URL | `GET /search` |
+
+- **Status changes** (`TaskWorkflow`) are shared by the task page and the board: allowed targets from the transition table, assignee required to start, optional blocking reason, backend refusals shown in a toast.
+- **Drag-and-drop** on the board was not requested (project rule: only when explicitly asked); tasks move with the "Move to" menu.
 
 #### Frontend ↔ backend communication
 

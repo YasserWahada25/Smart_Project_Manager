@@ -99,12 +99,32 @@ export const routes: Routes = [
               ),
           },
           {
+            path: 'dashboard',
+            title: 'Project dashboard',
+            loadComponent: () =>
+              import('./features/dashboard/project-dashboard/project-dashboard').then(
+                (m) => m.ProjectDashboard,
+              ),
+          },
+          {
             path: 'tasks/:taskId',
             title: 'Task',
             loadComponent: () =>
               import('./features/tasks/task-detail/task-detail').then((m) => m.TaskDetail),
           },
         ],
+      },
+      {
+        path: 'dashboard',
+        title: 'Dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard-page/dashboard-page').then((m) => m.DashboardPage),
+      },
+      {
+        path: 'search',
+        title: 'Search',
+        loadComponent: () =>
+          import('./features/search/search-page/search-page').then((m) => m.SearchPage),
       },
       {
         path: 'notifications',

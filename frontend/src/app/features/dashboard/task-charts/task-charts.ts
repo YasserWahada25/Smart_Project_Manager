@@ -7,35 +7,56 @@ import {
   TASK_PRIORITY_LABELS,
   TASK_STATUSES,
   TASK_STATUS_LABELS,
-  TaskPriority,
-  TaskStatus,
 } from '../../../core/models/task';
 import { ChartView } from '../../../shared/components/chart/chart';
 
-/** Fixed colors (a canvas cannot read the theme's CSS variables). */
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  TODO: '#90a4ae',
-  IN_PROGRESS: '#1e88e5',
-  CODE_REVIEW: '#8e24aa',
-  TESTING: '#00897b',
-  DONE: '#43a047',
-  BLOCKED: '#e53935',
-};
+/**
+ * Both charts compare counts per category: one hue, horizontal bars, the categories named on
+ * the axis (no color legend needed). Values are also listed as text (accessible table view).
+ * Color validated with the data-viz palette checker (contrast ≥ 3:1 on the light surface).
+ */
+const BAR_COLOR = '#2a78d6';
+const GRID_COLOR = '#e4e4e0';
+const TEXT_COLOR = '#52514e';
 
-const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  LOW: '#b0bec5',
-  MEDIUM: '#42a5f5',
-  HIGH: '#fb8c00',
-  CRITICAL: '#e53935',
-};
-
-interface LegendEntry {
+interface Entry {
   label: string;
   value: number;
-  color: string;
 }
 
-/** Tasks by status (doughnut) and by priority (bars), each with its values as text. */
+function barChart(entries: Entry[]): ChartConfiguration {
+  return {
+    type: 'bar',
+    data: {
+      labels: entries.map((entry) => entry.label),
+      datasets: [
+        {
+          label: 'Tasks',
+          data: entries.map((entry) => entry.value),
+          backgroundColor: BAR_COLOR,
+          // Thin bars, rounded at the data end only, square at the baseline.
+          maxBarThickness: 24,
+          borderRadius: 4,
+          borderSkipped: 'start',
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { precision: 0, color: TEXT_COLOR },
+          grid: { color: GRID_COLOR },
+          border: { display: false },
+        },
+        y: { ticks: { color: TEXT_COLOR }, grid: { display: false } },
+      },
+    },
+  };
+}
+
+/** Tasks by status and by priority. */
 @Component({
   selector: 'app-task-charts',
   imports: [ChartView],
@@ -46,11 +67,10 @@ interface LegendEntry {
       <div class="charts">
         <figure>
           <figcaption>Tasks by status</figcaption>
-          <app-chart [config]="statusChart()" label="Tasks by status" />
-          <ul class="legend" aria-label="Tasks by status">
-            @for (entry of statusLegend(); track entry.label) {
+          <app-chart [config]="statusChart()" label="Tasks by status (values listed below)" />
+          <ul class="values" aria-label="Tasks by status">
+            @for (entry of byStatus(); track entry.label) {
               <li>
-                <span class="swatch" [style.background]="entry.color"></span>
                 {{ entry.label }} <strong>{{ entry.value }}</strong>
               </li>
             }
@@ -58,11 +78,14 @@ interface LegendEntry {
         </figure>
         <figure>
           <figcaption>Tasks by priority</figcaption>
-          <app-chart [config]="priorityChart()" label="Tasks by priority" />
-          <ul class="legend" aria-label="Tasks by priority">
-            @for (entry of priorityLegend(); track entry.label) {
+          <app-chart
+            [config]="priorityChart()"
+            label="Tasks by priority (values listed below)"
+            [height]="180"
+          />
+          <ul class="values" aria-label="Tasks by priority">
+            @for (entry of byPriority(); track entry.label) {
               <li>
-                <span class="swatch" [style.background]="entry.color"></span>
                 {{ entry.label }} <strong>{{ entry.value }}</strong>
               </li>
             }
@@ -74,7 +97,7 @@ interface LegendEntry {
   styles: `
     .charts {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
     }
     figure {
@@ -87,7 +110,7 @@ interface LegendEntry {
       margin-bottom: 8px;
       font: var(--mat-sys-title-small);
     }
-    .legend {
+    .values {
       display: flex;
       flex-wrap: wrap;
       gap: 4px 16px;
@@ -95,13 +118,10 @@ interface LegendEntry {
       padding: 0;
       list-style: none;
       font: var(--mat-sys-body-small);
+      color: var(--mat-sys-on-surface-variant);
     }
-    .swatch {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      margin-right: 4px;
-      border-radius: 2px;
+    .values strong {
+      color: var(--mat-sys-on-surface);
     }
     .empty {
       color: var(--mat-sys-on-surface-variant);
@@ -112,53 +132,20 @@ interface LegendEntry {
 export class TaskCharts {
   readonly indicators = input.required<TaskIndicators>();
 
-  protected readonly statusLegend = computed<LegendEntry[]>(() =>
+  protected readonly byStatus = computed<Entry[]>(() =>
     TASK_STATUSES.map((status) => ({
       label: TASK_STATUS_LABELS[status],
       value: this.indicators().byStatus[status],
-      color: STATUS_COLORS[status],
     })),
   );
 
-  protected readonly priorityLegend = computed<LegendEntry[]>(() =>
+  protected readonly byPriority = computed<Entry[]>(() =>
     TASK_PRIORITIES.map((priority) => ({
       label: TASK_PRIORITY_LABELS[priority],
       value: this.indicators().byPriority[priority],
-      color: PRIORITY_COLORS[priority],
     })),
   );
 
-  protected readonly statusChart = computed<ChartConfiguration>(() => {
-    const legend = this.statusLegend();
-    return {
-      type: 'doughnut',
-      data: {
-        labels: legend.map((entry) => entry.label),
-        datasets: [
-          {
-            data: legend.map((entry) => entry.value),
-            backgroundColor: legend.map((entry) => entry.color),
-          },
-        ],
-      },
-    };
-  });
-
-  protected readonly priorityChart = computed<ChartConfiguration>(() => {
-    const legend = this.priorityLegend();
-    return {
-      type: 'bar',
-      data: {
-        labels: legend.map((entry) => entry.label),
-        datasets: [
-          {
-            label: 'Tasks',
-            data: legend.map((entry) => entry.value),
-            backgroundColor: legend.map((entry) => entry.color),
-          },
-        ],
-      },
-      options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
-    };
-  });
+  protected readonly statusChart = computed(() => barChart(this.byStatus()));
+  protected readonly priorityChart = computed(() => barChart(this.byPriority()));
 }

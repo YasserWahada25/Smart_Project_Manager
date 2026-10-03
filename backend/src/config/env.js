@@ -7,6 +7,16 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env'), quiet: true });
 
 const MIN_JWT_SECRET_LENGTH = 32;
 const BCRYPT_ROUNDS_RANGE = { min: 4, max: 15 };
+const MIN_AI_TOKEN_LENGTH = 32;
+const AI_TIMEOUT_RANGE = { min: 1000, max: 300000 };
+
+function isValidUrl(value) {
+  try {
+    return ['http:', 'https:'].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
 
 /** Returns the fallback when unset; otherwise a number, checked by validateConfig(). */
 function parseNumber(value, fallback) {
@@ -47,6 +57,10 @@ const config = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
   bcryptSaltRounds: parseNumber(process.env.BCRYPT_SALT_ROUNDS, 12),
+  // AI service (FastAPI). Without a token the AI features report "not configured".
+  aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:8000',
+  aiServiceToken: process.env.AI_SERVICE_TOKEN || undefined,
+  aiTimeoutMs: parseNumber(process.env.AI_TIMEOUT_MS, 90000),
 };
 
 /**
@@ -72,6 +86,16 @@ function validateConfig(currentConfig = config) {
   const rounds = currentConfig.bcryptSaltRounds;
   if (!Number.isInteger(rounds) || rounds < BCRYPT_ROUNDS_RANGE.min || rounds > BCRYPT_ROUNDS_RANGE.max) {
     errors.push(`BCRYPT_SALT_ROUNDS must be an integer between ${BCRYPT_ROUNDS_RANGE.min} and ${BCRYPT_ROUNDS_RANGE.max}`);
+  }
+  if (currentConfig.aiServiceToken && currentConfig.aiServiceToken.length < MIN_AI_TOKEN_LENGTH) {
+    errors.push(`AI_SERVICE_TOKEN must be at least ${MIN_AI_TOKEN_LENGTH} characters long`);
+  }
+  if (!isValidUrl(currentConfig.aiServiceUrl)) {
+    errors.push('AI_SERVICE_URL must be an http(s) URL');
+  }
+  const timeout = currentConfig.aiTimeoutMs;
+  if (!Number.isInteger(timeout) || timeout < AI_TIMEOUT_RANGE.min || timeout > AI_TIMEOUT_RANGE.max) {
+    errors.push(`AI_TIMEOUT_MS must be an integer between ${AI_TIMEOUT_RANGE.min} and ${AI_TIMEOUT_RANGE.max}`);
   }
   if (errors.length > 0) {
     throw new Error(`Invalid configuration: ${errors.join('; ')}`);

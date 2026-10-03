@@ -16,7 +16,7 @@ import { APP_NAME } from '../../core/app.constants';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApiError } from '../../core/models/api-error';
 import { ROLE_LABELS } from '../../core/models/user';
-import { ServiceState, SystemStatus } from '../../core/models/system-status';
+import { AiStatus, ServiceState, SystemStatus } from '../../core/models/system-status';
 import { HealthService } from '../../core/services/health.service';
 import { ErrorState } from '../../shared/components/error-state/error-state';
 import { LoadingState } from '../../shared/components/loading-state/loading-state';
@@ -51,22 +51,35 @@ export class Home {
   protected readonly loading = signal(true);
   protected readonly status = signal<SystemStatus | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly aiStatus = signal<AiStatus | null>(null);
 
   constructor() {
     this.refresh();
   }
 
   protected rows(status: SystemStatus): StatusRow[] {
-    return [
+    const rows: StatusRow[] = [
       { label: 'Frontend', detail: 'Angular application', state: 'up' },
       { label: 'Backend API', detail: 'Node.js + Express.js', state: status.backend },
       { label: 'Database', detail: 'MongoDB', state: status.database },
     ];
+    const ai = this.aiStatus();
+    if (ai) rows.push({ label: 'AI service', detail: aiDetail(ai), state: ai.available ? 'up' : 'down' });
+    return rows;
   }
 
   protected refresh(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
+
+    // Optional service: its failure never hides the status of the others.
+    this.healthService
+      .checkAi()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (status) => this.aiStatus.set(status),
+        error: () => this.aiStatus.set({ available: false, reason: 'UNREACHABLE', llm: null }),
+      });
 
     this.healthService
       .check()
@@ -85,4 +98,17 @@ export class Home {
         },
       });
   }
+}
+
+/** "Python + FastAPI · OpenAI gpt-4o-mini", "· local analyzer (no LLM key)", or why it is down. */
+function aiDetail(status: AiStatus): string {
+  if (!status.available) {
+    return status.reason === 'NOT_CONFIGURED'
+      ? 'Python + FastAPI · not configured (AI_SERVICE_TOKEN)'
+      : 'Python + FastAPI · not running';
+  }
+  const llm = status.llm;
+  return llm?.configured
+    ? `Python + FastAPI · OpenAI ${llm.model ?? ''}`.trim()
+    : 'Python + FastAPI · local analyzer (no LLM key)';
 }

@@ -77,4 +77,16 @@ describe('HealthService', () => {
     expect(result.error()).toMatchObject({ status: 502 });
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  it('reads the AI service status from the backend, without global toast on failure', () => {
+    let status: unknown;
+    service.checkAi().subscribe((value) => (status = value));
+    const body = { available: true, llm: { provider: 'openai', configured: false, model: null } };
+    httpTesting.expectOne('/api/v1/ai/status').flush(body);
+    expect(status).toEqual(body);
+
+    service.checkAi().subscribe({ error: () => undefined });
+    httpTesting.expectOne('/api/v1/ai/status').flush('Bad gateway', { status: 502, statusText: 'Bad Gateway' });
+    expect(toastError).not.toHaveBeenCalled();
+  });
 });

@@ -6,7 +6,7 @@ University mini-project — *AI for Software Engineering*.
 
 Smart Project Manager is a web platform that helps software teams manage projects, teams, sprints, tasks, priorities, deadlines and workload. An AI module assists the team with automatic task generation, developer recommendation and sprint delay-risk prediction.
 
-> **Project status:** the Express.js REST API is complete for all non-AI features (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: setup, authentication (sign in, sign up, protected pages, session handling), profile & skills, user administration, projects & teams. Next: sprints & tasks, Kanban, comments & notifications, dashboard screens, then the AI service.
+> **Project status:** the Express.js REST API is complete for all non-AI features (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: **every non-AI feature has its screens** (authentication, profile & skills, user administration, projects & teams, sprints, tasks, Kanban board, comments, activity history, notifications, dashboards with charts, global search). Next: the AI service (Python / FastAPI), then delivery (Docker, demo data, CI).
 > See [Development progress](#development-progress) for what is actually implemented.
 
 ---
@@ -57,7 +57,7 @@ Details: [docs/architecture.md](docs/architecture.md).
 
 ```
 .
-├── frontend/          Angular application          (layout, authentication, profile, users, projects & teams)
+├── frontend/          Angular application          (all non-AI screens)
 ├── backend/           Express.js REST API           (all non-AI features)
 ├── ai-service/        FastAPI AI service            (not created yet)
 ├── docs/              Project documentation
@@ -121,7 +121,7 @@ npm install
 npm start               # http://localhost:4200
 ```
 
-Open http://localhost:4200: you are sent to the sign-in page. Create an account on **Create an account** (developer or project manager), or sign in with the administrator created by `npm run create-admin`. The home page then shows the status of the frontend, the backend API and MongoDB. Every user edits their information, skills and password on **My profile**; administrators manage the accounts on **Users**. Project managers create projects on **Projects** and build their team from the developer directory (search by name or skill).
+Open http://localhost:4200: you are sent to the sign-in page. Create an account on **Create an account** (developer or project manager), or sign in with the administrator created by `npm run create-admin`. The home page then shows the status of the frontend, the backend API and MongoDB. Every user edits their information, skills and password on **My profile**; administrators manage the accounts on **Users**. Project managers create projects on **Projects** and build their team from the developer directory (search by name or skill); each project has tabs for its sprints, tasks, Kanban board, activity and dashboard. Developers find their work in **My tasks**; everyone has a **Dashboard**, **Notifications** (bell in the toolbar) and the global **search**.
 
 | Script                  | Purpose |
 |-------------------------|---------|
@@ -166,10 +166,10 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 | TASK 13 | Authentication UI (login, register, guards, session handling) | Done |
 | TASK 14 | Profile, skills & user administration UI | Done |
 | TASK 15 | Projects & team UI | Done |
-| TASK 16 | Sprints & tasks UI | Planned |
-| TASK 17 | Kanban board UI | Planned |
-| TASK 18 | Comments, activity & notifications UI | Planned |
-| TASK 19 | Dashboard UI (Chart.js) & search UI | Planned |
+| TASK 16 | Sprints & tasks UI | Done |
+| TASK 17 | Kanban board UI | Done |
+| TASK 18 | Comments, activity & notifications UI | Done |
+| TASK 19 | Dashboard UI (Chart.js) & search UI | Done |
 
 ### Phase 4 — AI service (Python / FastAPI) — requires Python 3.11+
 
@@ -200,7 +200,7 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 | [docs/database.md](docs/database.md)             | MongoDB design (collections, schemas, indexes)   |
 | [docs/api.md](docs/api.md)                       | REST API reference                               |
 | [docs/ai.md](docs/ai.md)                         | AI features, ML models                           |
-| [docs/prompts.md](docs/prompts.md)               | LLM prompts                                      |
+| [docs/prompts.md](docs/prompts.md)               | Part A: development prompts between the supervisor and the AI agent (in French); Part B: LLM prompts of the application (planned) |
 | [docs/testing.md](docs/testing.md)               | Test strategy and results                        |
 | [docs/deployment.md](docs/deployment.md)         | Environment, Docker, deployment                  |
 | [docs/demo.md](docs/demo.md)                     | Functional demonstration scenario                |
@@ -217,7 +217,7 @@ The final technical report is built from these documents:
 | 12. MongoDB database design                           | `database.md` |
 | 13. FastAPI AI architecture, 15. AI models            | `architecture.md`, `ai.md` |
 | 14. REST API documentation                            | `api.md` |
-| 16. LLM prompts                                       | `prompts.md` |
+| 16. LLM prompts                                       | `prompts.md` (part B; part A documents how the project was developed with an AI agent) |
 | 17. Security                                          | `requirements.md`, `architecture.md` |
 | 18. Testing                                           | `testing.md` |
 | 19. Docker and deployment                             | `deployment.md` |

@@ -32,6 +32,7 @@ interface NavItem {
 /** Navigation entries: one per implemented feature page (extended as features are added). */
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Home', icon: 'home', path: '/' },
+  { label: 'Dashboard', icon: 'insights', path: '/dashboard' },
   { label: 'Projects', icon: 'folder', path: '/projects' },
   // Only developers can be assigned tasks (team members are DEVELOPER accounts).
   { label: 'My tasks', icon: 'task_alt', path: '/my-tasks', roles: ['DEVELOPER'] },
@@ -95,6 +96,12 @@ export class MainLayout {
         takeUntilDestroyed(),
       )
       .subscribe();
+  }
+
+  /** Toolbar search: opens the search page with the query (at least 2 characters). */
+  protected search(query: string): void {
+    const q = query.trim();
+    void this.router.navigate(['/search'], { queryParams: q ? { q } : {} });
   }
 
   protected logout(): void {

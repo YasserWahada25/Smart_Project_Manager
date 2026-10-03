@@ -14,6 +14,7 @@ import { NotificationService } from './core/services/notification.service';
 import { ToastService } from './core/services/toast.service';
 import { ActivityService } from './features/activity/activity.service';
 import { CommentService } from './features/comments/comment.service';
+import { DashboardService } from './features/dashboard/dashboard.service';
 import { ProfileService } from './features/profile/profile.service';
 import { ProjectService } from './features/projects/project.service';
 import { SprintService } from './features/sprints/sprint.service';
@@ -27,6 +28,7 @@ import {
   testTask,
   testUser,
 } from './testing/test-data';
+import { testDashboard, testProjectDashboard } from './testing/dashboard-data';
 
 describe('App routing', () => {
   let toastError: ReturnType<typeof vi.fn>;
@@ -42,7 +44,10 @@ describe('App routing', () => {
         { provide: ToastService, useValue: { error: toastError, info: vi.fn() } },
         {
           provide: HealthService,
-          useValue: { check: () => of({ backend: 'up', database: 'up', checkedAt: new Date() }) },
+          useValue: {
+            check: () => of({ backend: 'up', database: 'up', checkedAt: new Date() }),
+            checkAi: () => of({ available: false, reason: 'NOT_CONFIGURED', llm: null }),
+          },
         },
         { provide: ProfileService, useValue: { load: () => of(user) } },
         {
@@ -62,6 +67,15 @@ describe('App routing', () => {
         },
         { provide: SprintService, useValue: { list: () => of([testSprint()]) } },
         { provide: CommentService, useValue: { list: () => of(testPage([])) } },
+        {
+          provide: DashboardService,
+          useValue: {
+            get: () => of(testDashboard()),
+            forProject: () => of(testProjectDashboard()),
+            search: () =>
+              of({ query: 'x', projects: { total: 0, items: [] }, tasks: { total: 0, items: [] } }),
+          },
+        },
         {
           provide: ActivityService,
           useValue: { forProject: () => of(testPage([])), forTask: () => of(testPage([])) },
@@ -164,6 +178,22 @@ describe('App routing', () => {
       await harness.navigateByUrl('/projects/p1/activity');
       expect(page().querySelector('h2')?.textContent).toBe('Activity');
       expect(title()).toBe('Activity · Smart Project Manager');
+
+      await harness.navigateByUrl('/projects/p1/dashboard');
+      expect(page().querySelector('h2')?.textContent).toBe('Tasks');
+      expect(title()).toBe('Project dashboard · Smart Project Manager');
+    });
+
+    it('opens the dashboard and the search (query read from the URL)', async () => {
+      const harness = await RouterTestingHarness.create('/dashboard');
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Dashboard');
+      expect(title()).toBe('Dashboard · Smart Project Manager');
+
+      await harness.navigateByUrl('/search?q=payment');
+      expect(
+        harness.routeNativeElement?.querySelector<HTMLInputElement>('app-search-page input')?.value,
+      ).toBe('payment');
+      expect(title()).toBe('Search · Smart Project Manager');
     });
 
     it('opens the notifications', async () => {

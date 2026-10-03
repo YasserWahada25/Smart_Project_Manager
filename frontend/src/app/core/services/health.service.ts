@@ -5,7 +5,7 @@ import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { SKIP_ERROR_TOAST } from '../http/api-error.interceptor';
 import { ApiError } from '../models/api-error';
-import { HealthReport, SystemStatus } from '../models/system-status';
+import { AiStatus, HealthReport, SystemStatus } from '../models/system-status';
 
 @Injectable({ providedIn: 'root' })
 export class HealthService {
@@ -34,5 +34,11 @@ export class HealthService {
         return throwError(() => error);
       }),
     );
+  }
+
+  /** The AI service as seen by the backend (displayed by the caller: no global toast). */
+  checkAi(): Observable<AiStatus> {
+    const context = new HttpContext().set(SKIP_ERROR_TOAST, true);
+    return this.http.get<AiStatus>(`${environment.apiUrl}/ai/status`, { context });
   }
 }

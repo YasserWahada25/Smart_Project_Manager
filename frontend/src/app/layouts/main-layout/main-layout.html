@@ -39,6 +39,27 @@
 
       <span class="spacer"></span>
 
+      @if (isHandset()) {
+        <a mat-icon-button routerLink="/search" class="toolbar-icon" aria-label="Search">
+          <mat-icon>search</mat-icon>
+        </a>
+      } @else {
+        <form
+          class="toolbar-search"
+          role="search"
+          (submit)="$event.preventDefault(); search(query.value)"
+        >
+          <mat-icon aria-hidden="true">search</mat-icon>
+          <input
+            #query
+            type="search"
+            maxlength="100"
+            placeholder="Search projects and tasks"
+            aria-label="Search projects and tasks"
+          />
+        </form>
+      }
+
       @if (user(); as current) {
         <a
           mat-icon-button

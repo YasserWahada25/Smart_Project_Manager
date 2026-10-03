@@ -1,7 +1,7 @@
 # Requirements
 
 > Status legend: **Planned** = specified, not implemented · **In progress** · **Done** = implemented and tested.
-> Current state: FR-01 Authentication, FR-02 User management, FR-03 User profiles, FR-04 Developer skills, FR-05 Project management, FR-06 Team management, FR-07 Sprint management, FR-08 Task management, the FR-09 Kanban board, FR-10 Comments, FR-11 Activity history, FR-12 Notifications, FR-13 Dashboard and FR-14 Search implemented in the backend (API); their user interfaces come with the frontend.
+> Current state: FR-01 Authentication, FR-02 User management, FR-03 User profiles, FR-04 Developer skills, FR-05 Project management, FR-06 Team management, FR-07 Sprint management, FR-08 Task management, the FR-09 Kanban board, FR-10 Comments, FR-11 Activity history, FR-12 Notifications, FR-13 Dashboard and FR-14 Search implemented in the backend (API) and in the Angular user interface. FR-15 (AI features) is planned.
 
 ## 1. Project context
 
@@ -52,14 +52,14 @@ Software teams have to juggle projects, sprints, tasks, priorities, deadlines an
 | FR-04 | Developer skills                | Developers manage their skills (name, level, years of experience; used by AI-02). | Done (API + UI `/profile`: add, edit, remove skills; AI-02 itself is planned) |
 | FR-05 | Project management              | CRUD on projects, status lifecycle, members. | Done (API + UI: project list, creation/edition form, project page with status changes, archiving and deletion) |
 | FR-06 | Team management                 | Manage project members/teams. | Done (API + UI: team on the project page, developer directory searchable by name and skill, add/remove members) |
-| FR-07 | Sprint management               | CRUD on sprints within a project, status lifecycle. | In progress (backend done, UI planned) |
-| FR-08 | Task management                 | CRUD on tasks, assignment, workflow transitions. | In progress (backend done, UI planned) |
-| FR-09 | Kanban board                    | Visualize tasks by workflow column; BLOCKED tasks identifiable. | In progress (board API done, UI planned) |
-| FR-10 | Comments                        | Users comment on tasks. | In progress (backend done, UI planned) |
-| FR-11 | Activity history                | Log task/sprint/project events. | In progress (backend done, UI planned) |
-| FR-12 | Notifications                   | Notify users of relevant events. | In progress (backend done, UI planned) |
-| FR-13 | Dashboard                       | Project indicators and charts. | In progress (API done incl. workload & platform indicators; charts UI planned; AI risk indicators with AI-03) |
-| FR-14 | Search and filters              | Search/filter projects and tasks. | In progress (API done: list filters + global search; UI: project search and status filter, developer search by skill done; task filters and global search planned) |
+| FR-07 | Sprint management               | CRUD on sprints within a project, status lifecycle. | Done (API + UI: Sprints tab, sprint form, start / complete / cancel / delete, progress) |
+| FR-08 | Task management                 | CRUD on tasks, assignment, workflow transitions. | Done (API + UI: Tasks tab with filters, task form, task page with workflow moves and assignment, My tasks) |
+| FR-09 | Kanban board                    | Visualize tasks by workflow column; BLOCKED tasks identifiable. | Done (API + UI: Board tab, six columns incl. Blocked, moves through the allowed transitions; no drag-and-drop) |
+| FR-10 | Comments                        | Users comment on tasks. | Done (API + UI on the task page: post, edit, moderate) |
+| FR-11 | Activity history                | Log task/sprint/project events. | Done (API + UI: Activity tab with type filter, task history) |
+| FR-12 | Notifications                   | Notify users of relevant events. | Done (API + UI: unread badge, notifications page) |
+| FR-13 | Dashboard                       | Project indicators and charts. | Done (API + UI: global dashboard by role and project dashboard, Chart.js charts, workload, accounts); AI risk indicators planned with AI-03 |
+| FR-14 | Search and filters              | Search/filter projects and tasks. | Done (API + UI: list filters, developer search by skill, task filters, global search page and toolbar field) |
 | FR-15 | AI features                     | AI-01, AI-02, AI-03 (see [ai.md](ai.md)). | Planned |
 
 ### 5.1 Project

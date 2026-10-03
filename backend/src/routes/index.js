@@ -10,6 +10,7 @@ const taskRoutes = require('./task.routes');
 const commentRoutes = require('./comment.routes');
 const notificationRoutes = require('./notification.routes');
 const dashboardRoutes = require('./dashboard.routes');
+const aiRoutes = require('./ai.routes');
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use('/sprints', sprintRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/comments', commentRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/ai', aiRoutes);
 router.use('/', dashboardRoutes);
 
 module.exports = router;

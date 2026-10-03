@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,7 +14,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
+import {
+  Subject,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import { ApiError } from '../../../core/models/api-error';
 import { SearchResults } from '../../../core/models/dashboard';
@@ -72,7 +89,8 @@ export class SearchPage {
             catchError((error: unknown) =>
               of<SearchOutcome>({
                 ok: false,
-                message: error instanceof ApiError ? error.message : 'An unexpected error occurred.',
+                message:
+                  error instanceof ApiError ? error.message : 'An unexpected error occurred.',
               }),
             ),
           );

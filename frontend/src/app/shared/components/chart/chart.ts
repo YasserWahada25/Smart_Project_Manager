@@ -10,19 +10,18 @@ import {
   viewChild,
 } from '@angular/core';
 import {
-  ArcElement,
   BarController,
   BarElement,
   CategoryScale,
   Chart,
   ChartConfiguration,
-  DoughnutController,
   LinearScale,
   Tooltip,
 } from 'chart.js';
 
-// Only the pieces used by the dashboards are bundled (Chart.js is tree-shakable).
-Chart.register(BarController, BarElement, CategoryScale, LinearScale, DoughnutController, ArcElement, Tooltip);
+// Only the pieces used by the dashboards are bundled (Chart.js is tree-shakable): bar charts
+// with a hover tooltip.
+Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 
 /**
  * Chart.js chart on a canvas, re-drawn when its configuration changes. The canvas is an image

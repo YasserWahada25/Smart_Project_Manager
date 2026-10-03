@@ -83,7 +83,12 @@
           }
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "setupFiles": [
+              "src/app/testing/test-setup.ts"
+            ]
+          }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",

@@ -61,7 +61,7 @@ describe('ProjectShell', () => {
     expect(element().querySelector('.status')?.textContent?.trim()).toBe('Planning');
     expect(
       [...element().querySelectorAll('[mat-tab-link]')].map((tab) => tab.textContent?.trim()),
-    ).toEqual(['Overview', 'Sprints', 'Tasks', 'Board', 'Activity']);
+    ).toEqual(['Overview', 'Sprints', 'Tasks', 'Board', 'Activity', 'Dashboard']);
   });
 
   it('gives the project manager the edit, status and deletion actions', async () => {

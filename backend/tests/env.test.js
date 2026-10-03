@@ -6,6 +6,9 @@ const validConfig = {
   jwtSecret: 'x'.repeat(32),
   jwtExpiresIn: '1d',
   bcryptSaltRounds: 12,
+  aiServiceUrl: 'http://localhost:8000',
+  aiServiceToken: undefined,
+  aiTimeoutMs: 90000,
 };
 
 describe('environment configuration', () => {
@@ -33,6 +36,23 @@ describe('environment configuration', () => {
   describe('validateConfig', () => {
     it('passes for a complete and valid configuration', () => {
       expect(() => validateConfig(validConfig)).not.toThrow();
+    });
+
+    it('accepts a missing AI_SERVICE_TOKEN (AI features "not configured") but not a short one', () => {
+      expect(() => validateConfig({ ...validConfig, aiServiceToken: undefined })).not.toThrow();
+      expect(() => validateConfig({ ...validConfig, aiServiceToken: 't'.repeat(32) })).not.toThrow();
+      expect(() => validateConfig({ ...validConfig, aiServiceToken: 'short' })).toThrow(
+        'AI_SERVICE_TOKEN must be at least 32 characters long',
+      );
+    });
+
+    it('checks AI_SERVICE_URL and AI_TIMEOUT_MS', () => {
+      expect(() => validateConfig({ ...validConfig, aiServiceUrl: 'ftp://ai' })).toThrow(
+        'AI_SERVICE_URL must be an http(s) URL',
+      );
+      expect(() => validateConfig({ ...validConfig, aiTimeoutMs: 500 })).toThrow(
+        'AI_TIMEOUT_MS must be an integer between 1000 and 300000',
+      );
     });
 
     it('throws when MONGODB_URI is missing', () => {

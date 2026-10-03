@@ -52,6 +52,7 @@ describe('MainLayout', () => {
     expect(element.querySelector('.brand')?.textContent).toContain('Smart Project Manager');
     expect(navLinks(element)).toEqual([
       { label: 'Home', href: '/' },
+      { label: 'Dashboard', href: '/dashboard' },
       { label: 'Projects', href: '/projects' },
       { label: 'My profile', href: '/profile' },
     ]);
@@ -61,6 +62,7 @@ describe('MainLayout', () => {
     const admin: HTMLElement = (await render(false, 'ADMIN')).nativeElement;
     expect(navLinks(admin).map((link) => link.label)).toEqual([
       'Home',
+      'Dashboard',
       'Projects',
       'My profile',
       'Users',
@@ -71,6 +73,7 @@ describe('MainLayout', () => {
     const developer: HTMLElement = (await render(false, 'DEVELOPER')).nativeElement;
     expect(navLinks(developer)).toEqual([
       { label: 'Home', href: '/' },
+      { label: 'Dashboard', href: '/dashboard' },
       { label: 'Projects', href: '/projects' },
       { label: 'My tasks', href: '/my-tasks' },
       { label: 'My profile', href: '/profile' },
@@ -79,12 +82,24 @@ describe('MainLayout', () => {
 
   it('shows the unread notifications on the bell, refreshed in the background', async () => {
     const element: HTMLElement = (await render(false)).nativeElement;
-
-    expect(refreshUnreadCount).toHaveBeenCalled();
+    // The first refresh is scheduled right away (timer 0).
+    await vi.waitFor(() => expect(refreshUnreadCount).toHaveBeenCalled());
     const bell = element.querySelector('a.notifications-button')!;
     expect(bell.getAttribute('href')).toBe('/notifications');
     expect(bell.getAttribute('aria-label')).toBe('Notifications, 3 unread');
     expect(bell.querySelector('.mat-badge-content')?.textContent).toBe('3');
+  });
+
+  it('searches from the toolbar', async () => {
+    const fixture = await render(false);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const element: HTMLElement = fixture.nativeElement;
+
+    const input = element.querySelector<HTMLInputElement>('.toolbar-search input')!;
+    input.value = '  payment ';
+    element.querySelector('.toolbar-search')!.dispatchEvent(new Event('submit'));
+
+    expect(navigate).toHaveBeenCalledWith(['/search'], { queryParams: { q: 'payment' } });
   });
 
   it('shows the menu button only on handsets', async () => {

@@ -91,7 +91,7 @@ npm run build            # production build (type checking + budgets)
 | `core/services/toast.service.spec.ts` | success / info / error open a snack bar (loaded on demand) with the right style and duration; messages shown in the order requested |
 | `shared/components/error-state/error-state.spec.ts` | Message rendered as an alert; "Try again" emits `retry`; button hidden when not retryable |
 | `features/home/home.spec.ts` | Loading state; three services operational; database outage highlighted; backend unreachable → error state, retry calls the service again and shows the status |
-| `layouts/main-layout/main-layout.spec.ts` | Application name; navigation links by role (Home, Projects, My profile; Users for administrators only); menu button only on handsets; user menu with My profile link |
+| `layouts/main-layout/main-layout.spec.ts` | Application name; navigation links by role (Home, Dashboard, Projects, My profile; My tasks for developers, Users for administrators); toolbar search; notifications bell with the unread count; menu button only on handsets; user menu with My profile link |
 | `app.spec.ts` | Routing with a fake session: signed-in user → home in the layout with tab title (regression test for the redirect loop), unknown URL → not-found page, `/login` → sent home, `/profile` with title "My profile", `/admin/users` refused (toast + home), `/projects` → `/projects/new` ("new" not read as an id) → `/projects/p1` with their titles; developer → `/projects/new` and `/projects/:id/edit` refused; administrator → `/admin/users` with title "Users"; visitor → `/login?returnUrl=…` with title "Sign in", `/register` without side navigation |
 | `core/auth/jwt.spec.ts` | Payload decoding, unreadable tokens → null, expiry date, expired / not expired / no `exp` |
 | `core/auth/token-storage.spec.ts` | Save/load, partial or corrupted storage → null, clear |
@@ -110,8 +110,29 @@ npm run build            # production build (type checking + budgets)
 | `features/projects/project.service.spec.ts` | List parameters, get, create (empty deadline not sent), update (deadline `null`), status, delete, add / remove member; `DeveloperService` search parameters (name and skill) |
 | `features/projects/project-list/project-list.spec.ts` | Cards (link, manager, status, dates in UTC, technologies "+N", team size), "New project" and subtitle per role, empty states per role / filters, debounced search + status filter (harness), error + retry |
 | `features/projects/project-form/project-form.spec.ts` | Today as default start date, technologies as chips (Enter, duplicates ignored, remove), creation payload + toast + navigation, validation (blank name, deadline before start, re-check when the start date moves), backend field messages, edition (fields filled, cleared deadline → `null`), refusal for another manager's or an archived project |
-| `features/projects/project-detail/project-detail.spec.ts` | Overview and team, manager actions vs read-only administrator, status change (archiving confirmed, read-only banner), deletion confirmed + navigation, refused deletion (409) reported, member removal (409 then success), "Add developers" dialog and page updated from it, reload on `:id` change, 404 without retry |
 | `features/projects/add-members-dialog/add-members-dialog.spec.ts` | Developers with skills, members marked "In the team", search by name and by skill (same text in both fields still searches — regression), addition (API call, page callback, toast, row updated), refused addition reported, empty state |
+| `features/projects/project-shell/project-shell.spec.ts` | Header and tabs (Overview, Sprints, Tasks, Board, Activity, Dashboard), manager actions vs read-only administrator, status change (archiving confirmed, read-only banner), deletion confirmed + navigation, refused deletion (409), reload on `:id` change, 404 without retry |
+| `features/projects/project-overview/project-overview.spec.ts` | Overview and team, team management only for the manager (not admin, not archived), member removal (409 then success), "Add developers" dialog and page updated from it |
+| `features/sprints/sprint-list/sprint-list.spec.ts` | Sprints with dates, progress, counts and links; actions allowed by the status; read-only for others; start without confirmation (409 reported); complete / cancel / delete confirmed then reload; form dialog; empty state |
+| `features/sprints/sprint-form-dialog/sprint-form-dialog.spec.ts` | Two-week default from today, creation payload, validation (name, end ≥ start), edition with backend error |
+| `features/tasks/task.service.spec.ts` | Task list filters, my tasks, creation (empty deadline not sent), update (deadline `null`), status with / without reason, assignee, get / delete; `SprintService` (all sprints in one request, CRUD, status) |
+| `features/tasks/task-workflow.spec.ts` | Transition table, assignee required to start, move + toast, blocking reason asked (cancel = no change), backend refusal; `BlockReasonDialog` (trimmed reason, too long refused) |
+| `features/tasks/task-form-dialog/task-form-dialog.spec.ts` | Creation in the pre-selected sprint with assignee and skills (defaults: Feature, Medium, 3 points), only open sprints offered, edition (closed sprint of the task kept, no assignee field), validation and backend errors |
+| `features/tasks/task-list/task-list.spec.ts` | Rows (status, priority, assignee, sprint, overdue), `?sprint=` filter + status filter, creation by the manager then reload, no creation for members |
+| `features/tasks/task-detail/task-detail.spec.ts` | Details, allowed moves (start needs an assignee), move then new targets, blocked reason, assignee vs other members, assignment (refusal restores the previous value), edition, deletion + navigation, comments and history sections |
+| `features/tasks/my-tasks/my-tasks.spec.ts` | My tasks with project, sprint, deadline / overdue and link, status filter, empty state |
+| `features/kanban/kanban-board/kanban-board.spec.ts` | Active sprint by default, six columns with counts, cards, `?sprint=` / backlog / all scopes, "Move to" menu (allowed targets, assignee required) then reload, assignee vs other members, error + retry |
+| `core/models/activity.spec.ts` | Readable text of the activity types (labels, missing user) |
+| `core/services/notification.service.spec.ts` | List + unread count, silent badge refresh (no toast), mark read / delete update the count only for unread ones, mark all |
+| `features/comments/comment.service.spec.ts` | Comment requests; activity requests (project with type filter, task) |
+| `shared/data/load-more-list.spec.ts` | Pages appended until everything is loaded, response before a reset ignored, replace / remove, errors |
+| `features/comments/task-comments/task-comments.spec.ts` | List, post + reload + event, empty comment refused, author edits / deletes, manager moderates but does not edit, no comment for an administrator nor in an archived project, backend refusal |
+| `features/activity/project-activity/project-activity.spec.ts` | Project timeline with "Show older entries", filter by event type; `TaskHistory` reloads when the task page changes it |
+| `features/notifications/notification-list/notification-list.spec.ts` | Unread highlighted, open = mark as read + navigation (none for "removed from project"), mark all, delete, unread only |
+| `features/dashboard/dashboard.service.spec.ts` | Dashboard and search requests; `describeDaysRemaining` |
+| `features/dashboard/dashboard-widgets.spec.ts` | Task charts (single-hue horizontal bars ≤ 24 px, values as text, empty state), workload table (bars relative to the heaviest, blocked highlighted), active sprint card (link to its board, late) |
+| `features/dashboard/dashboard-pages.spec.ts` | Dashboard of a manager (figures, charts, sprints, workload), a developer (my tasks first), an administrator (accounts), error + retry; project dashboard (deadline, members, sprints by status, workload of every member, no deadline / no active sprint) |
+| `features/search/search-page/search-page.spec.ts` | Query from the URL, projects and tasks with links, "x of y shown", nothing below 2 characters, typing updates the URL (debounced), error + retry |
 | `features/users/user-list/user-list.spec.ts` | First page, own account marked "You" without actions, debounced search + role/status filters (Angular Material test harnesses), pagination, role change after confirmation (row updated + toast), cancelled confirmation, deactivate with confirmation / activate without, backend refusal → toast, load error + retry |
 | `features/auth/login/login.spec.ts` | Validation messages without API call, login + navigation to returnUrl, external returnUrl ignored, explicit messages for 401 and 403, password visibility toggle |
 | `features/auth/register/register.spec.ts` | Password policy and confirmation messages, confirmation re-checked when the password changes, developer by default + success toast + navigation, project manager choice, 409 → "already registered" on the email field, backend 400 details on fields, other errors above the form |
@@ -161,6 +182,13 @@ npm run build            # production build (type checking + budgets)
 | 2026-10-02 | TASK 15 | Frontend | `npm run lint` / `npm run format:check` | All files pass linting / Prettier style OK |
 | 2026-10-02 | TASK 15 | Frontend | `npm run build` | Success; **initial bundle 341.6 kB raw / 94.4 kB transferred** (500.8 kB / 125.8 kB before the snack bar was loaded on demand — the 500 kB budget warning is gone); lazy chunks: project-form 86 kB, user-list 54 kB, project-detail 22 kB, project-list 11 kB |
 | 2026-10-02 | TASK 15 | Frontend | `npm audit --omit=dev` | 0 vulnerabilities |
+| 2026-10-02 | TASK 16 | Frontend | `npm run test:ci` / lint / format / build | 38 files, 240 tests passed / pass / pass / success, initial bundle 342.5 kB |
+| 2026-10-02 | TASK 17 | Frontend | `npm run test:ci` / lint / format / build | 39 files, 245 tests passed / pass / pass / success, initial bundle 342.6 kB |
+| 2026-10-02 | TASK 18 | Frontend | `npm run test:ci` / lint / format / build | 46 files, 283 tests passed / pass / pass / success, initial bundle 342.9 kB |
+| 2026-10-02 | TASK 18 | Backend | `npm test` / `npm run lint` | 20 suites, 296 tests passed (+1: a deleted project takes its notifications with it) / 0 errors |
+| 2026-10-03 | TASK 19 | Frontend | `npm run test:ci` | 50 files, 307 tests passed |
+| 2026-10-03 | TASK 19 | Frontend | `npm run lint` / `npm run format:check` / `npm run build` | Pass / pass / success; initial bundle 344.0 kB raw / 95.6 kB transferred; Chart.js only in the lazy dashboard chunks (dashboard-page 7 kB, project-dashboard 5 kB + shared Chart.js chunk) |
+| 2026-10-03 | TASK 19 | Frontend | `npm audit --omit=dev` | 0 vulnerabilities (chart.js 4.5.1 added) |
 
 ### Manual verification (TASK 02)
 
@@ -270,5 +298,20 @@ Through the dev proxy, with a throw-away project manager, two developers (with s
 - archive → modification 409 and team change 409 → un-archive allowed; remove member; delete the empty project → 204, then 404.
 
 **Finding (backend, not fixed in this task):** deleting a project removes its activities but not its **notifications**; they keep referencing the deleted project (2 such notifications were removed by the cleanup script). To be handled with the notifications screen (TASK 18).
+
+### Manual verification (TASK 16–19)
+
+Through the dev proxy, with a throw-away project manager and developer (`@smoke.test`, deleted afterwards with their project, sprints, tasks, activities and notifications) — **35/35 checks passed**:
+
+- `/dashboard`, `/search`, `/my-tasks`, `/notifications` and the five project tabs served;
+- sprints: creation (PLANNED), start, second active sprint refused (409), statistics;
+- tasks: creation in a sprint with assignee (empty deadline not sent), overdue backlog task, filters (sprint, unassigned + overdue); unassigned start refused (409), another developer's task refused (403), skipped steps refused (409); start, block with reason, unblock; my tasks;
+- board: six columns for the sprint, backlog scope;
+- comments: post, the manager cannot edit (403) but moderates (204), the author edits (`editedAt`); activity recorded (7 types), filtered by type, task history;
+- notifications: developer (added, assigned, sprint started) and manager (status changes, comments); mark one / all as read;
+- dashboards: manager (workload), developer (my tasks), project (active sprint, overdue); search (projects + tasks), 1 character refused (400);
+- backend fix: deleting a project deletes its notifications (1 before, 0 after).
+
+**Test timeout:** `src/app/testing/test-setup.ts` (`angular.json` → `test.options.setupFiles`) sets a 15 s timeout: with 50 spec files running in parallel, a few tests driven by Material harnesses took more than the default 5 s on a loaded machine.
 
 Not verified: graceful shutdown on `SIGTERM` (Windows does not deliver POSIX signals to Node processes the same way; to be verified in the Docker task).

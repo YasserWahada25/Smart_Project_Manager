@@ -43,8 +43,40 @@
 }
 
 .user-button,
-.notifications-button {
+.notifications-button,
+.toolbar-icon {
   color: inherit;
+}
+
+// Compact search field on the primary-colored toolbar.
+.toolbar-search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: min(320px, 30vw);
+  padding: 0 12px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--mat-sys-on-primary) 16%, transparent);
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: inherit;
+    font: var(--mat-sys-body-medium);
+
+    &::placeholder {
+      color: inherit;
+      opacity: 0.8;
+    }
+  }
+
+  &:focus-within {
+    outline: 2px solid var(--mat-sys-on-primary);
+  }
 }
 
 .user-name {

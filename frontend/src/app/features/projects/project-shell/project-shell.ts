@@ -44,6 +44,7 @@ export const PROJECT_TABS: readonly ProjectTab[] = [
   { label: 'Tasks', path: 'tasks', exact: false },
   { label: 'Board', path: 'board', exact: false },
   { label: 'Activity', path: 'activity', exact: false },
+  { label: 'Dashboard', path: 'dashboard', exact: false },
 ];
 
 /**

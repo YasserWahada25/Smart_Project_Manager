@@ -221,4 +221,4 @@ Index `{ task: 1, createdAt: 1 }`: comments of a task in chronological order. Co
 | Index | Justification |
 |-------|---------------|
 | `{ recipient: 1, read: 1, createdAt: -1 }` | "My notifications" (all or unread only), newest first, and the unread counter |
-| `{ createdAt: 1 }` with `expireAfterSeconds: 7776000` (TTL, 90 days) | Automatic purge of old notifications |
+| `{ createdAt: 1 }` with `expireAfterSeconds: 7776000` (TTL, 90 days) | Automatic purge of old notifications (the notifications of a deleted project are removed with it) |

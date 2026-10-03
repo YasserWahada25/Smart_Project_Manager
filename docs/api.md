@@ -417,7 +417,7 @@ Partial update (at least one field). **200** → `{ "project": { ... } }` · 400
 
 #### `DELETE /api/v1/projects/:id` — project manager
 
-**204 No Content** · 403 · 404.
+**204 No Content** — the activity history and the notifications of the project are deleted with it · 403 · 404 · 409 when it still has sprints or tasks.
 
 #### `POST /api/v1/projects/:id/members` — project manager
 
@@ -706,7 +706,7 @@ Generated automatically from the activity history; a user only sees **their own*
 | `PATCH /api/v1/notifications/read-all` | 200 `{ "updated": 3 }` | |
 | `DELETE /api/v1/notifications/:id` | 204 | |
 
-Another user's notification → 404 `Notification not found`. Notifications are deleted automatically after **90 days** (MongoDB TTL index). A failure while storing notifications never makes the original action fail.
+Another user's notification → 404 `Notification not found`. Notifications are deleted automatically after **90 days** (MongoDB TTL index), and with their project when it is deleted. A failure while storing notifications never makes the original action fail.
 
 ### 1.15 Dashboards
 

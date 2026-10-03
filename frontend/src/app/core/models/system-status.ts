@@ -9,6 +9,15 @@ export interface HealthReport {
 
 export type ServiceState = 'up' | 'down';
 
+/** GET /api/v1/ai/status: the AI service as seen by the backend. */
+export interface AiStatus {
+  available: boolean;
+  /** Why it is unavailable. */
+  reason?: 'NOT_CONFIGURED' | 'UNREACHABLE' | 'TIMEOUT';
+  /** Whether an LLM key is set in the AI service (otherwise the local analyzer is used). */
+  llm: { provider: string; configured: boolean; model: string | null } | null;
+}
+
 /** Availability of the backend and its database, as shown to the user. */
 export interface SystemStatus {
   backend: ServiceState;

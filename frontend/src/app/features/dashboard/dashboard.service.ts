@@ -3,11 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import {
-  DashboardData,
-  ProjectDashboardData,
-  SearchResults,
-} from '../../core/models/dashboard';
+import { DashboardData, ProjectDashboardData, SearchResults } from '../../core/models/dashboard';
 
 /** Dashboards and global search (indicators computed by the backend). */
 @Injectable({ providedIn: 'root' })

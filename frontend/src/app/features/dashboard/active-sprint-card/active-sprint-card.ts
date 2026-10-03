@@ -13,7 +13,10 @@ import { ActiveSprint, describeDaysRemaining } from '../../../core/models/dashbo
     @let current = sprint();
     <article class="sprint">
       <header>
-        <a [routerLink]="['/projects', current.project.id, 'board']" [queryParams]="{ sprint: current.id }">
+        <a
+          [routerLink]="['/projects', current.project.id, 'board']"
+          [queryParams]="{ sprint: current.id }"
+        >
           {{ current.name }}
         </a>
         @if (showProject()) {
@@ -26,9 +29,9 @@ import { ActiveSprint, describeDaysRemaining } from '../../../core/models/dashbo
         [attr.aria-label]="'Progress of ' + current.name"
       />
       <p class="numbers">
-        {{ current.stats.completedPoints }} / {{ current.stats.totalPoints }} points
-        ({{ current.stats.progress }}%) · {{ current.stats.completedTasks }} /
-        {{ current.stats.totalTasks }} tasks done
+        {{ current.stats.completedPoints }} / {{ current.stats.totalPoints }} points ({{
+          current.stats.progress
+        }}%) · {{ current.stats.completedTasks }} / {{ current.stats.totalTasks }} tasks done
         @if (current.stats.blockedTasks > 0) {
           · <span class="alert">{{ current.stats.blockedTasks }} blocked</span>
         }
