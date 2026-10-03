@@ -1,4 +1,6 @@
+const { matchedData } = require('express-validator');
 const aiClient = require('../services/aiClient.service');
+const aiAssistantService = require('../services/aiAssistant.service');
 const aiRecommendationService = require('../services/aiRecommendation.service');
 const aiRiskService = require('../services/aiRisk.service');
 
@@ -16,4 +18,14 @@ async function sprintRisk(req, res) {
   res.json(await aiRiskService.predictSprintRisk(req.user, req.params.id));
 }
 
-module.exports = { getStatus, recommendDevelopers, sprintRisk };
+/** AI-04: one manager message → the assistant's reply and the proposed changes (nothing applied). */
+async function assistantChat(req, res) {
+  res.json(await aiAssistantService.chat(req.user, req.params.id, matchedData(req, { locations: ['body'] })));
+}
+
+/** AI-04: a proposal confirmed by the manager, applied with the usual rules. */
+async function assistantAction(req, res) {
+  res.status(201).json(await aiAssistantService.executeAction(req.user, req.params.id, req.body));
+}
+
+module.exports = { getStatus, recommendDevelopers, sprintRisk, assistantChat, assistantAction };

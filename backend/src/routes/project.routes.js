@@ -22,6 +22,8 @@ const dashboardController = require('../controllers/dashboard.controller');
 const { projectDashboardRules } = require('../validators/dashboard.validator');
 const aiPlanController = require('../controllers/aiPlan.controller');
 const { generatePlanRules, applyPlanRules } = require('../validators/aiPlan.validator');
+const aiController = require('../controllers/ai.controller');
+const { chatRules, actionRules } = require('../validators/aiAssistant.validator');
 const { singleDocument } = require('../middleware/upload');
 
 const router = Router();
@@ -63,5 +65,9 @@ router.post(
   aiPlanController.generate,
 );
 router.post('/:id/ai/plan/apply', validate(applyPlanRules), aiPlanController.loadManagedProject, aiPlanController.apply);
+
+// AI-04: manager assistant (chat). Changes are only proposed; a confirmed proposal is applied by /actions.
+router.post('/:id/ai/assistant/chat', validate(chatRules), aiController.assistantChat);
+router.post('/:id/ai/assistant/actions', validate(actionRules), aiController.assistantAction);
 
 module.exports = router;
