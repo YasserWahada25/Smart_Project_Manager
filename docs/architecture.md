@@ -1,6 +1,6 @@
 # Architecture
 
-> Current state: **Express.js backend complete for the non-AI features** (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: screens for every non-AI feature (TASK 12–19). AI service not created yet.
+> Current state: **Express.js backend complete for the non-AI features** (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: screens for every non-AI feature (TASK 12–19) and the "Plan with AI" page (TASK 22). FastAPI AI service (TASK 20–22): health, service token, AI-01 planning (OpenAI or local analyzer with a Naive Bayes classifier).
 > This document describes the target architecture; sections are updated with the actual implementation as tasks are completed.
 
 ## 1. Global architecture
@@ -34,7 +34,7 @@
 | Angular frontend   | User interface, routing, forms, guards, HTTP calls to the backend. | Setup done (shell, routing, error handling, system status page) |
 | Express.js backend | Main REST API: authentication, authorization, business rules, validation, persistence, orchestration of AI calls. | Complete for non-AI features |
 | MongoDB            | Main application database. | 7 collections (users, projects, sprints, tasks, comments, activities, notifications) |
-| FastAPI AI service | Stateless AI operations (generation, recommendation, prediction). Does not access MongoDB directly. | Not created |
+| FastAPI AI service | Stateless AI operations (generation, recommendation, prediction). Does not access MongoDB directly. | Implemented: health, AI-01 (TASK 20–22) |
 
 ## 3. Communication rules
 
@@ -68,7 +68,7 @@ frontend/src/app/
 └── layouts/
 ```
 
-Implemented (TASK 12–19):
+Implemented (TASK 12–19, 22):
 
 ```
 frontend/
@@ -80,7 +80,7 @@ frontend/
 │   │   │   ├── http/api-error.interceptor.ts  HttpErrorResponse → ApiError + global toast
 │   │   │   ├── http/action-error.ts        message of a failed user action (null when already reported globally)
 │   │   │   ├── models/                     api-error, pagination, user, project, sprint, task, comment, activity
-│   │   │   │                               (+ describeActivity), notification, dashboard, system-status
+│   │   │   │                               (+ describeActivity), notification, dashboard, system-status, ai-plan
 │   │   │   ├── routing/app-title.strategy.ts  "<page> · Smart Project Manager"
 │   │   │   └── services/                   health, toast (snack bar loaded on demand), notification (unread count)
 │   │   ├── shared/components/              loading-state, error-state, confirm-dialog (+ ConfirmService),
@@ -108,6 +108,7 @@ frontend/
 │   │   │   ├── dashboard/                  dashboard-page, project-dashboard (tab), task-charts, workload-table,
 │   │   │   │                               active-sprint-card (DashboardService, also used by the search)
 │   │   │   ├── search/                     search-page
+│   │   │   ├── ai-plan/                    ai-plan-page ("Plan with AI", child route of the project shell) (AiPlanService)
 │   │   │   └── not-found/                  404 page
 │   │   ├── app.config.ts                   providers (router + input binding, HttpClient + interceptors, title, icons)
 │   │   ├── app.routes.ts                   lazy-loaded routes inside MainLayout; project tabs are child routes
@@ -182,11 +183,12 @@ Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayou
 
 #### Project page: shell and tabs (TASK 16–19)
 
-`/projects/:id` is a **shell** (`ProjectShell`: header with name, status and the manager's actions, read-only banner when archived, tab bar) whose tabs are **child routes**: `''` Overview, `sprints`, `tasks`, `tasks/:taskId` (task page), `board`, `activity`, `dashboard`. The shell provides a `ProjectContext` (current project, `isManager`, `isArchived`, `canEdit`, active members, `canChangeStatus(task)`) injected by every tab, so the project is loaded once and the permissions are computed in one place.
+`/projects/:id` is a **shell** (`ProjectShell`: header with name, status and the manager's actions, read-only banner when archived, tab bar) whose tabs are **child routes**: `''` Overview, `sprints`, `tasks`, `tasks/:taskId` (task page), `board`, `activity`, `dashboard`, and `ai-plan` ("Plan with AI", opened from the Sprints tab, no tab of its own). The shell provides a `ProjectContext` (current project, `isManager`, `isArchived`, `canEdit`, active members, `canChangeStatus(task)`) injected by every tab, so the project is loaded once and the permissions are computed in one place.
 
 | Screen | Who / rules (mirroring the backend) | Content | API used |
 |--------|-------------------------------------|---------|----------|
 | Sprints tab | viewers; the manager creates, edits (open sprints), starts, completes, cancels (confirmations), deletes (PLANNED only) | Sprints in chronological order: dates, objective, progress in story points, task counts (done, blocked); links to the tasks and the board of the sprint | `GET /projects/:id/sprints`, `POST`, `PATCH /sprints/:id`, `PATCH /sprints/:id/status`, `DELETE /sprints/:id` |
+| Plan with AI (`ai-plan`, TASK 22) | manager of a non-archived project (others see a message) | **Step 1**: specification textarea + file (`.txt .md .pdf .docx`, 5 MB, checked before upload), first sprint date (empty = automatic), sprint length, capacity in story points; the analyzer in use ("OpenAI <model>" — the document is sent to OpenAI — or "local") from `GET /ai/status`; spinner up to 90 s; errors shown on the page with the input kept. **Step 2 (review)**: method, stats, warnings; one card per sprint (editable name, dates, objective; points vs capacity), then the backlog; each task can be edited (title, description, type, priority, story points, skills), moved to another sprint or the backlog, or deleted; sprints can be removed (tasks → backlog) or added; "Apply the plan" validates, creates, shows a toast and opens the Sprints tab; "Back" keeps the input | `GET /ai/status`, `POST /projects/:id/ai/plan` (multipart), `POST /projects/:id/ai/plan/apply` |
 | Sprint form (dialog) | manager | Name, objective, start date (today) and end date (two weeks by default, ≥ start) | `POST /projects/:id/sprints`, `PATCH /sprints/:id` |
 | Tasks tab | viewers; the manager creates | Filters: title search (debounced), status, priority, type, assignee (or unassigned), sprint (or backlog), overdue; paginated table (status and priority badges, points, assignee, sprint, deadline / overdue); `?sprint=<id>` opens it filtered | `GET /projects/:id/tasks` |
 | Task form (dialog) | manager | Title, description, type, priority, complexity (1, 2, 3, 5, 8, 13 points), sprint (open sprints or backlog), deadline, required skills (chips), assignee (creation only: active members) | `POST /projects/:id/tasks`, `PATCH /tasks/:id` |
@@ -194,7 +196,7 @@ Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayou
 | Board tab (Kanban) | viewers; moves: manager and assignee | Six columns (To do → Done + Blocked) with counts; cards: title, priority, points, deadline / overdue, blocked reason, assignee; "Move to" menu per card; scope: active sprint by default, `?sprint=`, another sprint, the backlog or all tasks | `GET /projects/:id/board`, `PATCH /tasks/:id/status` |
 | My tasks (`/my-tasks`, developers' menu) | the signed-in user | Assigned tasks, nearest deadline first, status filter, links to the task pages | `GET /tasks/assigned` |
 | Comments (task page) | manager and members comment (not administrators); the author edits; the author or the manager deletes (moderation); nothing in an archived project | Oldest first with "Show more", edited marker, inline edition | `GET` / `POST /tasks/:id/comments`, `PATCH` / `DELETE /comments/:id` |
-| History (task page) and Activity tab | viewers | Timeline "<actor> <what happened>" built by `describeActivity()` (16 event types, labels instead of codes); filter by event type on the project | `GET /tasks/:id/activities`, `GET /projects/:id/activities` |
+| History (task page) and Activity tab | viewers | Timeline "<actor> <what happened>" built by `describeActivity()` (17 event types, labels instead of codes); filter by event type on the project | `GET /tasks/:id/activities`, `GET /projects/:id/activities` |
 | Notifications (`/notifications`) and toolbar bell | the signed-in user | Badge with the unread count, refreshed every 60 s (silently) and after each change; list with unread ones highlighted, "Unread only", open = mark as read + go to the task or project, "Mark all as read", delete | `GET /notifications`, `/notifications/unread-count`, `PATCH …/read`, `PATCH /notifications/read-all`, `DELETE /notifications/:id` |
 | Dashboard (`/dashboard`) | everyone (the backend adapts the content to the role) | Key figures, tasks by status and by priority (charts + values), active sprints (progress, days left / late), team workload (managers, administrators), my tasks (developers), accounts by role (administrators) | `GET /dashboard` |
 | Dashboard tab | viewers | Deadline (days left), team size, task figures and charts, sprints by status, active sprint, workload of every member | `GET /projects/:id/dashboard` |
@@ -230,7 +232,7 @@ backend/src/
 └── app.js
 ```
 
-Implemented (TASK 02–11):
+Implemented (TASK 02–11, 21–22):
 
 ```
 backend/
@@ -249,11 +251,14 @@ backend/
 │   │   ├── comment.controller.js task comments
 │   │   ├── activity.controller.js project / task history
 │   │   ├── notification.controller.js own notifications
-│   │   └── dashboard.controller.js dashboards & global search
+│   │   ├── dashboard.controller.js dashboards & global search
+│   │   ├── ai.controller.js     AI status
+│   │   └── aiPlan.controller.js AI-01: load the managed project, generate, apply
 │   ├── middleware/
 │   │   ├── authenticate.js      verifies the Bearer JWT, loads req.user from MongoDB
 │   │   ├── authorize.js         authorize(...roles) → 403 if role not allowed
 │   │   ├── validate.js          runs express-validator rules → 400 with field details
+│   │   ├── upload.js            multer: one specification file in memory (5 MB, .txt .md .pdf .docx) → 413 / 415
 │   │   ├── notFound.js          unknown route → 404 ApiError
 │   │   └── errorHandler.js      centralized error → JSON response mapping
 │   ├── models/
@@ -277,7 +282,8 @@ backend/
 │   │   ├── task.routes.js       /tasks/assigned, /tasks/:id (+ /comments, /activities)
 │   │   ├── comment.routes.js    /comments/:id
 │   │   ├── notification.routes.js /notifications
-│   │   └── dashboard.routes.js  /dashboard, /search (+ /projects/:id/dashboard in project.routes)
+│   │   ├── dashboard.routes.js  /dashboard, /search (+ /projects/:id/dashboard in project.routes)
+│   │   └── ai.routes.js         /ai/status (+ /projects/:id/ai/plan[/apply] in project.routes)
 │   ├── scripts/
 │   │   └── createAdmin.js       CLI: npm run create-admin
 │   ├── services/
@@ -294,7 +300,9 @@ backend/
 │   │   ├── activity.service.js  record() + listeners, history queries
 │   │   ├── notification.service.js activity → notifications, inbox operations
 │   │   ├── dashboard.service.js indicators (aggregations), workload, platform figures
-│   │   └── search.service.js    global search in visible projects
+│   │   ├── search.service.js    global search in visible projects
+│   │   ├── aiClient.service.js  HTTP client of the AI service (token header, timeout, 503/504/400/502 mapping, status)
+│   │   └── aiPlan.service.js    AI-01: extract + plan, strict validation of the AI answer, all-or-nothing creation
 │   ├── validators/
 │   │   ├── auth.validator.js    register & login rules
 │   │   ├── user.validator.js    list filters, status & role update rules
@@ -305,6 +313,7 @@ backend/
 │   │   ├── comment.validator.js comment & activity rules
 │   │   ├── notification.validator.js notification rules
 │   │   ├── dashboard.validator.js project dashboard & search rules
+│   │   ├── aiPlan.validator.js  AI-01 rules and PLAN_LIMITS (options, reviewed plan)
 │   │   ├── common.validator.js  reusable rules (ids, pagination, text, dates, string lists)
 │   │   └── password.policy.js   password rules shared by registration and admin bootstrap
 │   ├── utils/
@@ -384,16 +393,40 @@ Services call `activityService.record({ project, actor, type, task, sprint, targ
 
 ### 5.3 AI service (FastAPI)
 
+Implemented (TASK 20–22), Python 3.11+ (developed with 3.12 and 3.14):
+
 ```
-ai-service/app/
-├── routes/     API endpoints
-├── services/   AI logic
-├── schemas/    Pydantic request/response models
-├── models/     persisted ML models
-├── ml/         training code
-├── prompts/    LLM prompts
-└── main.py
+ai-service/
+├── app/
+│   ├── main.py                  create_app(): settings check, error handlers, routers
+│   ├── config.py                Settings (pydantic-settings, ai-service/.env): token, OpenAI, limits
+│   ├── security.py              X-AI-Service-Token check (constant-time) → 401
+│   ├── errors.py                ApiError + handlers: same error format as the backend
+│   ├── routes/
+│   │   ├── health.py            GET /api/v1/health (public)
+│   │   └── planning.py          POST /api/v1/ai/documents/extract, POST /api/v1/ai/projects/plan
+│   ├── schemas/                 Pydantic models: common (enums, limits), health, documents, planning, llm
+│   ├── services/
+│   │   ├── text_extraction.py   .txt/.md/.pdf/.docx → text with Markdown-like structure
+│   │   ├── planning_service.py  hybrid analysis (OpenAI, else / on failure local) + sprint planning
+│   │   ├── llm_client.py        OpenAI Chat Completions, structured outputs, errors → LlmError
+│   │   ├── requirement_parser.py local analyzer 1: requirements, epics, explicit metadata
+│   │   ├── task_enricher.py     local analyzer 2: type (ML), priority, story points, skills
+│   │   └── sprint_planner.py    deterministic split into sprints (capacity, priority, ≤ 20 sprints)
+│   ├── prompts/project_plan.py  AI-01 system prompt, user prompt, JSON schema (docs/prompts.md Part B)
+│   └── ml/
+│       ├── data/task_types.csv  155 labelled FR/EN sentences (synthetic dataset)
+│       ├── lexicon.py           cue stems per task type, stop words
+│       ├── text_classifier.py   multinomial Naive Bayes in pure Python + cross-validation
+│       ├── task_type_model.py   train / evaluate / save / load (python -m app.ml.task_type_model)
+│       └── models/              task_type.json (generated, git-ignored)
+├── tests/                       pytest (in-memory documents, mocked OpenAI)
+├── requirements.txt, requirements-dev.txt, pytest.ini, .flake8, .env.example
 ```
+
+- **Stateless**: the service never reads or writes MongoDB; the backend sends the data it needs and stores the result.
+- **Blocking work off the event loop**: PDF / Word parsing runs in a thread pool; the plan route is a sync endpoint (FastAPI runs it in a worker thread).
+- Details of the AI-01 approach: [ai.md](ai.md) § 4.1.
 
 ## 6. Security architecture
 
@@ -420,3 +453,8 @@ ai-service/app/
 | Profile endpoints only act on the token's own user (no user id in the URL → no IDOR) | Implemented |
 | Validation of array items without `bail()` (express-validator wildcard quirk) + same rules enforced again by the Mongoose schema | Implemented |
 | Token revocation on logout (logout = client discards token) | Not implemented (stateless JWT; future improvement) |
+| AI service reachable only with the shared secret `X-AI-Service-Token` (constant-time comparison); never called by the browser | Implemented (TASK 20–21) |
+| AI answers validated twice (Pydantic in the AI service, strict contract check in the backend → 502) and reviewed by the manager before anything is stored | Implemented (TASK 22) |
+| Uploaded specification: one file, 5 MB, extension whitelist, kept in memory only, read only after the project-manager check | Implemented (TASK 22) |
+| Prompt injection mitigation: document between markers declared untrusted, markers neutralised, strict JSON schema, output never executed | Implemented (TASK 22) |
+| OpenAI key only in `ai-service/.env`, never logged or returned | Implemented (TASK 20–22) |

@@ -18,6 +18,7 @@ const ICONS: Partial<Record<ActivityType, string>> = {
   TASK_DELETED: 'delete',
   SPRINT_DELETED: 'delete',
   COMMENT_ADDED: 'comment',
+  AI_PLAN_APPLIED: 'auto_awesome',
 };
 
 /** Timeline of activity entries: "<actor> <what happened> — <date>". */

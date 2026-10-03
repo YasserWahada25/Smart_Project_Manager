@@ -86,7 +86,9 @@ describe('HealthService', () => {
     expect(status).toEqual(body);
 
     service.checkAi().subscribe({ error: () => undefined });
-    httpTesting.expectOne('/api/v1/ai/status').flush('Bad gateway', { status: 502, statusText: 'Bad Gateway' });
+    httpTesting
+      .expectOne('/api/v1/ai/status')
+      .flush('Bad gateway', { status: 502, statusText: 'Bad Gateway' });
     expect(toastError).not.toHaveBeenCalled();
   });
 });

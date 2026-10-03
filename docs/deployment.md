@@ -1,6 +1,6 @@
 # Deployment
 
-> Current state: **the backend runs locally** (requires MongoDB). Nothing is containerized yet.
+> Current state: **the frontend, the backend and the AI service run locally** (the backend requires MongoDB). Nothing is containerized yet.
 > Dockerfiles and `docker-compose.yml` are added in a dedicated task.
 
 ## 1. Services and default ports
@@ -9,7 +9,7 @@
 |---------|--------------|--------|
 | Angular frontend | 4200 (dev server) | Runs locally (`npm start`) |
 | Express.js backend | 3000 | Runs locally |
-| FastAPI AI service | 8000 | Not created |
+| FastAPI AI service | 8000 | Runs locally (`uvicorn`) |
 | MongoDB | 27017 | External (local install or Docker) |
 
 ## 2. Environment variables
@@ -41,12 +41,29 @@ Read only by `npm run create-admin`:
 | `ADMIN_FIRST_NAME` | No | `Platform` | |
 | `ADMIN_LAST_NAME` | No | `Administrator` | |
 
-### 2.2 Planned variables
+AI service connection (TASK 21):
 
-| Variable | Used by | Description |
-|----------|---------|-------------|
-| `AI_SERVICE_URL` | Backend | Base URL of the AI service — AI integration task |
-| `AI_SERVICE_PORT` | AI service | HTTP port of the FastAPI service — AI service task |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AI_SERVICE_URL` | No | `http://localhost:8000` | Base URL of the AI service |
+| `AI_SERVICE_TOKEN` | For the AI features | — | Shared secret sent as `X-AI-Service-Token`; **same value** as in `ai-service/.env`, at least 32 characters. Without it, `GET /ai/status` reports `NOT_CONFIGURED` and AI calls return 503 |
+| `AI_TIMEOUT_MS` | No | `90000` | Timeout of an AI call, integer 1 000–300 000 (validated at startup) |
+
+### 2.2 AI service — [`ai-service/.env.example`](../ai-service/.env.example)
+
+Loaded by `ai-service/app/config.py` (pydantic-settings) from `ai-service/.env`; the service refuses to start on an invalid value.
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AI_SERVICE_TOKEN` | **Yes** | — | Same value as in `backend/.env`, at least 32 characters. Generate: `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `OPENAI_API_KEY` | No | empty | OpenAI key. **Empty = local analyzer only** (no data sent to OpenAI). Set by the supervisor only, never committed |
+| `OPENAI_MODEL` | No | `gpt-4o-mini` | Any chat model of the account that supports structured outputs |
+| `OPENAI_BASE_URL` | No | `https://api.openai.com/v1` | OpenAI-compatible endpoint |
+| `LLM_TIMEOUT_SECONDS` | No | `60` | Timeout of the OpenAI call (> 0, ≤ 300); keep it below the backend `AI_TIMEOUT_MS` |
+| `LLM_MAX_DOCUMENT_CHARS` | No | `30000` | Longer documents are cut before being sent to OpenAI (1 000–200 000) |
+| `MAX_UPLOAD_BYTES` | No | `5242880` | Largest specification file (5 MB) |
+| `MAX_DOCUMENT_CHARS` | No | `100000` | Text extracted from a file is cut beyond this length |
+| `LOG_LEVEL` | No | `INFO` | Python logging level |
 
 The root [`.env.example`](../.env.example) gathers the variables for the future Docker Compose setup.
 
@@ -104,9 +121,33 @@ Startup failures (the process logs `Failed to start backend: <reason>` and exits
 | `BCRYPT_SALT_ROUNDS` out of range | `BCRYPT_SALT_ROUNDS must be an integer between 4 and 15` | Immediately |
 | MongoDB unreachable | e.g. `connect ECONNREFUSED 127.0.0.1:27017` | After ~10 s (server selection timeout) |
 
-### 3.3 Frontend
+### 3.3 AI service (FastAPI)
 
-Prerequisites: Node.js 20.19+ (developed with 24), the backend running on port 3000.
+Prerequisites: Python 3.11+ (developed with 3.14.8 and checked with 3.12.5).
+
+```bash
+cd ai-service
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r requirements-dev.txt   # Windows (Linux/macOS: .venv/bin/python)
+cp .env.example .env              # set AI_SERVICE_TOKEN (same value in backend/.env); OPENAI_API_KEY optional
+.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000
+```
+
+`requirements-dev.txt` includes `requirements.txt` plus pytest and flake8 (runtime only: `pip install -r requirements.txt`).
+
+Verify: `curl http://localhost:8000/api/v1/health` → `{"status":"ok","service":"smart-project-manager-ai","llm":{"provider":"openai","configured":false,"model":null}}` (`configured: true` when a key is set). Then, signed in to the application, the home page shows "AI service · Python + FastAPI · local analyzer (no LLM key)" or "· OpenAI <model>". Swagger UI: `http://localhost:8000/docs`.
+
+| Command (from `ai-service/`) | Purpose |
+|---|---|
+| `.venv/Scripts/python.exe -m pytest -q` | Tests (if the system temp folder is not writable, add `--basetemp <folder>`) |
+| `.venv/Scripts/python.exe -m flake8 app tests` | Lint (flake8 is used because `ruff`'s binary was blocked by Windows application control on the development machine) |
+| `.venv/Scripts/python.exe -m app.ml.task_type_model` | Re-train the task type classifier and print its cross-validation metrics (also done automatically when `app/ml/models/task_type.json` is missing or outdated) |
+
+The model file is generated and git-ignored; no Internet access is needed when `OPENAI_API_KEY` is empty.
+
+### 3.4 Frontend
+
+Prerequisites: **Node.js 22.22.3+ or 24.15+** (Angular CLI 22 refuses older versions: "The Angular CLI requires a minimum Node.js version of v22.22.3 or v24.15.0"; developed with 24), the backend running on port 3000.
 
 ```bash
 cd frontend

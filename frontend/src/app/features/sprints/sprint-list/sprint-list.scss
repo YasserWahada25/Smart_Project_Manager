@@ -11,6 +11,12 @@
   }
 }
 
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .sprints {
   display: flex;
   flex-direction: column;

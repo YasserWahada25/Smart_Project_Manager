@@ -46,6 +46,18 @@ describe('describeActivity', () => {
     ],
     [{ type: 'TASK_DELETED', details: { title: 'Cart' } }, 'deleted the task «Cart»'],
     [{ type: 'COMMENT_ADDED', details: { title: 'Login' } }, 'commented on «Login»'],
+    [
+      { type: 'AI_PLAN_APPLIED', details: { sprints: 3, tasks: 12, method: 'local' } },
+      'created 12 tasks in 3 sprints with the AI planner',
+    ],
+    [
+      { type: 'AI_PLAN_APPLIED', details: { sprints: 1, tasks: 1, method: 'llm' } },
+      'created 1 task in 1 sprint with the AI planner',
+    ],
+    [
+      { type: 'AI_PLAN_APPLIED', details: { sprints: 0, tasks: 4, method: null } },
+      'created 4 tasks in the backlog with the AI planner',
+    ],
   ])('%o → "%s"', (overrides, expected) => {
     expect(describeActivity(activity(overrides))).toBe(expected);
   });

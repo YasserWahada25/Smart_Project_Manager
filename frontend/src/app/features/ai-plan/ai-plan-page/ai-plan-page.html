@@ -1,0 +1,376 @@
+<a mat-button routerLink="../sprints" class="back">
+  <mat-icon>arrow_back</mat-icon>
+  Sprints
+</a>
+
+<h2 class="page-title">
+  <mat-icon aria-hidden="true">auto_awesome</mat-icon>
+  Plan with AI
+</h2>
+
+@if (!canEdit()) {
+  <p class="notice" role="status">
+    Only the project manager can plan an active project with the AI.
+  </p>
+} @else if (generating()) {
+  <app-loading-state
+    message="Analysing the specification and preparing the sprints… This can take up to 90 seconds."
+  />
+} @else if (review(); as reviewForm) {
+  @let current = plan()!;
+  <!-- ---------- step 2: review ---------- -->
+  <section class="summary" aria-label="Proposed plan">
+    <p class="method">
+      @if (current.method === 'llm') {
+        Proposed by <strong>OpenAI</strong> ({{ current.model }}).
+      } @else {
+        Proposed by the <strong>local analyzer</strong> (rules + Naive Bayes classifier).
+      }
+      Nothing is created until you apply the plan: edit, move or delete the tasks first.
+    </p>
+    <p class="stats">
+      {{ current.stats.taskCount }} {{ current.stats.taskCount === 1 ? 'task' : 'tasks' }} ·
+      {{ current.stats.sprintCount }} {{ current.stats.sprintCount === 1 ? 'sprint' : 'sprints' }} ·
+      {{ current.stats.totalPoints }} points planned · {{ current.options.sprintLengthDays }}-day
+      sprints of {{ current.options.capacityPerSprint }} points
+      @if (current.source.filename) {
+        · from «{{ current.source.filename }}»
+      }
+    </p>
+    @if (current.warnings.length > 0) {
+      <ul class="warnings">
+        @for (warning of current.warnings; track $index) {
+          <li>
+            <mat-icon aria-hidden="true">warning</mat-icon>
+            <span>{{ warning }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <mat-menu #moveMenu="matMenu">
+    <ng-template matMenuContent let-task="task" let-from="from">
+      @for (target of lists(reviewForm); track target.tasks) {
+        @if (target.tasks !== from) {
+          <button mat-menu-item type="button" (click)="moveTask(task, from, target.tasks)">
+            {{ target.label }}
+          </button>
+        }
+      }
+    </ng-template>
+  </mat-menu>
+
+  <div class="lists">
+    @for (list of lists(reviewForm); track list.tasks) {
+      <mat-card appearance="outlined" class="list" [class.backlog]="!list.sprint">
+        <mat-card-content>
+          @if (list.sprint; as sprint) {
+            <div class="list-header" [formGroup]="sprint">
+              <div class="row">
+                <mat-form-field appearance="outline" class="name">
+                  <mat-label>Sprint name</mat-label>
+                  <input matInput formControlName="name" />
+                  @if (sprint.controls.name.invalid) {
+                    <mat-error>{{ sprintError(sprint, 'name') }}</mat-error>
+                  }
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Start date</mat-label>
+                  <input matInput type="date" formControlName="startDate" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>End date</mat-label>
+                  <input matInput type="date" formControlName="endDate" />
+                  @if (sprint.controls.endDate.invalid) {
+                    <mat-error>{{ sprintError(sprint, 'endDate') }}</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Objective</mat-label>
+                <textarea matInput formControlName="objective" rows="2"></textarea>
+                @if (sprint.controls.objective.invalid) {
+                  <mat-error>{{ sprintError(sprint, 'objective') }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
+          } @else {
+            <h3 class="backlog-title">Backlog</h3>
+            <p class="hint">Tasks kept for later: created without a sprint.</p>
+          }
+
+          <p class="list-meta">
+            {{ list.tasks.length }} {{ list.tasks.length === 1 ? 'task' : 'tasks' }} ·
+            <span
+              [class.over]="list.sprint && points(list.tasks) > current.options.capacityPerSprint"
+            >
+              {{ points(list.tasks) }}
+              @if (list.sprint) {
+                / {{ current.options.capacityPerSprint }}
+              }
+              points
+            </span>
+            @if (list.sprint) {
+              <span class="spacer"></span>
+              <button
+                mat-button
+                type="button"
+                [attr.aria-label]="'Remove ' + list.label"
+                (click)="removeSprint(reviewForm, list.index)"
+              >
+                <mat-icon>delete_sweep</mat-icon>
+                Remove the sprint
+              </button>
+            }
+          </p>
+
+          <ul class="tasks">
+            @for (task of list.tasks.controls; track task) {
+              <li class="task" [class.invalid]="task.invalid">
+                <div class="task-summary">
+                  <div class="task-text">
+                    <span class="task-title">{{ task.controls.title.value || '(no title)' }}</span>
+                    <span class="task-meta">
+                      {{ typeLabels[task.controls.type.value] }} ·
+                      {{ priorityLabels[task.controls.priority.value] }} ·
+                      {{ task.controls.complexity.value }}
+                      {{ task.controls.complexity.value === 1 ? 'point' : 'points' }}
+                      @if (task.controls.requiredSkills.value.length > 0) {
+                        · {{ task.controls.requiredSkills.value.join(', ') }}
+                      }
+                      @if (task.controls.epic.value) {
+                        · <em>{{ task.controls.epic.value }}</em>
+                      }
+                    </span>
+                  </div>
+                  <button
+                    mat-icon-button
+                    type="button"
+                    [attr.aria-label]="'Edit ' + task.controls.title.value"
+                    [attr.aria-expanded]="isExpanded(task)"
+                    (click)="toggle(task)"
+                  >
+                    <mat-icon>{{ isExpanded(task) ? 'expand_less' : 'edit' }}</mat-icon>
+                  </button>
+                  <button
+                    mat-icon-button
+                    type="button"
+                    [attr.aria-label]="'Move ' + task.controls.title.value"
+                    [matMenuTriggerFor]="moveMenu"
+                    [matMenuTriggerData]="{ task, from: list.tasks }"
+                  >
+                    <mat-icon>drive_file_move</mat-icon>
+                  </button>
+                  <button
+                    mat-icon-button
+                    type="button"
+                    [attr.aria-label]="'Delete ' + task.controls.title.value"
+                    (click)="deleteTask(task, list.tasks)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+
+                @if (isExpanded(task)) {
+                  <div class="task-editor" [formGroup]="task">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Title</mat-label>
+                      <input matInput formControlName="title" />
+                      @if (task.controls.title.invalid) {
+                        <mat-error>{{ taskError(task, 'title') }}</mat-error>
+                      }
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Description</mat-label>
+                      <textarea matInput formControlName="description" rows="3"></textarea>
+                      @if (task.controls.description.invalid) {
+                        <mat-error>{{ taskError(task, 'description') }}</mat-error>
+                      }
+                    </mat-form-field>
+                    <div class="row">
+                      <mat-form-field appearance="outline">
+                        <mat-label>Type</mat-label>
+                        <mat-select formControlName="type">
+                          @for (type of types; track type) {
+                            <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="outline">
+                        <mat-label>Priority</mat-label>
+                        <mat-select formControlName="priority">
+                          @for (priority of priorities; track priority) {
+                            <mat-option [value]="priority">{{
+                              priorityLabels[priority]
+                            }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="outline">
+                        <mat-label>Complexity</mat-label>
+                        <mat-select formControlName="complexity">
+                          @for (points of storyPoints; track points) {
+                            <mat-option [value]="points">{{ points }}</mat-option>
+                          }
+                        </mat-select>
+                        <mat-hint>Story points</mat-hint>
+                      </mat-form-field>
+                    </div>
+                    <app-tag-input
+                      label="Required skills"
+                      placeholder="Add a skill…"
+                      itemName="skill"
+                      [control]="task.controls.requiredSkills"
+                      [maxItems]="taskLimits.maxRequiredSkills"
+                      [maxLength]="taskLimits.skillMaxLength"
+                    />
+                  </div>
+                }
+              </li>
+            } @empty {
+              <li class="empty">No task.</li>
+            }
+          </ul>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  @if (reviewError(); as message) {
+    <p class="form-error" role="alert">{{ message }}</p>
+  }
+
+  <div class="footer">
+    <button mat-button type="button" [disabled]="applying()" (click)="back()">
+      <mat-icon>arrow_back</mat-icon>
+      Back
+    </button>
+    @if (reviewForm.controls.sprints.length < limits.maxSprints) {
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="applying()"
+        (click)="addSprint(reviewForm)"
+      >
+        <mat-icon>add</mat-icon>
+        Add a sprint
+      </button>
+    }
+    <span class="spacer"></span>
+    <button mat-flat-button type="button" [disabled]="applying()" (click)="apply(reviewForm)">
+      <mat-icon>check</mat-icon>
+      Apply the plan ({{ taskCount(reviewForm) }}
+      {{ taskCount(reviewForm) === 1 ? 'task' : 'tasks' }},
+      {{ reviewForm.controls.sprints.length }}
+      {{ reviewForm.controls.sprints.length === 1 ? 'sprint' : 'sprints' }})
+    </button>
+  </div>
+} @else {
+  <!-- ---------- step 1: specification ---------- -->
+  <p class="intro">
+    Paste the specification (cahier des charges, user stories, backlog…) and/or attach a file. The
+    AI proposes sprints and tasks (type, priority, story points, skills); you review them before
+    anything is created.
+  </p>
+
+  <p class="analyzer" role="status">
+    <mat-icon aria-hidden="true">{{
+      aiStatus()?.available === false ? 'cloud_off' : 'memory'
+    }}</mat-icon>
+    <span>
+      @if (aiStatus(); as status) {
+        @if (!status.available) {
+          The AI service is not available
+          {{ status.reason === 'NOT_CONFIGURED' ? '(not configured)' : '(not running)' }}: the plan
+          cannot be generated for now.
+        } @else if (status.llm?.configured) {
+          Analyzer: <strong>OpenAI {{ status.llm?.model }}</strong
+          >. The specification is sent to OpenAI to be analysed; the local analyzer takes over if
+          OpenAI fails.
+        } @else {
+          Analyzer: <strong>local</strong> (rules + Naive Bayes classifier). The specification does
+          not leave your servers.
+        }
+      } @else {
+        Checking the AI service…
+      }
+    </span>
+  </p>
+
+  <form [formGroup]="inputForm" (ngSubmit)="generate()" novalidate>
+    @if (inputError(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Specification</mat-label>
+      <textarea
+        matInput
+        formControlName="text"
+        rows="12"
+        placeholder="# Authentication&#10;- As a customer, I want to sign in with my email…"
+      ></textarea>
+      <mat-hint>Headings become epics; lists, user stories and tables become tasks.</mat-hint>
+      @if (inputForm.controls.text.invalid) {
+        <mat-error>{{ textError() }}</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="file">
+      <input
+        #fileInput
+        type="file"
+        hidden
+        aria-label="Specification file"
+        [accept]="accept"
+        (change)="selectFile($event)"
+      />
+      <button mat-stroked-button type="button" (click)="fileInput.click()">
+        <mat-icon>attach_file</mat-icon>
+        Attach a file
+      </button>
+      @if (file(); as selected) {
+        <span class="file-name">{{ selected.name }}</span>
+        <button mat-icon-button type="button" aria-label="Remove the file" (click)="removeFile()">
+          <mat-icon>close</mat-icon>
+        </button>
+      } @else {
+        <span class="hint">.txt, .md, .pdf or .docx — 5 MB max</span>
+      }
+    </div>
+    @if (fileError(); as message) {
+      <p class="file-error" role="alert">{{ message }}</p>
+    }
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>First sprint starts on</mat-label>
+        <input matInput type="date" formControlName="startDate" />
+        <mat-hint>Empty: today, or after the last sprint</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Sprint length (days)</mat-label>
+        <input matInput type="number" formControlName="sprintLengthDays" />
+        @if (inputForm.controls.sprintLengthDays.invalid) {
+          <mat-error>{{ numberError('sprintLengthDays') }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Capacity per sprint (points)</mat-label>
+        <input matInput type="number" formControlName="capacityPerSprint" />
+        @if (inputForm.controls.capacityPerSprint.invalid) {
+          <mat-error>{{ numberError('capacityPerSprint') }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="footer">
+      <span class="spacer"></span>
+      <button mat-flat-button type="submit" [disabled]="aiStatus()?.available === false">
+        <mat-icon>auto_awesome</mat-icon>
+        Generate the plan
+      </button>
+    </div>
+  </form>
+}

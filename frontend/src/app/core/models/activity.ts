@@ -20,7 +20,8 @@ export type ActivityType =
   | 'TASK_UNASSIGNED'
   | 'TASK_STATUS_CHANGED'
   | 'TASK_DELETED'
-  | 'COMMENT_ADDED';
+  | 'COMMENT_ADDED'
+  | 'AI_PLAN_APPLIED';
 
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   PROJECT_CREATED: 'Project created',
@@ -39,6 +40,7 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   TASK_STATUS_CHANGED: 'Task status changed',
   TASK_DELETED: 'Task deleted',
   COMMENT_ADDED: 'Comment added',
+  AI_PLAN_APPLIED: 'AI plan applied',
 };
 
 interface PersonRef {
@@ -54,6 +56,10 @@ export interface ActivityDetails {
   from?: string;
   to?: string;
   fields?: string[];
+  /** AI_PLAN_APPLIED: sprints and tasks created, analyzer used (llm or local). */
+  sprints?: number;
+  tasks?: number;
+  method?: string | null;
 }
 
 export interface Activity {
@@ -74,6 +80,8 @@ function label<T extends string>(labels: Record<T, string>, value: string | unde
 }
 
 const person = (user: PersonRef | null | undefined) => (user ? fullName(user) : 'a former member');
+const count = (value: number | undefined, noun: string) =>
+  `${value ?? 0} ${value === 1 ? noun : `${noun}s`}`;
 const fieldList = (fields: string[] | undefined) =>
   fields && fields.length > 0 ? ` (${fields.join(', ')})` : '';
 
@@ -113,5 +121,9 @@ export function describeActivity(activity: Activity): string {
       return `deleted the task «${d.title}»`;
     case 'COMMENT_ADDED':
       return `commented on «${d.title}»`;
+    case 'AI_PLAN_APPLIED':
+      return d.sprints
+        ? `created ${count(d.tasks, 'task')} in ${count(d.sprints, 'sprint')} with the AI planner`
+        : `created ${count(d.tasks, 'task')} in the backlog with the AI planner`;
   }
 }
