@@ -73,7 +73,7 @@
   }
 
   <nav mat-tab-nav-bar class="tabs" aria-label="Project sections" [tabPanel]="tabPanel">
-    @for (tab of tabs; track tab.path) {
+    @for (tab of tabs(); track tab.path) {
       <a
         mat-tab-link
         [routerLink]="tab.path"

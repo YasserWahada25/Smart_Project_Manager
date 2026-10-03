@@ -113,6 +113,15 @@ export const routes: Routes = [
                 (m) => m.ProjectDashboard,
               ),
           },
+          // AI-04, manager only (the tab is hidden for the others; the page checks canEdit).
+          {
+            path: 'assistant',
+            title: 'Assistant',
+            loadComponent: () =>
+              import('./features/ai-assistant/assistant-page/assistant-page').then(
+                (m) => m.AssistantPage,
+              ),
+          },
           {
             path: 'tasks/:taskId',
             title: 'Task',

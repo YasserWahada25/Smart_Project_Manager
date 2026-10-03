@@ -53,15 +53,24 @@ describe('ProjectShell', () => {
   const moreMenu = () =>
     loader.getHarness(MatMenuHarness.with({ selector: '[aria-label="More actions"]' }));
 
-  it('shows the project name, its status and the tabs', async () => {
+  const tabs = () =>
+    [...element().querySelectorAll('[mat-tab-link]')].map((tab) => tab.textContent?.trim());
+
+  it('shows the project name, its status and the tabs (Assistant for the manager)', async () => {
     await render();
 
     expect(projectService.get).toHaveBeenCalledWith('p1');
     expect(element().querySelector('h1')?.textContent).toBe('E-commerce platform');
     expect(element().querySelector('.status')?.textContent?.trim()).toBe('Planning');
-    expect(
-      [...element().querySelectorAll('[mat-tab-link]')].map((tab) => tab.textContent?.trim()),
-    ).toEqual(['Overview', 'Sprints', 'Tasks', 'Board', 'Activity', 'Dashboard']);
+    expect(tabs()).toEqual([
+      'Overview',
+      'Sprints',
+      'Tasks',
+      'Board',
+      'Activity',
+      'Dashboard',
+      'Assistant',
+    ]);
   });
 
   it('gives the project manager the edit, status and deletion actions', async () => {
@@ -77,6 +86,7 @@ describe('ProjectShell', () => {
 
     expect(element().querySelector('a[href="/projects/p1/edit"]')).toBeNull();
     expect(buttonWithText('Change status')).toBeUndefined();
+    expect(tabs()).not.toContain('Assistant');
   });
 
   it('changes the status; archiving asks for confirmation and shows the read-only banner', async () => {

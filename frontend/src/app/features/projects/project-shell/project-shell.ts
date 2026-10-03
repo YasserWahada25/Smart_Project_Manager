@@ -35,6 +35,8 @@ interface ProjectTab {
   path: string;
   /** Exact match for the active state (the overview path is a prefix of the others). */
   exact: boolean;
+  /** Shown only to the manager of a project that is not archived. */
+  managerOnly?: boolean;
 }
 
 /** Sections of a project, each one a child route of /projects/:id. */
@@ -45,6 +47,7 @@ export const PROJECT_TABS: readonly ProjectTab[] = [
   { label: 'Board', path: 'board', exact: false },
   { label: 'Activity', path: 'activity', exact: false },
   { label: 'Dashboard', path: 'dashboard', exact: false },
+  { label: 'Assistant', path: 'assistant', exact: false, managerOnly: true },
 ];
 
 /**
@@ -80,7 +83,9 @@ export class ProjectShell {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly tabs = PROJECT_TABS;
+  protected readonly tabs = computed(() =>
+    PROJECT_TABS.filter((tab) => !tab.managerOnly || this.context.canEdit()),
+  );
   protected readonly statusLabels = PROJECT_STATUS_LABELS;
   protected readonly project = this.context.project;
   protected readonly isManager = this.context.isManager;

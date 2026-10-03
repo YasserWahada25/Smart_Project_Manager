@@ -1,0 +1,128 @@
+<div class="toolbar">
+  <h2>
+    <mat-icon aria-hidden="true">forum</mat-icon>
+    Assistant
+  </h2>
+  @if (entries().length > 0) {
+    <button mat-button type="button" [disabled]="thinking()" (click)="clear()">
+      <mat-icon>restart_alt</mat-icon>
+      New conversation
+    </button>
+  }
+</div>
+
+@if (!canEdit()) {
+  <p class="notice" role="status">
+    The assistant is available to the manager of an active project.
+  </p>
+} @else {
+  <p class="intro">
+    Ask about the project (progress, late or blocked tasks, workload, sprint risk) or ask for
+    changes. The assistant reads the project data; every change it prepares is shown below its
+    answer and applied only when you click <strong>Confirm</strong>. It never deletes anything.
+  </p>
+
+  @if (!available()) {
+    <p class="notice warning" role="status">
+      <mat-icon aria-hidden="true">key_off</mat-icon>
+      <span>{{ unavailableMessage() }}</span>
+    </p>
+  }
+
+  <section class="conversation" aria-label="Conversation" aria-live="polite">
+    @for (entry of entries(); track $index) {
+      <article class="message" [class.user]="entry.role === 'user'">
+        <span class="author">{{ entry.role === 'user' ? 'You' : 'Assistant' }}</span>
+        <p class="content">{{ entry.content }}</p>
+        @if (entry.proposals.length > 0) {
+          <ul class="proposals" aria-label="Proposed changes">
+            @for (view of entry.proposals; track view.proposal.id) {
+              <li class="proposal" [attr.data-state]="view.state">
+                <mat-icon aria-hidden="true">edit_note</mat-icon>
+                <div class="proposal-text">
+                  <span>{{ view.proposal.summary }}</span>
+                  @switch (view.state) {
+                    @case ('applied') {
+                      <span class="outcome done">Applied — {{ view.result }}</span>
+                    }
+                    @case ('dismissed') {
+                      <span class="outcome">Dismissed</span>
+                    }
+                    @case ('failed') {
+                      <span class="outcome failed">Not applied — {{ view.result }}</span>
+                    }
+                  }
+                </div>
+                @if (view.state === 'pending' || view.state === 'applying') {
+                  <div class="proposal-actions">
+                    <button
+                      mat-flat-button
+                      type="button"
+                      [disabled]="view.state === 'applying'"
+                      [attr.aria-label]="'Confirm: ' + view.proposal.summary"
+                      (click)="confirm(view)"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      mat-button
+                      type="button"
+                      [disabled]="view.state === 'applying'"
+                      [attr.aria-label]="'Dismiss: ' + view.proposal.summary"
+                      (click)="dismiss(view)"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </article>
+    } @empty {
+      @if (available()) {
+        <div class="suggestions">
+          <span class="hint">Try:</span>
+          @for (suggestion of suggestions; track suggestion) {
+            <button mat-stroked-button type="button" (click)="ask(suggestion)">
+              {{ suggestion }}
+            </button>
+          }
+        </div>
+      }
+    }
+    @if (thinking()) {
+      <div class="thinking" role="status">
+        <mat-progress-bar mode="indeterminate" aria-label="The assistant is thinking" />
+        <span class="hint">The assistant is reading the project…</span>
+      </div>
+    }
+  </section>
+
+  @if (errorMessage(); as message) {
+    <p class="form-error" role="alert">{{ message }}</p>
+  }
+
+  <form class="composer" (ngSubmit)="send()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Your message</mat-label>
+      <textarea
+        matInput
+        rows="2"
+        [formControl]="question"
+        [attr.maxlength]="limits.messageMaxLength"
+        (keydown)="onKeydown($event)"
+      ></textarea>
+      <mat-hint>Enter to send, Shift+Enter for a new line</mat-hint>
+    </mat-form-field>
+    <button
+      mat-flat-button
+      type="submit"
+      [disabled]="thinking() || !available() || !question.value.trim()"
+    >
+      <mat-icon>send</mat-icon>
+      Send
+    </button>
+  </form>
+}
