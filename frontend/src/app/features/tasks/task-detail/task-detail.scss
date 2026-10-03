@@ -1,0 +1,150 @@
+.back {
+  margin-left: -12px;
+}
+
+.task-header {
+  margin: 8px 0 16px;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: 8px;
+  font: var(--mat-sys-label-medium);
+  background: var(--mat-sys-surface-container-high);
+
+  &.overdue {
+    background: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+}
+
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+
+  h2 {
+    font: var(--mat-sys-headline-small);
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blocked {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.workflow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.workflow-label {
+  font: var(--mat-sys-label-large);
+}
+
+.hint {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.layout,
+.collaboration {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 959px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+h3 {
+  font: inherit;
+  margin: 0;
+}
+
+h4 {
+  font: var(--mat-sys-title-small);
+  margin: 16px 0 8px;
+}
+
+.description {
+  margin: 16px 0 0;
+  white-space: pre-line;
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 2px 10px;
+    border-radius: 8px;
+    font: var(--mat-sys-label-medium);
+    background: var(--mat-sys-surface-container-high);
+  }
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0 0;
+
+  dt {
+    font: var(--mat-sys-label-medium);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 4px 0 0;
+  }
+}
+
+.assignee {
+  width: 100%;
+}
+
+.overdue-text {
+  color: var(--mat-sys-error);
+}
+
+.collaboration {
+  margin-top: 16px;
+}

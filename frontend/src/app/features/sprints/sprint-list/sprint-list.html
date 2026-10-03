@@ -1,0 +1,135 @@
+<div class="toolbar">
+  <h2>Sprints</h2>
+  @if (canEdit()) {
+    <button mat-flat-button type="button" (click)="openForm()">
+      <mat-icon>add</mat-icon>
+      New sprint
+    </button>
+  }
+</div>
+
+@if (loading()) {
+  <app-loading-state message="Loading the sprints…" />
+} @else if (errorMessage(); as message) {
+  <app-error-state [message]="message" (retry)="load()" />
+} @else {
+  <ul class="sprints">
+    @for (sprint of sprints(); track sprint.id) {
+      <li>
+        <mat-card appearance="outlined" class="sprint" [attr.data-status]="sprint.status">
+          <mat-card-header>
+            <mat-card-title class="sprint-title">
+              <h3>{{ sprint.name }}</h3>
+              <span class="status" [attr.data-status]="sprint.status">
+                {{ statusLabels[sprint.status] }}
+              </span>
+            </mat-card-title>
+            <mat-card-subtitle>
+              {{ sprint.startDate | date: 'mediumDate' : 'UTC' }} →
+              {{ sprint.endDate | date: 'mediumDate' : 'UTC' }}
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            @if (sprint.objective) {
+              <p class="objective">{{ sprint.objective }}</p>
+            }
+            @if (sprint.stats; as stats) {
+              <div class="progress">
+                <mat-progress-bar
+                  mode="determinate"
+                  [value]="stats.progress"
+                  [attr.aria-label]="'Progress of ' + sprint.name"
+                />
+                <span class="progress-text">
+                  {{ stats.completedPoints }} / {{ stats.totalPoints }} points ({{
+                    stats.progress
+                  }}%)
+                </span>
+              </div>
+              <p class="counts">
+                {{ stats.totalTasks }} {{ stats.totalTasks === 1 ? 'task' : 'tasks' }} ·
+                {{ stats.completedTasks }} done
+                @if (stats.blockedTasks > 0) {
+                  · <span class="blocked">{{ stats.blockedTasks }} blocked</span>
+                }
+              </p>
+            }
+          </mat-card-content>
+          <mat-card-actions class="actions">
+            <a mat-button routerLink="../tasks" [queryParams]="{ sprint: sprint.id }">
+              <mat-icon>list</mat-icon>
+              Tasks
+            </a>
+            <a mat-button routerLink="../board" [queryParams]="{ sprint: sprint.id }">
+              <mat-icon>view_kanban</mat-icon>
+              Board
+            </a>
+            @if (canEdit()) {
+              <span class="spacer"></span>
+              @if (sprint.status === 'PLANNED') {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="busyId() === sprint.id"
+                  (click)="changeStatus(sprint, 'ACTIVE')"
+                >
+                  <mat-icon>play_arrow</mat-icon>
+                  Start
+                </button>
+              }
+              @if (sprint.status === 'ACTIVE') {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="busyId() === sprint.id"
+                  (click)="changeStatus(sprint, 'COMPLETED')"
+                >
+                  <mat-icon>check</mat-icon>
+                  Complete
+                </button>
+              }
+              @if (isOpen(sprint)) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="busyId() === sprint.id"
+                  [attr.aria-label]="'Edit ' + sprint.name"
+                  (click)="openForm(sprint)"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="busyId() === sprint.id"
+                  [attr.aria-label]="'Cancel ' + sprint.name"
+                  (click)="changeStatus(sprint, 'CANCELLED')"
+                >
+                  <mat-icon>block</mat-icon>
+                </button>
+              }
+              @if (sprint.status === 'PLANNED') {
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="busyId() === sprint.id"
+                  [attr.aria-label]="'Delete ' + sprint.name"
+                  (click)="deleteSprint(sprint)"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            }
+          </mat-card-actions>
+        </mat-card>
+      </li>
+    } @empty {
+      <li class="empty">
+        No sprint yet.
+        @if (canEdit()) {
+          Create a sprint to plan the work of the team.
+        }
+      </li>
+    }
+  </ul>
+}

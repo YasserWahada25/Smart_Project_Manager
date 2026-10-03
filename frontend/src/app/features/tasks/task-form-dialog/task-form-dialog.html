@@ -1,0 +1,111 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit the task' : 'New task' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <mat-dialog-content>
+    @if (errorMessage(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Title</mat-label>
+      <input matInput formControlName="title" />
+      @if (form.controls.title.invalid) {
+        <mat-error>{{ error('title') }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Description (optional)</mat-label>
+      <textarea matInput formControlName="description" rows="3"></textarea>
+      @if (form.controls.description.invalid) {
+        <mat-error>{{ error('description') }}</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Type</mat-label>
+        <mat-select formControlName="type">
+          @for (type of types; track type) {
+            <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Priority</mat-label>
+        <mat-select formControlName="priority">
+          @for (priority of priorities; track priority) {
+            <mat-option [value]="priority">{{ priorityLabels[priority] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Complexity</mat-label>
+        <mat-select formControlName="complexity">
+          @for (points of storyPoints; track points) {
+            <mat-option [value]="points"
+              >{{ points }} {{ points === 1 ? 'point' : 'points' }}</mat-option
+            >
+          }
+        </mat-select>
+        <mat-hint>Story points</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Sprint</mat-label>
+        <mat-select formControlName="sprint">
+          <mat-option value="">Backlog (no sprint)</mat-option>
+          @for (sprint of sprintOptions; track sprint.id) {
+            <mat-option [value]="sprint.id">
+              {{ sprint.name }} ({{ sprintStatusLabels[sprint.status] }})
+            </mat-option>
+          }
+        </mat-select>
+        @if (form.controls.sprint.invalid) {
+          <mat-error>{{ fieldError('sprint') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Deadline (optional)</mat-label>
+        <input matInput type="date" formControlName="deadline" />
+      </mat-form-field>
+    </div>
+
+    @if (!isEdit) {
+      <mat-form-field appearance="outline">
+        <mat-label>Assignee</mat-label>
+        <mat-select formControlName="assignee">
+          <mat-option value="">Unassigned</mat-option>
+          @for (member of members; track member.id) {
+            <mat-option [value]="member.id">{{ fullName(member) }}</mat-option>
+          }
+        </mat-select>
+        @if (form.controls.assignee.invalid) {
+          <mat-error>{{ fieldError('assignee') }}</mat-error>
+        }
+      </mat-form-field>
+    }
+
+    <app-tag-input
+      label="Required skills"
+      placeholder="Add a skill…"
+      hint="Used to choose the right developer (e.g. Angular, Node.js)"
+      itemName="skill"
+      [control]="form.controls.requiredSkills"
+      [maxItems]="limits.maxRequiredSkills"
+      [maxLength]="limits.skillMaxLength"
+    />
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button type="submit" [disabled]="submitting()">
+      {{ isEdit ? 'Save changes' : 'Create the task' }}
+    </button>
+  </mat-dialog-actions>
+</form>

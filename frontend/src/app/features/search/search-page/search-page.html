@@ -1,0 +1,81 @@
+<header class="page-header">
+  <h1>Search</h1>
+  <p>Projects (name, description) and tasks (title, description) you have access to.</p>
+</header>
+
+<form role="search" (submit)="$event.preventDefault()">
+  <mat-form-field appearance="outline" class="query">
+    <mat-label>Search</mat-label>
+    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    <input matInput type="search" [formControl]="query" maxlength="100" />
+    <mat-hint>At least {{ minLength }} characters</mat-hint>
+  </mat-form-field>
+</form>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Searching" />
+}
+
+@if (errorMessage(); as message) {
+  <app-error-state [message]="message" (retry)="retry()" />
+} @else if (results(); as current) {
+  <section aria-labelledby="projects-title">
+    <h2 id="projects-title">
+      Projects
+      <span class="count">{{ current.projects.total }}</span>
+    </h2>
+    @if (current.projects.items.length > 0) {
+      <ul class="results">
+        @for (project of current.projects.items; track project.id) {
+          <li>
+            <a [routerLink]="['/projects', project.id]">{{ project.name }}</a>
+            <span class="meta">{{ projectStatusLabels[project.status] }}</span>
+            @if (project.description) {
+              <p class="description">{{ project.description }}</p>
+            }
+          </li>
+        }
+      </ul>
+      @if (current.projects.total > current.projects.items.length) {
+        <p class="more">
+          {{ current.projects.items.length }} of {{ current.projects.total }} shown: refine the
+          search to find the others.
+        </p>
+      }
+    } @else {
+      <p class="empty">No project matches “{{ current.query }}”.</p>
+    }
+  </section>
+
+  <section aria-labelledby="tasks-title">
+    <h2 id="tasks-title">
+      Tasks
+      <span class="count">{{ current.tasks.total }}</span>
+    </h2>
+    @if (current.tasks.items.length > 0) {
+      <ul class="results">
+        @for (task of current.tasks.items; track task.id) {
+          <li>
+            <a [routerLink]="['/projects', task.project.id, 'tasks', task.id]">{{ task.title }}</a>
+            <span class="meta">
+              {{ task.project.name }} ·
+              {{ task.assignee ? fullName(task.assignee) : 'Unassigned' }}
+            </span>
+            <span class="badges">
+              <app-task-status [status]="task.status" />
+              <app-task-priority [priority]="task.priority" />
+            </span>
+          </li>
+        }
+      </ul>
+      @if (current.tasks.total > current.tasks.items.length) {
+        <p class="more">
+          {{ current.tasks.items.length }} of {{ current.tasks.total }} shown: refine the search
+          to find the others.
+        </p>
+      }
+    } @else {
+      <p class="empty">No task matches “{{ current.query }}”.</p>
+    }
+  </section>
+}

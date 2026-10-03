@@ -1,9 +1,12 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { Role } from '../../core/models/user';
+import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FakeAuthService, fakeAuthService, testUser } from '../../testing/test-data';
 import { MainLayout } from './main-layout';
@@ -11,16 +14,21 @@ import { MainLayout } from './main-layout';
 describe('MainLayout', () => {
   let auth: FakeAuthService;
   let toastInfo: ReturnType<typeof vi.fn>;
+  let refreshUnreadCount: ReturnType<typeof vi.fn>;
+  const unreadCount = signal(0);
 
-  async function render(isHandset: boolean) {
-    auth = fakeAuthService(testUser());
+  async function render(isHandset: boolean, role: Role = 'PROJECT_MANAGER') {
+    auth = fakeAuthService(testUser({ role }));
     toastInfo = vi.fn();
+    refreshUnreadCount = vi.fn(() => of(3));
+    unreadCount.set(3);
     TestBed.configureTestingModule({
       imports: [MainLayout],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: auth },
         { provide: ToastService, useValue: { info: toastInfo } },
+        { provide: NotificationService, useValue: { unreadCount, refreshUnreadCount } },
         {
           provide: BreakpointObserver,
           useValue: { observe: () => of({ matches: isHandset, breakpoints: {} }) },
@@ -32,15 +40,51 @@ describe('MainLayout', () => {
     return fixture;
   }
 
+  const navLinks = (element: HTMLElement) =>
+    [...element.querySelectorAll('mat-nav-list a')].map((link) => ({
+      label: link.querySelector('[matListItemTitle]')?.textContent?.trim(),
+      href: link.getAttribute('href'),
+    }));
+
   it('shows the application name and the navigation links', async () => {
     const element: HTMLElement = (await render(false)).nativeElement;
 
     expect(element.querySelector('.brand')?.textContent).toContain('Smart Project Manager');
-    const links = [...element.querySelectorAll('mat-nav-list a')];
-    expect(links.map((link) => link.textContent?.trim())).toEqual([
-      expect.stringContaining('Home'),
+    expect(navLinks(element)).toEqual([
+      { label: 'Home', href: '/' },
+      { label: 'Projects', href: '/projects' },
+      { label: 'My profile', href: '/profile' },
     ]);
-    expect(links[0].getAttribute('href')).toBe('/');
+  });
+
+  it('shows "Users" to administrators only and "My tasks" to developers only', async () => {
+    const admin: HTMLElement = (await render(false, 'ADMIN')).nativeElement;
+    expect(navLinks(admin).map((link) => link.label)).toEqual([
+      'Home',
+      'Projects',
+      'My profile',
+      'Users',
+    ]);
+    expect(navLinks(admin)).toContainEqual({ label: 'Users', href: '/admin/users' });
+
+    TestBed.resetTestingModule();
+    const developer: HTMLElement = (await render(false, 'DEVELOPER')).nativeElement;
+    expect(navLinks(developer)).toEqual([
+      { label: 'Home', href: '/' },
+      { label: 'Projects', href: '/projects' },
+      { label: 'My tasks', href: '/my-tasks' },
+      { label: 'My profile', href: '/profile' },
+    ]);
+  });
+
+  it('shows the unread notifications on the bell, refreshed in the background', async () => {
+    const element: HTMLElement = (await render(false)).nativeElement;
+
+    expect(refreshUnreadCount).toHaveBeenCalled();
+    const bell = element.querySelector('a.notifications-button')!;
+    expect(bell.getAttribute('href')).toBe('/notifications');
+    expect(bell.getAttribute('aria-label')).toBe('Notifications, 3 unread');
+    expect(bell.querySelector('.mat-badge-content')?.textContent).toBe('3');
   });
 
   it('shows the menu button only on handsets', async () => {
@@ -64,6 +108,7 @@ describe('MainLayout', () => {
     const menu = document.querySelector('.mat-mdc-menu-panel') as HTMLElement;
     expect(menu.textContent).toContain('Sara Manager');
     expect(menu.textContent).toContain('Project manager');
+    expect(menu.querySelector('a[href="/profile"]')?.textContent).toContain('My profile');
 
     [...menu.querySelectorAll<HTMLButtonElement>('button')]
       .find((button) => button.textContent?.includes('Log out'))

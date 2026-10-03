@@ -1,6 +1,6 @@
 # Architecture
 
-> Current state: **Express.js backend complete for the non-AI features** (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: setup and authentication (TASK 12–13); other feature screens and AI service not created yet.
+> Current state: **Express.js backend complete for the non-AI features** (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: setup, authentication, profile, user administration, projects and teams (TASK 12–15); sprint/task/Kanban/notification/dashboard screens and AI service not created yet.
 > This document describes the target architecture; sections are updated with the actual implementation as tasks are completed.
 
 ## 1. Global architecture
@@ -68,7 +68,7 @@ frontend/src/app/
 └── layouts/
 ```
 
-Implemented (TASK 12–13):
+Implemented (TASK 12–15):
 
 ```
 frontend/
@@ -77,24 +77,31 @@ frontend/
 │   │   ├── core/
 │   │   │   ├── app.constants.ts            APP_NAME
 │   │   │   ├── auth/                       auth.service, auth.interceptor, auth.guards, token-storage, jwt, auth.models
-│   │   │   ├── models/user.ts              User, Role, ROLE_LABELS, Skill
+│   │   │   ├── models/user.ts              User, Role, ROLES / ROLE_LABELS, Skill, SKILL_LEVELS / SKILL_LEVEL_LABELS
+│   │   │   ├── models/pagination.ts        Paginated<T> ({ data, pagination } lists of the backend)
+│   │   │   ├── models/project.ts           Project, ProjectStatus (+ labels), ProjectMember, Developer, ProjectInput, PROJECT_LIMITS
 │   │   │   ├── http/api-error.interceptor.ts  HttpErrorResponse → ApiError + global toast
+│   │   │   ├── http/action-error.ts        message of a failed user action (null when already reported globally)
 │   │   │   ├── models/api-error.ts         ApiError (status, code, message, details)
 │   │   │   ├── models/system-status.ts     HealthReport / SystemStatus
 │   │   │   ├── routing/app-title.strategy.ts  "<page> · Smart Project Manager"
-│   │   │   └── services/                   health.service.ts, toast.service.ts
-│   │   ├── shared/components/              loading-state, error-state
-│   │   ├── shared/forms/                   password validators (same policy as the backend), form error helpers
+│   │   │   └── services/                   health.service.ts, toast.service.ts (snack bar loaded on demand)
+│   │   ├── shared/components/              loading-state, error-state, confirm-dialog (+ ConfirmService)
+│   │   ├── shared/forms/                   password validators (same policy as the backend), integer / tag list / "not before" date validators, form error helpers (backend field messages, incl. array paths)
+│   │   ├── shared/data/paged-list.ts       PagedList: paginated list state (items, total, loading, error; latest query wins)
 │   │   ├── testing/                        test data & fake AuthService (excluded from the build)
-│   │   ├── layouts/main-layout/            toolbar (user menu, logout) + responsive side navigation
+│   │   ├── layouts/main-layout/            toolbar (user menu: My profile, Log out) + responsive side navigation filtered by role
 │   │   ├── layouts/auth-layout/            centered layout of the public pages
 │   │   ├── features/
 │   │   │   ├── auth/login, auth/register   sign in / create an account (reactive forms)
 │   │   │   ├── home/                       welcome + system status (frontend → API → MongoDB)
+│   │   │   ├── profile/                    My profile: account, personal information, skills, password (ProfileService)
+│   │   │   ├── users/                      user administration for ADMIN (UserAdminService, user-list)
+│   │   │   ├── projects/                   project-list, project-detail, project-form, add-members-dialog (ProjectService, DeveloperService)
 │   │   │   └── not-found/                  404 page
 │   │   ├── app.config.ts                   providers (router, HttpClient + interceptor, title, icons)
-│   │   ├── app.routes.ts                   lazy-loaded routes inside MainLayout
-│   │   └── app.ts                          root component (<router-outlet>)
+│   │   ├── app.routes.ts                   lazy-loaded routes inside MainLayout (admin pages behind roleGuard)
+│   │   └── app.ts                          root component (<router-outlet>; preloads the toast code after the first render)
 │   ├── environments/                       environment.ts / environment.development.ts (apiUrl)
 │   ├── styles.scss                         Material 3 theme (azure/blue), toast styles
 │   └── index.html
@@ -116,6 +123,9 @@ frontend/
 | Shared `LoadingState` / `ErrorState` components | Same loading and error presentation on every page (with "Try again") |
 | Responsive layout (`BreakpointObserver`) | Side menu always visible on desktop, drawer + menu button on handsets |
 | angular-eslint with template **accessibility** rules, Prettier | Code quality and accessibility checked by `npm run lint` |
+| **Snack bar loaded on demand** (`ToastService`) | No toast is needed to display the first page: `MatSnackBar` and the CDK overlay are loaded by a dynamic `import()` and preloaded right after the first render (so a "cannot reach the server" toast still works if the network drops later). Initial bundle: 500.8 kB → 341.6 kB (125.8 → 94.4 kB transferred) |
+| `PagedList` for list pages | One implementation of "filters → paginated request → items/total/loading/error" where only the latest query is displayed (`switchMap`); used by the users, projects and developer-directory lists |
+| Native date inputs (`<input type="date">`) | Their value is already the `YYYY-MM-DD` format of the API (no date adapter to load); backend dates (midnight UTC) are displayed with the `UTC` time zone so the calendar day never shifts |
 
 #### Frontend authentication
 
@@ -126,12 +136,37 @@ frontend/
 | `authInterceptor` | Adds `Authorization: Bearer <token>` to requests for `/api/v1` only (never to other origins). A 401 on an authenticated request (expired token, password changed, account deactivated) ends the session: toast + redirect to `/login?returnUrl=…` |
 | `authGuard` | Application pages: requires a session, otherwise `/login?returnUrl=<page>` |
 | `guestGuard` | `/login`, `/register`: signed-in users are sent home |
-| `roleGuard(...roles)` | Restricts a page to roles (used from the administration screens). UX only: the backend enforces the same rules |
+| `roleGuard(...roles)` | Restricts a page to roles (`/admin/users` → `ADMIN`): other users get a toast and are sent home. UX only: the backend enforces the same rules (403) |
 | `safeReturnUrl()` | Only internal paths are accepted after login (no open redirect: `//host`, `https://`, `\\`, `:` refused) |
 
 Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayout`; everything else is under `MainLayout` protected by `authGuard`. (An empty-path parent for the public pages would also match `/` and, with `guestGuard`, cause an infinite redirect loop for signed-in users — this was caught by the routing tests.)
 
 **Token storage choice:** the backend issues a Bearer JWT (no cookie), so the token is kept in `localStorage` to survive page reloads. Risk: a successful XSS could read it. Mitigations: Angular escapes all template bindings (no `innerHTML` is used), the token expires (`JWT_EXPIRES_IN`), it is invalidated by a password change, and it is only sent to our own API. An httpOnly cookie would remove this risk but requires CSRF protection on the backend (possible future improvement).
+
+#### Profile and user administration screens
+
+| Route | Who | Content | API used |
+|-------|-----|---------|----------|
+| `/profile` ("My profile") | every signed-in user | Account (email, role, member since — read only); personal information (first/last name, job title, bio); skills (name, level, years of experience — the whole list is saved at once); password change | `GET`/`PATCH /profile`, `PUT /profile/skills`, `PATCH /profile/password` |
+| `/admin/users` ("Users") | `ADMIN` (`roleGuard` + backend 403) | Table of accounts: search on name/email (debounced 300 ms), role and status filters, server-side pagination; per account: change role, deactivate (confirmation dialog), activate | `GET /users`, `PATCH /users/:id/role`, `PATCH /users/:id/status` |
+
+- **Navigation by role:** each menu entry can list the roles allowed to see it (`NAV_ITEMS[].roles`); "Users" is only shown to administrators. The user menu also links to "My profile".
+- **Session kept in sync:** `ProfileService` updates the user stored by `AuthService` after every successful call (the toolbar name changes immediately). After a password change the backend rejects every older token and returns a new one: `AuthService.replaceSession()` switches to it, so the current tab stays signed in while the other devices are signed out.
+- **Validation:** the forms apply the backend rules (lengths, password policy, skill levels, unique skill names ignoring case, whole years 0–50) and also show the backend messages on the right field — array paths such as `skills[1].level` are mapped to the `FormArray` controls. A wrong current password is a 400 on its field (not a 401, so the session is not ended).
+- **Self-protection:** an administrator cannot change their own role or status (backend rule): their row is marked "You" and has no action menu.
+- **Feedback:** deactivating an account and changing a role ask for confirmation (`ConfirmService`, Cancel focused by default); the row is updated in place and a toast confirms the change; a refusal from the backend (403, 404…) is shown in a toast.
+
+#### Projects and team screens
+
+| Route | Who | Content | API used |
+|-------|-----|---------|----------|
+| `/projects` ("Projects") | every signed-in user — the backend returns all projects to an administrator, managed projects to a project manager, the projects a developer belongs to | Cards (name, manager, status, description, dates, technologies, team size), search on the name (debounced), status filter, pagination; "New project" for project managers; empty state explained per role | `GET /projects` |
+| `/projects/new`, `/projects/:id/edit` | `PROJECT_MANAGER` (`roleGuard`); editing is refused in the page for another manager's project or an archived project | Name, description, start date (today by default), optional deadline (≥ start date), technologies as chips (Enter / comma, duplicates ignored, ≤ 30 × 50 characters); a cleared deadline is sent as `null` (removed) | `POST /projects`, `GET` / `PATCH /projects/:id` |
+| `/projects/:id` | viewers of the project (404 "Project not found" otherwise, without retry) | Overview (description, dates, manager, technologies) and team (members with job title, email, skills, deactivated badge). For its manager: Edit, Change status (archiving asks for confirmation), Delete (confirmation; 409 when the project has sprints or tasks), Add developers, Remove a member (confirmation; 409 when they have unfinished tasks) | `GET` / `PATCH` / `DELETE /projects/:id`, `POST` / `DELETE /projects/:id/members` |
+| "Add developers" dialog | project manager | Developer directory (active developers): search on name/email and exact skill (each field debounced), pagination, "Add" per developer, members marked "In the team"; the dialog stays open to add several developers and the project page is updated after each addition | `GET /developers`, `POST /projects/:id/members` |
+
+- **Who can do what** mirrors the backend rules (only the manager who created the project modifies it; administrators and members see it read-only; an archived project only accepts a status change). The backend still enforces every rule (403 / 404 / 409), and its messages are shown in toasts (`actionErrorMessage`).
+- The `ProjectDetail` page reloads when its `:id` route parameter changes (the router reuses the component between projects).
 
 #### Frontend ↔ backend communication
 

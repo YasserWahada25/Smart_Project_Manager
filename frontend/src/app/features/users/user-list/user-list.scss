@@ -1,0 +1,93 @@
+.page-header {
+  margin-bottom: 16px;
+
+  h1 {
+    font: var(--mat-sys-headline-medium);
+    margin: 0 0 8px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+
+  mat-form-field {
+    flex: 1 1 180px;
+  }
+
+  .search {
+    flex: 2 1 260px;
+  }
+}
+
+// The table scrolls horizontally on narrow screens instead of breaking the layout.
+.table-container {
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+
+  mat-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+  }
+}
+
+.users {
+  min-width: 720px;
+}
+
+.name {
+  font: var(--mat-sys-title-small);
+}
+
+.badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font: var(--mat-sys-label-small);
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.status {
+  padding: 2px 8px;
+  border-radius: 8px;
+  font: var(--mat-sys-label-medium);
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+
+  &.inactive {
+    background: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+}
+
+.inactive-row td {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.actions-cell {
+  width: 56px;
+  text-align: center;
+}
+
+.locked {
+  color: var(--mat-sys-on-surface-variant);
+  vertical-align: middle;
+}
+
+.no-data {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}

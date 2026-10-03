@@ -1,0 +1,86 @@
+<h2 mat-dialog-title>Add developers to {{ projectName() }}</h2>
+
+<mat-dialog-content>
+  <form class="filters" role="search" [formGroup]="filters" (submit)="$event.preventDefault()">
+    <mat-form-field appearance="outline">
+      <mat-label>Name or email</mat-label>
+      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+      <input matInput formControlName="search" maxlength="100" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Skill</mat-label>
+      <input matInput formControlName="skill" maxlength="50" />
+      <mat-hint>Exact skill name, e.g. Angular</mat-hint>
+    </mat-form-field>
+  </form>
+
+  @if (errorMessage(); as message) {
+    <app-error-state [message]="message" (retry)="load()" />
+  } @else {
+    <div class="results">
+      @if (loading()) {
+        <mat-progress-bar mode="indeterminate" aria-label="Searching developers" />
+      }
+      <ul class="developers">
+        @for (developer of developers(); track developer.id) {
+          <li class="developer">
+            <div class="text">
+              <span class="name">{{ developer.firstName }} {{ developer.lastName }}</span>
+              <span class="detail">
+                @if (developer.jobTitle) {
+                  {{ developer.jobTitle }} ·
+                }
+                {{ developer.email }}
+              </span>
+              @if (developer.skills.length > 0) {
+                <ul class="skills" aria-label="Skills">
+                  @for (skill of developer.skills; track skill.name) {
+                    <li>
+                      {{ skill.name }} <span class="level">{{ levelLabels[skill.level] }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+            @if (memberIds().has(developer.id)) {
+              <span class="in-team">
+                <mat-icon aria-hidden="true">check</mat-icon>
+                In the team
+              </span>
+            } @else {
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="addingId() !== null"
+                [attr.aria-label]="'Add ' + developer.firstName + ' ' + developer.lastName"
+                (click)="add(developer)"
+              >
+                Add
+              </button>
+            }
+          </li>
+        } @empty {
+          @if (!loading()) {
+            <li class="empty">No active developer matches this search.</li>
+          }
+        }
+      </ul>
+    </div>
+
+    @if (total() > pageSize) {
+      <mat-paginator
+        [length]="total()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize"
+        [hidePageSize]="true"
+        aria-label="Pages of developers"
+        (page)="changePage($event)"
+      />
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Close</button>
+</mat-dialog-actions>

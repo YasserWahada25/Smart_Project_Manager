@@ -1,0 +1,71 @@
+<header class="page-header">
+  <h1>My tasks</h1>
+  <p>The tasks assigned to you, nearest deadline first.</p>
+</header>
+
+<mat-form-field appearance="outline" class="status-filter">
+  <mat-label>Status</mat-label>
+  <mat-select [formControl]="status">
+    <mat-option value="">All</mat-option>
+    @for (value of statuses; track value) {
+      <mat-option [value]="value">{{ statusLabels[value] }}</mat-option>
+    }
+  </mat-select>
+</mat-form-field>
+
+@if (errorMessage(); as message) {
+  <app-error-state [message]="message" (retry)="load()" />
+} @else {
+  <div class="results">
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Loading your tasks" />
+    }
+    <ul class="tasks">
+      @for (task of tasks(); track task.id) {
+        <li>
+          <a class="task" [routerLink]="['/projects', task.project.id, 'tasks', task.id]">
+            <span class="title">{{ task.title }}</span>
+            <span class="context">
+              {{ task.project.name }}
+              @if (task.sprint) {
+                · {{ task.sprint.name }}
+              }
+            </span>
+            <span class="badges">
+              <app-task-status [status]="task.status" />
+              <app-task-priority [priority]="task.priority" />
+              <span class="points">{{ task.complexity }} pts</span>
+              @if (task.deadline) {
+                <span class="deadline" [class.overdue]="task.isOverdue">
+                  <mat-icon aria-hidden="true">event</mat-icon>
+                  {{ task.deadline | date: 'mediumDate' : 'UTC' }}
+                  @if (task.isOverdue) {
+                    (overdue)
+                  }
+                </span>
+              }
+            </span>
+          </a>
+        </li>
+      } @empty {
+        @if (!loading()) {
+          <li class="empty">
+            <mat-icon aria-hidden="true">task_alt</mat-icon>
+            <p>No task assigned to you{{ status.value ? ' with this status' : '' }}.</p>
+          </li>
+        }
+      }
+    </ul>
+  </div>
+
+  @if (total() > pageSize) {
+    <mat-paginator
+      [length]="total()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize"
+      [hidePageSize]="true"
+      aria-label="Pages of tasks"
+      (page)="changePage($event)"
+    />
+  }
+}

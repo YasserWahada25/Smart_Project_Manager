@@ -1,0 +1,82 @@
+<header class="page-header">
+  <a mat-button [routerLink]="cancelLink()" class="back">
+    <mat-icon>arrow_back</mat-icon>
+    {{ isEdit() ? 'Back to the project' : 'Back to the projects' }}
+  </a>
+  <h1>{{ isEdit() ? 'Edit the project' : 'New project' }}</h1>
+</header>
+
+@if (loading()) {
+  <app-loading-state message="Loading the project…" />
+} @else if (loadError(); as failure) {
+  <app-error-state
+    [message]="failure.message"
+    [retryable]="failure.retryable"
+    (retry)="load(id()!)"
+  />
+} @else {
+  <mat-card appearance="outlined" class="form-card">
+    <mat-card-content>
+      @if (errorMessage(); as message) {
+        <p class="form-error" role="alert">{{ message }}</p>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <mat-form-field appearance="outline">
+          <mat-label>Project name</mat-label>
+          <input matInput formControlName="name" />
+          @if (form.controls.name.invalid) {
+            <mat-error>{{ error('name') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="4"></textarea>
+          <mat-hint align="end"
+            >{{ form.controls.description.value.length }} /
+            {{ limits.descriptionMaxLength }}</mat-hint
+          >
+          @if (form.controls.description.invalid) {
+            <mat-error>{{ error('description') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="row">
+          <mat-form-field appearance="outline">
+            <mat-label>Start date</mat-label>
+            <input matInput type="date" formControlName="startDate" />
+            @if (form.controls.startDate.invalid) {
+              <mat-error>{{ error('startDate') }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Deadline (optional)</mat-label>
+            <input matInput type="date" formControlName="deadline" />
+            @if (form.controls.deadline.invalid) {
+              <mat-error>{{ error('deadline') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <app-tag-input
+          label="Technologies"
+          placeholder="Add a technology…"
+          hint="Press Enter or a comma after each one (e.g. Angular, Node.js)"
+          itemName="technology"
+          [control]="form.controls.technologies"
+          [maxItems]="limits.maxTechnologies"
+          [maxLength]="limits.technologyMaxLength"
+        />
+
+        <div class="actions">
+          <a mat-button [routerLink]="cancelLink()">Cancel</a>
+          <button mat-flat-button type="submit" [disabled]="submitting()">
+            {{ isEdit() ? 'Save changes' : 'Create the project' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+}

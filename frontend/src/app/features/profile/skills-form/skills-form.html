@@ -1,0 +1,100 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title><h2>Skills</h2></mat-card-title>
+    <mat-card-subtitle>The technologies you work with and your level</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    @if (errorMessage(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div formArrayName="skills" class="skills">
+        @for (skill of skills.controls; track skill; let i = $index) {
+          <div
+            class="skill"
+            [formGroupName]="i"
+            role="group"
+            [attr.aria-label]="'Skill ' + (i + 1)"
+          >
+            <mat-form-field appearance="outline" class="name">
+              <mat-label>Skill</mat-label>
+              <input matInput formControlName="name" />
+              @if (skill.controls.name.invalid) {
+                <mat-error>{{ nameError(skill) }}</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="level">
+              <mat-label>Level</mat-label>
+              <mat-select formControlName="level">
+                @for (level of levels; track level) {
+                  <mat-option [value]="level">{{ levelLabels[level] }}</mat-option>
+                }
+              </mat-select>
+              @if (skill.controls.level.invalid) {
+                <mat-error>{{ levelError(skill) }}</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="years">
+              <mat-label>Years</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                max="50"
+                step="1"
+                formControlName="yearsOfExperience"
+              />
+              @if (skill.controls.yearsOfExperience.invalid) {
+                <mat-error>{{ yearsError(skill) }}</mat-error>
+              }
+            </mat-form-field>
+
+            <button
+              mat-icon-button
+              type="button"
+              class="remove"
+              [attr.aria-label]="'Remove ' + (skill.controls.name.value || 'this skill')"
+              (click)="remove(i)"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        } @empty {
+          <p class="empty">No skills yet. Add the technologies you work with.</p>
+        }
+      </div>
+
+      @if (listError(); as message) {
+        <p class="list-error" role="alert">{{ message }}</p>
+      }
+
+      <div class="actions">
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="skills.length >= maxSkills"
+          (click)="add()"
+        >
+          <mat-icon>add</mat-icon>
+          Add a skill
+        </button>
+        <span class="spacer"></span>
+        <button
+          mat-button
+          type="button"
+          [disabled]="form.pristine || submitting()"
+          (click)="cancel()"
+        >
+          Cancel
+        </button>
+        <button mat-flat-button type="submit" [disabled]="form.pristine || submitting()">
+          Save skills
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

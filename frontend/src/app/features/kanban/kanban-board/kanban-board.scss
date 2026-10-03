@@ -1,0 +1,173 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  h2 {
+    font: var(--mat-sys-title-large);
+    margin: 0;
+  }
+}
+
+.scope {
+  width: 280px;
+  max-width: 100%;
+}
+
+.board-area {
+  position: relative;
+
+  mat-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+  }
+}
+
+.summary {
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Six columns side by side; the board scrolls horizontally on narrow screens.
+.columns {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(220px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-low);
+
+  h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 4px 8px;
+    font: var(--mat-sys-title-small);
+  }
+
+  &[data-status='BLOCKED'] {
+    background: var(--mat-sys-error-container);
+
+    h3 {
+      color: var(--mat-sys-on-error-container);
+    }
+  }
+
+  &[data-status='DONE'] h3 {
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.count {
+  min-width: 24px;
+  padding: 0 6px;
+  border-radius: 12px;
+  text-align: center;
+  font: var(--mat-sys-label-medium);
+  background: var(--mat-sys-surface-container-highest);
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  background: var(--mat-sys-surface);
+
+  &.overdue {
+    border-left: 4px solid var(--mat-sys-error);
+  }
+}
+
+.card-title {
+  font: var(--mat-sys-title-small);
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--mat-sys-primary);
+    text-decoration: underline;
+  }
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.card.overdue .deadline {
+  color: var(--mat-sys-error);
+}
+
+.reason {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  font-style: italic;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 40px;
+}
+
+.assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--mat-sys-body-small);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.empty {
+  padding: 12px 4px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  text-align: center;
+}
+
+.menu-label {
+  display: block;
+  padding: 8px 16px 4px;
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-surface-variant);
+}

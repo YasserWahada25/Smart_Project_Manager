@@ -1,0 +1,164 @@
+<a mat-button [routerLink]="tasksLink" class="back">
+  <mat-icon>arrow_back</mat-icon>
+  All tasks
+</a>
+
+@if (loading()) {
+  <app-loading-state message="Loading the task…" />
+} @else if (loadError(); as failure) {
+  <app-error-state [message]="failure.message" [retryable]="failure.retryable" (retry)="load()" />
+} @else if (task(); as current) {
+  <header class="task-header">
+    <div class="badges">
+      <app-task-status [status]="current.status" />
+      <app-task-priority [priority]="current.priority" />
+      <span class="chip">{{ typeLabels[current.type] }}</span>
+      <span class="chip"
+        >{{ current.complexity }} {{ current.complexity === 1 ? 'point' : 'points' }}</span
+      >
+      @if (current.isOverdue) {
+        <span class="chip overdue">Overdue</span>
+      }
+    </div>
+    <div class="title-row">
+      <h2>{{ current.title }}</h2>
+      @if (canEdit()) {
+        <div class="actions">
+          <button mat-stroked-button type="button" [disabled]="busy()" (click)="edit()">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            aria-label="Delete the task"
+            [disabled]="busy()"
+            (click)="deleteTask()"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+  </header>
+
+  @if (current.status === 'BLOCKED') {
+    <p class="blocked" role="status">
+      <mat-icon aria-hidden="true">block</mat-icon>
+      <span> Blocked{{ current.blockedReason ? ': ' + current.blockedReason : '.' }} </span>
+    </p>
+  }
+
+  @if (canMove()) {
+    <section class="workflow" aria-label="Change the status">
+      <span class="workflow-label">Move to</span>
+      @for (target of targets(); track target) {
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="busy() || needsAssignee(target)"
+          (click)="move(target)"
+        >
+          {{ statusLabels[target] }}
+        </button>
+      }
+      @if (current.assignee === null) {
+        <span class="hint">Assign the task to a developer before starting it.</span>
+      }
+    </section>
+  }
+
+  <div class="layout">
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title><h3>Description</h3></mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="description" [class.muted]="!current.description">
+          {{ current.description || 'No description.' }}
+        </p>
+        <h4>Required skills</h4>
+        @if (current.requiredSkills.length > 0) {
+          <ul class="tags" aria-label="Required skills">
+            @for (skill of current.requiredSkills; track skill) {
+              <li>{{ skill }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="muted">None listed.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title><h3>Details</h3></mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <dl class="facts">
+          <div>
+            <dt>Assignee</dt>
+            <dd>
+              @if (canEdit()) {
+                <mat-form-field appearance="outline" class="assignee" subscriptSizing="dynamic">
+                  <mat-select
+                    [formControl]="assignee"
+                    aria-label="Assignee"
+                    (selectionChange)="assign($event.value)"
+                  >
+                    <mat-option value="">Unassigned</mat-option>
+                    @for (member of members(); track member.id) {
+                      <mat-option [value]="member.id">{{ fullName(member) }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                {{ current.assignee ? fullName(current.assignee) : 'Unassigned' }}
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Sprint</dt>
+            <dd>{{ sprintName() }}</dd>
+          </div>
+          <div>
+            <dt>Deadline</dt>
+            <dd [class.overdue-text]="current.isOverdue">
+              {{ current.deadline ? (current.deadline | date: 'longDate' : 'UTC') : 'Not set' }}
+            </dd>
+          </div>
+          <div>
+            <dt>Created by</dt>
+            <dd>{{ fullName(current.createdBy) }}, {{ current.createdAt | date: 'medium' }}</dd>
+          </div>
+          @if (current.completedAt) {
+            <div>
+              <dt>Completed</dt>
+              <dd>{{ current.completedAt | date: 'medium' }}</dd>
+            </div>
+          }
+        </dl>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="collaboration">
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title><h3>Comments</h3></mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <app-task-comments [taskId]="current.id" (commented)="historyChanged()" />
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title><h3>History</h3></mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <app-task-history [taskId]="current.id" [version]="historyVersion()" />
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

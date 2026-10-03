@@ -1,0 +1,39 @@
+<header class="page-header">
+  <h1>My profile</h1>
+  <p>Your personal information, your skills and your password.</p>
+</header>
+
+@if (loading()) {
+  <app-loading-state message="Loading your profile…" />
+} @else if (errorMessage(); as message) {
+  <app-error-state [message]="message" (retry)="load()" />
+} @else if (user(); as current) {
+  <div class="sections">
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title><h2>Account</h2></mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <dl class="account">
+          <div>
+            <dt>Email</dt>
+            <dd>{{ current.email }}</dd>
+          </div>
+          <div>
+            <dt>Role</dt>
+            <dd>{{ roleLabel() }}</dd>
+          </div>
+          <div>
+            <dt>Member since</dt>
+            <dd>{{ current.createdAt | date: 'longDate' }}</dd>
+          </div>
+        </dl>
+        <p class="note">Your email cannot be changed. Your role is managed by an administrator.</p>
+      </mat-card-content>
+    </mat-card>
+
+    <app-profile-info-form [user]="current" (saved)="user.set($event)" />
+    <app-skills-form [user]="current" (saved)="user.set($event)" />
+    <app-password-form />
+  </div>
+}

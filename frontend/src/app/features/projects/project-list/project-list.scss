@@ -1,0 +1,144 @@
+@use '../project-status';
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  h1 {
+    font: var(--mat-sys-headline-medium);
+    margin: 0 0 8px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+
+  mat-form-field {
+    flex: 1 1 180px;
+  }
+
+  .search {
+    flex: 2 1 260px;
+  }
+}
+
+.results {
+  position: relative;
+  min-height: 80px;
+
+  mat-progress-bar {
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.card-link {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 12px;
+
+  &:hover .project-card,
+  &:focus-visible .project-card {
+    border-color: var(--mat-sys-primary);
+  }
+}
+
+.project-card {
+  height: 100%;
+}
+
+.status {
+  @include project-status.badge;
+  display: inline-block;
+  margin: 8px 0;
+}
+
+.description {
+  margin: 0 0 8px;
+  color: var(--mat-sys-on-surface-variant);
+  // Two lines at most on a card.
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dates,
+.team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.technologies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 2px 8px;
+    border-radius: 8px;
+    font: var(--mat-sys-label-small);
+    background: var(--mat-sys-surface-container-high);
+  }
+
+  .more {
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
+  p {
+    margin: 0;
+  }
+}

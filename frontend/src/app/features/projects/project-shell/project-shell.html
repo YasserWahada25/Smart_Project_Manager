@@ -1,0 +1,92 @@
+<a mat-button routerLink="/projects" class="back">
+  <mat-icon>arrow_back</mat-icon>
+  All projects
+</a>
+
+@if (loading()) {
+  <app-loading-state message="Loading the project…" />
+} @else if (loadError(); as failure) {
+  <app-error-state [message]="failure.message" [retryable]="failure.retryable" (retry)="load()" />
+} @else if (project(); as current) {
+  <header class="page-header">
+    <div class="title">
+      <h1>{{ current.name }}</h1>
+      <span class="status" [attr.data-status]="current.status">
+        {{ statusLabels[current.status] }}
+      </span>
+    </div>
+
+    @if (isManager()) {
+      <div class="actions">
+        @if (!isArchived()) {
+          <a mat-stroked-button [routerLink]="['/projects', current.id, 'edit']">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </a>
+        }
+        <button
+          mat-stroked-button
+          type="button"
+          [matMenuTriggerFor]="statusMenu"
+          [disabled]="busy()"
+        >
+          <mat-icon>flag</mat-icon>
+          Change status
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          aria-label="More actions"
+          [matMenuTriggerFor]="moreMenu"
+          [disabled]="busy()"
+        >
+          <mat-icon>more_vert</mat-icon>
+        </button>
+      </div>
+
+      <mat-menu #statusMenu="matMenu">
+        @for (status of otherStatuses(); track status) {
+          <button mat-menu-item type="button" (click)="changeStatus(status)">
+            {{ statusLabels[status] }}
+          </button>
+        }
+      </mat-menu>
+      <mat-menu #moreMenu="matMenu" xPosition="before">
+        <button mat-menu-item type="button" (click)="deleteProject()">
+          <mat-icon>delete</mat-icon>
+          <span>Delete the project</span>
+        </button>
+      </mat-menu>
+    }
+  </header>
+
+  @if (isArchived()) {
+    <p class="banner" role="status">
+      <mat-icon aria-hidden="true">inventory_2</mat-icon>
+      <span>
+        This project is archived: it is read-only.
+        @if (isManager()) {
+          Change its status to modify it again.
+        }
+      </span>
+    </p>
+  }
+
+  <nav mat-tab-nav-bar class="tabs" aria-label="Project sections" [tabPanel]="tabPanel">
+    @for (tab of tabs; track tab.path) {
+      <a
+        mat-tab-link
+        [routerLink]="tab.path"
+        routerLinkActive
+        #link="routerLinkActive"
+        [routerLinkActiveOptions]="{ exact: tab.exact }"
+        [active]="link.isActive"
+      >
+        {{ tab.label }}
+      </a>
+    }
+  </nav>
+  <mat-tab-nav-panel #tabPanel class="panel">
+    <router-outlet />
+  </mat-tab-nav-panel>
+}

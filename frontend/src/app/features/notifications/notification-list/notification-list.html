@@ -1,0 +1,59 @@
+<header class="page-header">
+  <div>
+    <h1>Notifications</h1>
+    <p>
+      {{ unreadCount() }} unread {{ unreadCount() === 1 ? 'notification' : 'notifications' }}.
+      Notifications are kept 90 days.
+    </p>
+  </div>
+  <button mat-stroked-button type="button" [disabled]="unreadCount() === 0" (click)="markAllRead()">
+    <mat-icon>done_all</mat-icon>
+    Mark all as read
+  </button>
+</header>
+
+<mat-checkbox [formControl]="unreadOnly">Unread only</mat-checkbox>
+
+@if (list.errorMessage(); as message) {
+  <app-error-state [message]="message" (retry)="list.reset()" />
+} @else {
+  @if (list.loading() && list.items().length === 0) {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading the notifications" />
+  }
+  <ul class="notifications">
+    @for (notification of list.items(); track notification.id) {
+      <li class="notification" [class.unread]="!notification.read">
+        <mat-icon aria-hidden="true">{{ icons[notification.type] }}</mat-icon>
+        <button type="button" class="open" (click)="open(notification)">
+          <span class="message">{{ notification.message }}</span>
+          <span class="date">
+            {{ notification.createdAt | date: 'medium' }}
+            @if (!notification.read) {
+              · <span class="unread-label">Unread</span>
+            }
+          </span>
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          aria-label="Delete the notification"
+          (click)="remove(notification)"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </li>
+    } @empty {
+      @if (!list.loading()) {
+        <li class="empty">
+          <mat-icon aria-hidden="true">notifications_none</mat-icon>
+          <p>{{ unreadOnly.value ? 'No unread notification.' : 'No notification.' }}</p>
+        </li>
+      }
+    }
+  </ul>
+  @if (list.hasMore()) {
+    <button mat-stroked-button type="button" [disabled]="list.loading()" (click)="list.loadMore()">
+      Show older notifications
+    </button>
+  }
+}

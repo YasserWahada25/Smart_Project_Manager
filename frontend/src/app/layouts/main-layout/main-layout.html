@@ -8,13 +8,13 @@
   >
     <mat-toolbar class="sidenav-header">Menu</mat-toolbar>
     <mat-nav-list>
-      @for (item of navItems; track item.path) {
+      @for (item of navItems(); track item.path) {
         <a
           mat-list-item
           [routerLink]="item.path"
           routerLinkActive
           #link="routerLinkActive"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [routerLinkActiveOptions]="{ exact: item.path === '/' }"
           [activated]="link.isActive"
           (click)="isHandset() && drawer.close()"
         >
@@ -40,6 +40,23 @@
       <span class="spacer"></span>
 
       @if (user(); as current) {
+        <a
+          mat-icon-button
+          routerLink="/notifications"
+          class="notifications-button"
+          [attr.aria-label]="
+            unreadCount() > 0 ? 'Notifications, ' + unreadCount() + ' unread' : 'Notifications'
+          "
+        >
+          <mat-icon
+            [matBadge]="unreadCount()"
+            [matBadgeHidden]="unreadCount() === 0"
+            matBadgeColor="warn"
+            matBadgeSize="small"
+            aria-hidden="true"
+            >notifications</mat-icon
+          >
+        </a>
         <button
           mat-button
           type="button"
@@ -58,6 +75,10 @@
             <span class="menu-role">{{ roleLabel() }}</span>
           </div>
           <mat-divider />
+          <a mat-menu-item routerLink="/profile">
+            <mat-icon>person</mat-icon>
+            <span>My profile</span>
+          </a>
           <button mat-menu-item type="button" (click)="logout()">
             <mat-icon>logout</mat-icon>
             <span>Log out</span>

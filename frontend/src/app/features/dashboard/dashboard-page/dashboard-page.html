@@ -1,0 +1,131 @@
+<header class="page-header">
+  <h1>Dashboard</h1>
+  @if (data(); as current) {
+    <p>
+      @switch (current.role) {
+        @case ('ADMIN') {
+          All the projects of the platform.
+        }
+        @case ('PROJECT_MANAGER') {
+          The projects you manage.
+        }
+        @default {
+          The projects you are a member of, and your tasks.
+        }
+      }
+    </p>
+  }
+</header>
+
+@if (loading()) {
+  <app-loading-state message="Loading the indicators…" />
+} @else if (errorMessage(); as message) {
+  <app-error-state [message]="message" (retry)="load()" />
+} @else if (data(); as current) {
+  @if (current.myTasks; as mine) {
+    <section aria-labelledby="my-tasks-title">
+      <h2 id="my-tasks-title">My tasks</h2>
+      <ul class="kpis">
+        <li>
+          <span class="value">{{ mine.total - mine.completed }}</span>
+          <span class="label">open</span>
+        </li>
+        <li>
+          <span class="value">{{ mine.completed }}</span>
+          <span class="label">done</span>
+        </li>
+        <li [class.alert]="mine.blocked > 0">
+          <span class="value">{{ mine.blocked }}</span>
+          <span class="label">blocked</span>
+        </li>
+        <li [class.alert]="mine.overdue > 0">
+          <span class="value">{{ mine.overdue }}</span>
+          <span class="label">overdue</span>
+        </li>
+      </ul>
+      <a routerLink="/my-tasks" class="more-link">See my tasks</a>
+    </section>
+  }
+
+  <section aria-labelledby="overview-title">
+    <h2 id="overview-title">Overview</h2>
+    <ul class="kpis">
+      <li>
+        <span class="value">{{ current.projects.total }}</span>
+        <span class="label">projects ({{ current.projects.active }} active)</span>
+      </li>
+      <li>
+        <span class="value">{{ current.sprints.active }}</span>
+        <span class="label">active sprints</span>
+      </li>
+      <li>
+        <span class="value">{{ current.tasks.total }}</span>
+        <span class="label">tasks</span>
+      </li>
+      <li>
+        <span class="value">{{ current.tasks.completed }}</span>
+        <span class="label">done</span>
+      </li>
+      <li [class.alert]="current.tasks.blocked > 0">
+        <span class="value">{{ current.tasks.blocked }}</span>
+        <span class="label">blocked</span>
+      </li>
+      <li [class.alert]="current.tasks.overdue > 0">
+        <span class="value">{{ current.tasks.overdue }}</span>
+        <span class="label">overdue</span>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="charts-title">
+    <h2 id="charts-title">Tasks</h2>
+    <app-task-charts [indicators]="current.tasks" />
+  </section>
+
+  <section aria-labelledby="sprints-title">
+    <h2 id="sprints-title">Active sprints</h2>
+    @if (current.sprints.activeSprints.length > 0) {
+      <div class="sprints">
+        @for (sprint of current.sprints.activeSprints; track sprint.id) {
+          <app-active-sprint-card [sprint]="sprint" />
+        }
+      </div>
+    } @else {
+      <p class="empty">No sprint in progress.</p>
+    }
+  </section>
+
+  @if (current.workload; as workload) {
+    <section aria-labelledby="workload-title">
+      <h2 id="workload-title">Team workload</h2>
+      <app-workload-table [rows]="workload" />
+    </section>
+  }
+
+  @if (current.platform; as platform) {
+    <section aria-labelledby="platform-title">
+      <h2 id="platform-title">Accounts</h2>
+      <ul class="kpis">
+        <li>
+          <span class="value">{{ platform.users.total }}</span>
+          <span class="label">accounts</span>
+        </li>
+        <li>
+          <span class="value">{{ platform.users.active }}</span>
+          <span class="label">active</span>
+        </li>
+        <li>
+          <span class="value">{{ platform.users.inactive }}</span>
+          <span class="label">deactivated</span>
+        </li>
+        @for (role of roles; track role) {
+          <li>
+            <span class="value">{{ platform.users.byRole[role] }}</span>
+            <span class="label">{{ roleLabels[role] }}</span>
+          </li>
+        }
+      </ul>
+      <a routerLink="/admin/users" class="more-link">Manage the users</a>
+    </section>
+  }
+}

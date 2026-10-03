@@ -2,6 +2,9 @@
 import { computed, signal } from '@angular/core';
 
 import { AuthService } from '../core/auth/auth.service';
+import { Project, ProjectMember } from '../core/models/project';
+import { Sprint } from '../core/models/sprint';
+import { Task } from '../core/models/task';
 import { Role, User } from '../core/models/user';
 
 export function testUser(overrides: Partial<User> = {}): User {
@@ -19,6 +22,95 @@ export function testUser(overrides: Partial<User> = {}): User {
     updatedAt: '2026-10-01T00:00:00.000Z',
     ...overrides,
   };
+}
+
+/** Project managed by testUser() (id u1), without members by default. */
+export function testProject(overrides: Partial<Project> = {}): Project {
+  return {
+    id: 'p1',
+    name: 'E-commerce platform',
+    description: 'Online shop with Stripe payment',
+    startDate: '2026-10-01T00:00:00.000Z',
+    deadline: '2027-01-31T00:00:00.000Z',
+    status: 'PLANNING',
+    technologies: ['Angular', 'Node.js'],
+    manager: {
+      id: 'u1',
+      firstName: 'Sara',
+      lastName: 'Manager',
+      email: 'sara@example.com',
+      jobTitle: '',
+    },
+    members: [],
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function testMember(overrides: Partial<ProjectMember> = {}): ProjectMember {
+  return {
+    id: 'd1',
+    firstName: 'Youssef',
+    lastName: 'Alami',
+    email: 'youssef@example.com',
+    jobTitle: 'Full-stack developer',
+    isActive: true,
+    skills: [{ name: 'Angular', level: 'ADVANCED' }],
+    ...overrides,
+  };
+}
+
+export function testSprint(overrides: Partial<Sprint> = {}): Sprint {
+  return {
+    id: 's1',
+    name: 'Sprint 1',
+    objective: 'Authentication and catalog',
+    project: 'p1',
+    startDate: '2026-10-05T00:00:00.000Z',
+    endDate: '2026-10-18T00:00:00.000Z',
+    status: 'PLANNED',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+    stats: {
+      totalTasks: 3,
+      completedTasks: 1,
+      blockedTasks: 1,
+      totalPoints: 10,
+      completedPoints: 5,
+      progress: 50,
+      tasksByStatus: { TODO: 1, IN_PROGRESS: 0, CODE_REVIEW: 0, TESTING: 0, DONE: 1, BLOCKED: 1 },
+    },
+    ...overrides,
+  };
+}
+
+/** Task of testProject(), assigned to testMember() (d1), in sprint s1. */
+export function testTask(overrides: Partial<Task> = {}): Task {
+  return {
+    id: 't1',
+    title: 'Implement login page',
+    description: 'Reactive form + JWT',
+    type: 'FEATURE',
+    priority: 'HIGH',
+    complexity: 5,
+    status: 'TODO',
+    deadline: '2026-11-15T00:00:00.000Z',
+    isOverdue: false,
+    requiredSkills: ['Angular'],
+    project: 'p1',
+    sprint: 's1',
+    assignee: { id: 'd1', firstName: 'Youssef', lastName: 'Alami', email: 'youssef@example.com' },
+    createdBy: { id: 'u1', firstName: 'Sara', lastName: 'Manager', email: 'sara@example.com' },
+    createdAt: '2026-10-02T09:00:00.000Z',
+    updatedAt: '2026-10-02T09:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** Paginated response of a list endpoint. */
+export function testPage<T>(data: T[], total = data.length) {
+  return { data, pagination: { page: 1, limit: 20, total, totalPages: Math.ceil(total / 20) } };
 }
 
 function base64Url(value: object): string {
@@ -55,6 +147,11 @@ export function fakeAuthService(user: User | null) {
     expireSession: vi.fn(),
     refreshOnStartup: vi.fn(),
     refreshCurrentUser: vi.fn(),
+    updateCurrentUser: vi.fn((next: User) => session.set(next)),
+    replaceSession: vi.fn(({ user: next }: { user: User }) => {
+      session.set(next);
+      return next;
+    }),
   } satisfies Partial<Record<keyof AuthService, unknown>>;
 }
 

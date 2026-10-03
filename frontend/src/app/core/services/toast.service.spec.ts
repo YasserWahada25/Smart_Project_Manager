@@ -17,9 +17,21 @@ describe('ToastService', () => {
     ['success', 'toast-success', 4000],
     ['info', 'toast-info', 4000],
     ['error', 'toast-error', 6000],
-  ] as const)('%s() opens a styled snack bar', (method, panelClass, duration) => {
+  ] as const)('%s() opens a styled snack bar', async (method, panelClass, duration) => {
     toast[method]('Saved');
 
-    expect(open).toHaveBeenCalledWith('Saved', 'Close', { duration, panelClass: [panelClass] });
+    // The snack bar is loaded on demand (dynamic import), then opened.
+    await vi.waitFor(() =>
+      expect(open).toHaveBeenCalledWith('Saved', 'Close', { duration, panelClass: [panelClass] }),
+    );
+  });
+
+  it('shows the messages in the order they were requested', async () => {
+    toast.preload();
+    toast.info('First');
+    toast.error('Second');
+
+    await vi.waitFor(() => expect(open).toHaveBeenCalledTimes(2));
+    expect(open.mock.calls.map(([message]) => message)).toEqual(['First', 'Second']);
   });
 });

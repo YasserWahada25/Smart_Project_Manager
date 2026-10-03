@@ -1,0 +1,104 @@
+<div class="toolbar">
+  <h2>Board</h2>
+  <mat-form-field appearance="outline" class="scope" subscriptSizing="dynamic">
+    <mat-label>Show</mat-label>
+    <mat-select [formControl]="scope">
+      <mat-option value="">All the tasks</mat-option>
+      <mat-option value="backlog">Backlog (no sprint)</mat-option>
+      @for (sprint of sprints(); track sprint.id) {
+        <mat-option [value]="sprint.id">
+          {{ sprint.name }} ({{ sprintStatusLabels[sprint.status] }})
+        </mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+@if (errorMessage(); as message) {
+  <app-error-state [message]="message" (retry)="load()" />
+} @else {
+  <div class="board-area">
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Loading the board" />
+    }
+    @if (board(); as current) {
+      <p class="summary">
+        {{ current.totalTasks }} {{ current.totalTasks === 1 ? 'task' : 'tasks' }}
+      </p>
+      <div class="columns">
+        @for (column of current.columns; track column.status) {
+          <section
+            class="column"
+            [attr.data-status]="column.status"
+            [attr.aria-labelledby]="'column-' + column.status"
+          >
+            <h3 [id]="'column-' + column.status">
+              {{ statusLabels[column.status] }}
+              <span class="count">{{ column.count }}</span>
+            </h3>
+            <ul class="cards">
+              @for (task of column.tasks; track task.id) {
+                <li class="card" [class.overdue]="task.isOverdue">
+                  <a class="card-title" [routerLink]="['/projects', projectId, 'tasks', task.id]">
+                    {{ task.title }}
+                  </a>
+                  <div class="card-meta">
+                    <app-task-priority [priority]="task.priority" />
+                    <span>{{ task.complexity }} pts</span>
+                    @if (task.deadline) {
+                      <span class="deadline">
+                        {{ task.deadline | date: 'MMM d' : 'UTC' }}
+                        @if (task.isOverdue) {
+                          · overdue
+                        }
+                      </span>
+                    }
+                  </div>
+                  @if (task.blockedReason) {
+                    <p class="reason">{{ task.blockedReason }}</p>
+                  }
+                  <div class="card-footer">
+                    <span class="assignee">
+                      <mat-icon aria-hidden="true">person</mat-icon>
+                      {{ task.assignee ? fullName(task.assignee) : 'Unassigned' }}
+                    </span>
+                    @if (canMove(task)) {
+                      <button
+                        mat-icon-button
+                        type="button"
+                        [matMenuTriggerFor]="moveMenu"
+                        [matMenuTriggerData]="{ task }"
+                        [disabled]="movingId() === task.id"
+                        [attr.aria-label]="'Move ' + task.title"
+                      >
+                        <mat-icon>swap_horiz</mat-icon>
+                      </button>
+                    }
+                  </div>
+                </li>
+              } @empty {
+                <li class="empty">No task</li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+    }
+  </div>
+
+  <mat-menu #moveMenu="matMenu">
+    <ng-template matMenuContent let-task="task">
+      <span class="menu-label">Move to</span>
+      @for (target of targets(task); track target) {
+        <button
+          mat-menu-item
+          type="button"
+          [disabled]="needsAssignee(task, target)"
+          (click)="move(task, target)"
+        >
+          {{ statusLabels[target] }}
+        </button>
+      }
+    </ng-template>
+  </mat-menu>
+}

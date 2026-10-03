@@ -1,0 +1,49 @@
+.page-header {
+  margin-bottom: 24px;
+
+  h1 {
+    font: var(--mat-sys-headline-medium);
+    margin: 0 0 8px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 760px;
+}
+
+h2 {
+  font: inherit;
+  margin: 0;
+}
+
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 48px;
+  margin: 16px 0 0;
+
+  dt {
+    font: var(--mat-sys-label-medium);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 4px 0 0;
+    font: var(--mat-sys-body-large);
+    overflow-wrap: anywhere;
+  }
+}
+
+.note {
+  margin: 16px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

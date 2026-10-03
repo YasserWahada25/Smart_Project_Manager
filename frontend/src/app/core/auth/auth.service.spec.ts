@@ -162,6 +162,44 @@ describe('AuthService', () => {
     expect(auth.isAuthenticated()).toBe(false);
   });
 
+  it('updates the user of the session and keeps the token', () => {
+    const auth = setup();
+    auth.updateCurrentUser(testUser());
+    expect(auth.isAuthenticated()).toBe(false);
+
+    auth.login({ email: 'a@b.co', password: 'x' }).subscribe();
+    const token = testToken();
+    httpTesting
+      .expectOne('/api/v1/auth/login')
+      .flush({ token, tokenType: 'Bearer', expiresIn: '1d', user: testUser() });
+
+    auth.updateCurrentUser(testUser({ jobTitle: 'Tech lead' }));
+
+    expect(auth.currentUser()?.jobTitle).toBe('Tech lead');
+    expect(auth.token()).toBe(token);
+    expect(JSON.parse(localStorage.getItem('spm.auth.user') ?? '{}').jobTitle).toBe('Tech lead');
+  });
+
+  it('switches to the new token returned after a password change', () => {
+    const auth = setup();
+    auth.login({ email: 'a@b.co', password: 'x' }).subscribe();
+    httpTesting
+      .expectOne('/api/v1/auth/login')
+      .flush({ token: testToken(), tokenType: 'Bearer', expiresIn: '1d', user: testUser() });
+    const newToken = testToken(7200);
+
+    const user = auth.replaceSession({
+      token: newToken,
+      tokenType: 'Bearer',
+      expiresIn: '1d',
+      user: testUser(),
+    });
+
+    expect(user).toEqual(testUser());
+    expect(auth.token()).toBe(newToken);
+    expect(localStorage.getItem('spm.auth.token')).toBe(newToken);
+  });
+
   it('logs out', () => {
     const auth = setup();
     auth.login({ email: 'a@b.co', password: 'x' }).subscribe();

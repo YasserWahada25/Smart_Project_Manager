@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit the sprint' : 'New sprint' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <mat-dialog-content>
+    @if (errorMessage(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" placeholder="Sprint 1" />
+      @if (form.controls.name.invalid) {
+        <mat-error>{{ error('name') }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Objective (optional)</mat-label>
+      <textarea matInput formControlName="objective" rows="2"></textarea>
+      @if (form.controls.objective.invalid) {
+        <mat-error>{{ error('objective') }}</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Start date</mat-label>
+        <input matInput type="date" formControlName="startDate" />
+        @if (form.controls.startDate.invalid) {
+          <mat-error>{{ error('startDate') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>End date</mat-label>
+        <input matInput type="date" formControlName="endDate" />
+        @if (form.controls.endDate.invalid) {
+          <mat-error>{{ error('endDate') }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button type="submit" [disabled]="submitting()">
+      {{ isEdit ? 'Save changes' : 'Create the sprint' }}
+    </button>
+  </mat-dialog-actions>
+</form>

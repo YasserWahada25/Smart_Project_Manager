@@ -19,13 +19,14 @@ export function firstErrorMessage(
 
 /**
  * Shows the backend validation messages (ApiError.details) on the matching controls.
+ * Array paths use the backend notation (`skills[1].level` → control `skills.1.level`).
  * The `server` error disappears as soon as the user edits the field (validators re-run).
  * Returns true if at least one message was attached to a control.
  */
 export function applyServerErrors(form: FormGroup, error: ApiError): boolean {
   let applied = false;
   for (const { field, message } of error.details) {
-    const control = form.get(field);
+    const control = form.get(field.replace(/\[(\d+)\]/g, '.$1'));
     if (control) {
       control.setErrors({ ...control.errors, server: message });
       control.markAsTouched();
@@ -33,4 +34,14 @@ export function applyServerErrors(form: FormGroup, error: ApiError): boolean {
     }
   }
   return applied;
+}
+
+/**
+ * Error of a form submission: backend validation messages go on their fields (returns null);
+ * any other error returns the message to display above the form.
+ */
+export function formSubmitError(form: FormGroup, error: unknown): string | null {
+  if (!(error instanceof ApiError)) return 'An unexpected error occurred.';
+  if (error.status === 400 && applyServerErrors(form, error)) return null;
+  return error.message;
 }

@@ -6,7 +6,7 @@ University mini-project — *AI for Software Engineering*.
 
 Smart Project Manager is a web platform that helps software teams manage projects, teams, sprints, tasks, priorities, deadlines and workload. An AI module assists the team with automatic task generation, developer recommendation and sprint delay-risk prediction.
 
-> **Project status:** the Express.js REST API is complete for all non-AI features (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: setup + authentication screens (sign in, sign up, protected pages, session handling). Next: profile/administration screens and the business screens, then the AI service.
+> **Project status:** the Express.js REST API is complete for all non-AI features (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). Angular frontend: setup, authentication (sign in, sign up, protected pages, session handling), profile & skills, user administration, projects & teams. Next: sprints & tasks, Kanban, comments & notifications, dashboard screens, then the AI service.
 > See [Development progress](#development-progress) for what is actually implemented.
 
 ---
@@ -57,7 +57,7 @@ Details: [docs/architecture.md](docs/architecture.md).
 
 ```
 .
-├── frontend/          Angular application          (layout, authentication, home)
+├── frontend/          Angular application          (layout, authentication, profile, users, projects & teams)
 ├── backend/           Express.js REST API           (all non-AI features)
 ├── ai-service/        FastAPI AI service            (not created yet)
 ├── docs/              Project documentation
@@ -121,7 +121,7 @@ npm install
 npm start               # http://localhost:4200
 ```
 
-Open http://localhost:4200: you are sent to the sign-in page. Create an account on **Create an account** (developer or project manager), or sign in with the administrator created by `npm run create-admin`. The home page then shows the status of the frontend, the backend API and MongoDB.
+Open http://localhost:4200: you are sent to the sign-in page. Create an account on **Create an account** (developer or project manager), or sign in with the administrator created by `npm run create-admin`. The home page then shows the status of the frontend, the backend API and MongoDB. Every user edits their information, skills and password on **My profile**; administrators manage the accounts on **Users**. Project managers create projects on **Projects** and build their team from the developer directory (search by name or skill).
 
 | Script                  | Purpose |
 |-------------------------|---------|
@@ -164,8 +164,8 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 |---------|--------------------------------------------------------------|--------|
 | TASK 12 | Angular setup (project, routing, layout, Angular Material, environments, HTTP & error interceptors) | Done |
 | TASK 13 | Authentication UI (login, register, guards, session handling) | Done |
-| TASK 14 | Profile, skills & user administration UI | Planned |
-| TASK 15 | Projects & team UI | Planned |
+| TASK 14 | Profile, skills & user administration UI | Done |
+| TASK 15 | Projects & team UI | Done |
 | TASK 16 | Sprints & tasks UI | Planned |
 | TASK 17 | Kanban board UI | Planned |
 | TASK 18 | Comments, activity & notifications UI | Planned |
@@ -204,7 +204,7 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 | [docs/testing.md](docs/testing.md)               | Test strategy and results                        |
 | [docs/deployment.md](docs/deployment.md)         | Environment, Docker, deployment                  |
 | [docs/demo.md](docs/demo.md)                     | Functional demonstration scenario                |
-| [docs/bilan.md](docs/bilan.md)                   | Progress report after TASK 13 and log of the supervisor ↔ AI agent exchanges (in French) |
+| [docs/bilan.md](docs/bilan.md)                   | Progress report, updated after each task, and log of the supervisor ↔ AI agent exchanges (in French) |
 
 ### Technical report mapping
 

@@ -1,0 +1,52 @@
+.page-header {
+  margin-bottom: 16px;
+
+  .back {
+    margin-left: -12px;
+  }
+
+  h1 {
+    font: var(--mat-sys-headline-medium);
+    margin: 8px 0 0;
+  }
+}
+
+.form-card {
+  max-width: 760px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+
+  @media (max-width: 599px) {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.form-error {
+  margin: 8px 0 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}

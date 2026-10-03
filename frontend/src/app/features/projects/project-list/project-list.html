@@ -1,0 +1,105 @@
+<header class="page-header">
+  <div>
+    <h1>Projects</h1>
+    <p>{{ subtitle() }}</p>
+  </div>
+  @if (canCreate()) {
+    <a mat-flat-button routerLink="/projects/new">
+      <mat-icon>add</mat-icon>
+      New project
+    </a>
+  }
+</header>
+
+<form class="filters" role="search" [formGroup]="filters" (submit)="$event.preventDefault()">
+  <mat-form-field appearance="outline" class="search">
+    <mat-label>Search</mat-label>
+    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    <input matInput formControlName="search" maxlength="100" placeholder="Project name" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select formControlName="status">
+      <mat-option value="">All statuses</mat-option>
+      @for (status of statuses; track status) {
+        <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</form>
+
+@if (errorMessage(); as message) {
+  <app-error-state [message]="message" (retry)="load()" />
+} @else {
+  <div class="results">
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Loading the projects" />
+    }
+
+    @if (projects().length > 0) {
+      <ul class="grid">
+        @for (project of projects(); track project.id) {
+          <li>
+            <a class="card-link" [routerLink]="['/projects', project.id]">
+              <mat-card appearance="outlined" class="project-card">
+                <mat-card-header>
+                  <mat-card-title>{{ project.name }}</mat-card-title>
+                  <mat-card-subtitle>
+                    Manager: {{ project.manager.firstName }} {{ project.manager.lastName }}
+                  </mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <span class="status" [attr.data-status]="project.status">
+                    {{ statusLabels[project.status] }}
+                  </span>
+                  @if (project.description) {
+                    <p class="description">{{ project.description }}</p>
+                  }
+                  <p class="dates">
+                    <mat-icon aria-hidden="true">event</mat-icon>
+                    {{ project.startDate | date: 'mediumDate' : 'UTC' }}
+                    @if (project.deadline) {
+                      → {{ project.deadline | date: 'mediumDate' : 'UTC' }}
+                    }
+                  </p>
+                  @if (project.technologies.length > 0) {
+                    <ul class="technologies" aria-label="Technologies">
+                      @for (technology of visibleTechnologies(project); track technology) {
+                        <li>{{ technology }}</li>
+                      }
+                      @if (hiddenTechnologies(project) > 0) {
+                        <li class="more">+{{ hiddenTechnologies(project) }}</li>
+                      }
+                    </ul>
+                  }
+                  <p class="team">
+                    <mat-icon aria-hidden="true">group</mat-icon>
+                    {{ project.members.length }}
+                    {{ project.members.length === 1 ? 'member' : 'members' }}
+                  </p>
+                </mat-card-content>
+              </mat-card>
+            </a>
+          </li>
+        }
+      </ul>
+    } @else if (!loading()) {
+      <div class="empty">
+        <mat-icon aria-hidden="true">folder_open</mat-icon>
+        <p>{{ emptyMessage() }}</p>
+      </div>
+    }
+  </div>
+
+  @if (total() > pageSize() || pageIndex() > 0) {
+    <mat-paginator
+      [length]="total()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizeOptions"
+      aria-label="Pages of projects"
+      (page)="changePage($event)"
+    />
+  }
+}

@@ -1,0 +1,53 @@
+.comments {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comment {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.comment-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+
+  time,
+  .edited {
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.content {
+  margin: 0 0 4px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  padding: 12px 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.new-comment {
+  margin-top: 16px;
+}
+
+.full {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

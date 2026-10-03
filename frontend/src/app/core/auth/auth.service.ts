@@ -59,11 +59,24 @@ export class AuthService {
   refreshCurrentUser(): Observable<User> {
     return this.http.get<{ user: User }>(`${this.url}/me`).pipe(
       map(({ user }) => {
-        const token = this.token();
-        if (token) this.setSession({ token, user });
+        this.updateCurrentUser(user);
         return user;
       }),
     );
+  }
+
+  /** Keeps the session copy of the user in sync (e.g. after a profile update). */
+  updateCurrentUser(user: User): void {
+    const token = this.token();
+    if (token) this.setSession({ token, user });
+  }
+
+  /**
+   * Switches the session to a new token (returned after a password change: every token
+   * issued before the change is now rejected by the backend).
+   */
+  replaceSession(response: AuthResponse): User {
+    return this.start(response);
   }
 
   /** Called once at startup: re-validates a restored session without blocking the UI. */

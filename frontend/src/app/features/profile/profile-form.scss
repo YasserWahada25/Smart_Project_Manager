@@ -1,0 +1,47 @@
+// Shared by the forms of the profile page.
+h2 {
+  font: inherit;
+  margin: 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+
+  @media (max-width: 599px) {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.form-error {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}

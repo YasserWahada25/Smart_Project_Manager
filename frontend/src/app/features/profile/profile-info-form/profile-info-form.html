@@ -1,0 +1,64 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title><h2>Personal information</h2></mat-card-title>
+    <mat-card-subtitle>Your name, job title and a short bio</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    @if (errorMessage(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="row">
+        <mat-form-field appearance="outline">
+          <mat-label>First name</mat-label>
+          <input matInput formControlName="firstName" autocomplete="given-name" />
+          @if (form.controls.firstName.invalid) {
+            <mat-error>{{ error('firstName') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Last name</mat-label>
+          <input matInput formControlName="lastName" autocomplete="family-name" />
+          @if (form.controls.lastName.invalid) {
+            <mat-error>{{ error('lastName') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Job title</mat-label>
+        <input matInput formControlName="jobTitle" autocomplete="organization-title" />
+        <mat-hint>For example: Full-stack developer</mat-hint>
+        @if (form.controls.jobTitle.invalid) {
+          <mat-error>{{ error('jobTitle') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Bio</mat-label>
+        <textarea matInput formControlName="bio" rows="3"></textarea>
+        <mat-hint align="end">{{ form.controls.bio.value.length }} / {{ bioMaxLength }}</mat-hint>
+        @if (form.controls.bio.invalid) {
+          <mat-error>{{ error('bio') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="actions">
+        <button
+          mat-button
+          type="button"
+          [disabled]="form.pristine || submitting()"
+          (click)="cancel()"
+        >
+          Cancel
+        </button>
+        <button mat-flat-button type="submit" [disabled]="form.pristine || submitting()">
+          Save
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

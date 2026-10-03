@@ -1,0 +1,113 @@
+@if (project(); as current) {
+  <div class="layout">
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title><h2>Overview</h2></mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="description" [class.muted]="!current.description">
+          {{ current.description || 'No description.' }}
+        </p>
+        <dl class="facts">
+          <div>
+            <dt>Start date</dt>
+            <dd>{{ current.startDate | date: 'longDate' : 'UTC' }}</dd>
+          </div>
+          <div>
+            <dt>Deadline</dt>
+            <dd>
+              {{ current.deadline ? (current.deadline | date: 'longDate' : 'UTC') : 'Not set' }}
+            </dd>
+          </div>
+          <div>
+            <dt>Project manager</dt>
+            <dd>
+              {{ fullName(current.manager) }}
+              <span class="muted">{{ current.manager.email }}</span>
+            </dd>
+          </div>
+        </dl>
+        <h3>Technologies</h3>
+        @if (current.technologies.length > 0) {
+          <ul class="tags" aria-label="Technologies">
+            @for (technology of current.technologies; track technology) {
+              <li>{{ technology }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="muted">No technology listed.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title><h2>Team</h2></mat-card-title>
+        <mat-card-subtitle>
+          {{ current.members.length }} {{ current.members.length === 1 ? 'member' : 'members' }}
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (canEdit()) {
+          <button
+            mat-flat-button
+            type="button"
+            class="add"
+            [disabled]="current.members.length >= maxMembers"
+            (click)="openAddMembers()"
+          >
+            <mat-icon>person_add</mat-icon>
+            Add developers
+          </button>
+        }
+        <ul class="members">
+          @for (member of current.members; track member.id) {
+            <li class="member">
+              <div class="member-text">
+                <span class="member-name">
+                  {{ fullName(member) }}
+                  @if (!member.isActive) {
+                    <span class="inactive">Deactivated</span>
+                  }
+                </span>
+                <span class="member-detail">
+                  @if (member.jobTitle) {
+                    {{ member.jobTitle }} ·
+                  }
+                  {{ member.email }}
+                </span>
+                @if (member.skills.length > 0) {
+                  <ul class="tags small" aria-label="Skills">
+                    @for (skill of member.skills; track skill.name) {
+                      <li>
+                        {{ skill.name }} <span class="muted">{{ levelLabels[skill.level] }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+              @if (canEdit()) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="removingId() === member.id"
+                  [attr.aria-label]="'Remove ' + fullName(member) + ' from the team'"
+                  (click)="removeMember(member)"
+                >
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              }
+            </li>
+          } @empty {
+            <li class="empty">
+              No developer in the team yet.
+              @if (canEdit()) {
+                Add developers to start planning.
+              }
+            </li>
+          }
+        </ul>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

@@ -1,0 +1,81 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  h2 {
+    font: var(--mat-sys-title-large);
+    margin: 0;
+  }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 12px;
+
+  mat-form-field {
+    flex: 1 1 150px;
+  }
+
+  .search {
+    flex: 2 1 240px;
+  }
+
+  .overdue {
+    margin-top: 8px;
+  }
+}
+
+.table-container {
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+
+  mat-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+  }
+}
+
+.tasks {
+  min-width: 860px;
+}
+
+.title {
+  display: block;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.type {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.overdue-cell {
+  color: var(--mat-sys-error);
+}
+
+.overdue-label {
+  display: block;
+  font: var(--mat-sys-label-small);
+}
+
+.no-data {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}

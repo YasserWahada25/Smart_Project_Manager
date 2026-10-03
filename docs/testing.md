@@ -88,17 +88,31 @@ npm run build            # production build (type checking + budgets)
 |------|------------------|
 | `core/http/api-error.interceptor.spec.ts` | Successful responses untouched; backend error body → `ApiError` (status, code, message, field details) without toast for 4xx; network error → status 0 `NETWORK_ERROR` + toast; 502 without body → fallback message + toast; 500 → backend message in toast; `SKIP_ERROR_TOAST` disables the toast |
 | `core/services/health.service.spec.ts` | `GET /api/v1/health` → backend & database up; 503 → backend up / database down (no toast); 502 → `ApiError` emitted, no global toast |
-| `core/services/toast.service.spec.ts` | success / info / error open a snack bar with the right style and duration |
+| `core/services/toast.service.spec.ts` | success / info / error open a snack bar (loaded on demand) with the right style and duration; messages shown in the order requested |
 | `shared/components/error-state/error-state.spec.ts` | Message rendered as an alert; "Try again" emits `retry`; button hidden when not retryable |
 | `features/home/home.spec.ts` | Loading state; three services operational; database outage highlighted; backend unreachable → error state, retry calls the service again and shows the status |
-| `layouts/main-layout/main-layout.spec.ts` | Application name and navigation links; menu button only on handsets |
-| `app.spec.ts` | Routing with a fake session: signed-in user → home in the layout with tab title (regression test for the redirect loop), unknown URL → not-found page, `/login` → sent home; visitor → `/login?returnUrl=…` with title "Sign in", `/register` without side navigation |
+| `layouts/main-layout/main-layout.spec.ts` | Application name; navigation links by role (Home, Projects, My profile; Users for administrators only); menu button only on handsets; user menu with My profile link |
+| `app.spec.ts` | Routing with a fake session: signed-in user → home in the layout with tab title (regression test for the redirect loop), unknown URL → not-found page, `/login` → sent home, `/profile` with title "My profile", `/admin/users` refused (toast + home), `/projects` → `/projects/new` ("new" not read as an id) → `/projects/p1` with their titles; developer → `/projects/new` and `/projects/:id/edit` refused; administrator → `/admin/users` with title "Users"; visitor → `/login?returnUrl=…` with title "Sign in", `/register` without side navigation |
 | `core/auth/jwt.spec.ts` | Payload decoding, unreadable tokens → null, expiry date, expired / not expired / no `exp` |
 | `core/auth/token-storage.spec.ts` | Save/load, partial or corrupted storage → null, clear |
-| `core/auth/auth.service.spec.ts` | Login (POST body, no Authorization header, session persisted), register, restore valid session, discard expired session, refresh user with Bearer header, 401 → session ended + toast + redirect to login, automatic logout at token expiry (fake timers), logout |
+| `core/auth/auth.service.spec.ts` | Login (POST body, no Authorization header, session persisted), register, restore valid session, discard expired session, refresh user with Bearer header, 401 → session ended + toast + redirect to login, automatic logout at token expiry (fake timers), session user updated with the token kept, new token after a password change, logout |
 | `core/auth/auth.interceptor.spec.ts` | Bearer header on API requests only (never another origin), no header without session, 401 on authenticated request → `expireSession`, 401 without session and 403 → session kept |
 | `core/auth/auth.guards.spec.ts` | `authGuard` (allow / redirect with returnUrl), `guestGuard`, `roleGuard` (allow / refuse with message), `safeReturnUrl` (8 cases incl. `//host`, backslash, `https://`, `javascript:`) |
-| `shared/forms/forms.spec.ts` | Password policy validator (same cases as the backend incl. multi-byte), confirmation validator, first error message, backend messages applied to controls and cleared on edit |
+| `shared/forms/forms.spec.ts` | Password policy validator (same cases as the backend incl. multi-byte), confirmation validator, first error message, backend messages applied to controls and cleared on edit, array paths (`skills[1].level`) mapped to `FormArray` controls, `formSubmitError`, integer validator |
+| `shared/components/confirm-dialog/confirm-dialog.spec.ts` | Title, message and destructive style; confirm → `true`, Cancel → `false` |
+| `features/profile/profile.service.spec.ts` | `GET`/`PATCH /profile`, `PUT /profile/skills`, `PATCH /profile/password` (session switched to the new token); session user refreshed on success, untouched on error |
+| `features/profile/profile.spec.ts` | Loader, account card (email, role, member since) and the three forms; load error + retry |
+| `features/profile/profile-info-form/profile-info-form.spec.ts` | Current values, Save enabled only after a change, validation (blank first name, bio > 500), trimmed values sent + toast + `saved` event, Cancel, backend field messages vs. other errors |
+| `features/profile/skills-form/skills-form.spec.ts` | Current skills, empty state, add / remove, whole list saved (years optional), duplicate names (case-insensitive) and non-integer years refused, backend messages on `skills[i].name` and on the list, Cancel, no error on a new empty skill after a save (regression) |
+| `features/profile/password-form/password-form.spec.ts` | Required fields, password policy + confirmation, success → toast + form cleared **without error messages** (regression), wrong current password on its field (400, session kept), show / hide |
+| `features/users/user-admin.service.spec.ts` | Query parameters (only the filters that are set, trimmed search), `PATCH /users/:id/status`, `PATCH /users/:id/role` |
+| `shared/data/paged-list.spec.ts` | Items / total / loading, only the latest query displayed (slow response ignored), error message then recovery, item replaced in place; `actionErrorMessage` (network, 5xx and 401 → null) |
+| `features/projects/project.service.spec.ts` | List parameters, get, create (empty deadline not sent), update (deadline `null`), status, delete, add / remove member; `DeveloperService` search parameters (name and skill) |
+| `features/projects/project-list/project-list.spec.ts` | Cards (link, manager, status, dates in UTC, technologies "+N", team size), "New project" and subtitle per role, empty states per role / filters, debounced search + status filter (harness), error + retry |
+| `features/projects/project-form/project-form.spec.ts` | Today as default start date, technologies as chips (Enter, duplicates ignored, remove), creation payload + toast + navigation, validation (blank name, deadline before start, re-check when the start date moves), backend field messages, edition (fields filled, cleared deadline → `null`), refusal for another manager's or an archived project |
+| `features/projects/project-detail/project-detail.spec.ts` | Overview and team, manager actions vs read-only administrator, status change (archiving confirmed, read-only banner), deletion confirmed + navigation, refused deletion (409) reported, member removal (409 then success), "Add developers" dialog and page updated from it, reload on `:id` change, 404 without retry |
+| `features/projects/add-members-dialog/add-members-dialog.spec.ts` | Developers with skills, members marked "In the team", search by name and by skill (same text in both fields still searches — regression), addition (API call, page callback, toast, row updated), refused addition reported, empty state |
+| `features/users/user-list/user-list.spec.ts` | First page, own account marked "You" without actions, debounced search + role/status filters (Angular Material test harnesses), pagination, role change after confirmation (row updated + toast), cancelled confirmation, deactivate with confirmation / activate without, backend refusal → toast, load error + retry |
 | `features/auth/login/login.spec.ts` | Validation messages without API call, login + navigation to returnUrl, external returnUrl ignored, explicit messages for 401 and 403, password visibility toggle |
 | `features/auth/register/register.spec.ts` | Password policy and confirmation messages, confirmation re-checked when the password changes, developer by default + success toast + navigation, project manager choice, 409 → "already registered" on the email field, backend 400 details on fields, other errors above the form |
 
@@ -138,6 +152,15 @@ npm run build            # production build (type checking + budgets)
 | 2026-10-02 | TASK 12 | Frontend | `npm audit --omit=dev` | 0 vulnerabilities |
 | 2026-10-02 | TASK 13 | Frontend | `npm run test:ci` | 15 files, 90 tests passed |
 | 2026-10-02 | TASK 13 | Frontend | `npm run lint` / `npm run format:check` / `npm run build` | Pass / pass / success, initial bundle 471 kB raw (119 kB transferred) |
+| 2026-10-02 | TASK 14 | Frontend | `npm run test:ci` | 23 files, 143 tests passed |
+| 2026-10-02 | TASK 14 | Frontend | `npm run lint` / `npm run format:check` | All files pass linting / Prettier style OK |
+| 2026-10-02 | TASK 14 | Frontend | `npm run build` | Success; initial bundle 499.7 kB raw / 125 kB transferred (budget warning at 500 kB); lazy chunks: user-list 128 kB, profile 22 kB. The +29 kB come from CDK overlay / accessibility code shared by the new Material menus, selects and dialog, which the bundler keeps in the initial chunk (measured: 470.8 kB with the two new routes removed) |
+| 2026-10-02 | TASK 14 | Frontend | `npm audit --omit=dev` | 0 vulnerabilities |
+| 2026-10-02 | TASK 14 | Backend | `npm test` / `npm run lint` | 20 suites, 295 tests passed / 0 errors (backend unchanged) |
+| 2026-10-02 | TASK 15 | Frontend | `npm run test:ci` | 29 files, 194 tests passed |
+| 2026-10-02 | TASK 15 | Frontend | `npm run lint` / `npm run format:check` | All files pass linting / Prettier style OK |
+| 2026-10-02 | TASK 15 | Frontend | `npm run build` | Success; **initial bundle 341.6 kB raw / 94.4 kB transferred** (500.8 kB / 125.8 kB before the snack bar was loaded on demand — the 500 kB budget warning is gone); lazy chunks: project-form 86 kB, user-list 54 kB, project-detail 22 kB, project-list 11 kB |
+| 2026-10-02 | TASK 15 | Frontend | `npm audit --omit=dev` | 0 vulnerabilities |
 
 ### Manual verification (TASK 02)
 
@@ -224,5 +247,28 @@ The visual rendering was checked through component tests (jsdom), not in a real 
 `ng serve` + real backend + local MongoDB (throw-away `@smoke.test` account deleted afterwards): `/login`, `/register`, `/`, `/some/page` served (200); register through the proxy → token + user; login → token; wrong password → 401 `Invalid email or password`; `/auth/me` → 200 with the token, 401 without.
 
 **Browser check (2026-10-02, by the project supervisor):** in a real browser, one `PROJECT_MANAGER` and one `DEVELOPER` account were created through `/register`; each landed on the home page with the right greeting, role and email, the user menu showed the full name, role and **Log out**, and the system status showed Frontend, Backend API and Database as Operational.
+
+### Manual verification (TASK 14)
+
+Through the dev proxy (`http://localhost:4200/api/v1` → backend → local MongoDB), with a throw-away developer and an administrator created by `npm run create-admin` (`@smoke.test` accounts, deleted afterwards) — **21/21 checks passed**:
+
+- `/profile` and `/admin/users` served (200);
+- profile read and update; skills saved; invalid level → 400 on `skills[0].level` and duplicate → 400 on `skills` (the field paths the forms map);
+- wrong current password → 400 on `currentPassword` (not 401); password changed → new token; old token → 401 "Password has been changed, please log in again"; new token → 200;
+- admin: list with search and with role + status filters; developer → 403 on `/users`; change role; deactivate → the user's token gets 401 "Account is deactivated"; reactivate; own account → 403.
+
+### Manual verification (TASK 15)
+
+Through the dev proxy, with a throw-away project manager, two developers (with skills) and an administrator (`@smoke.test` accounts and their project, deleted afterwards) — **26/26 checks passed**:
+
+- `/projects`, `/projects/new`, `/projects/:id`, `/projects/:id/edit` served (200);
+- creation without deadline (status `PLANNING`, no `deadline` field); deadline before start → 400 on `deadline`; developer → 403;
+- list with search; developer directory filtered by skill (`angular` matches `Angular`);
+- add member; same member again → 409; non-developer → 400;
+- the member sees the project, an outsider gets 404; member and administrator cannot modify (403), the administrator can view;
+- edition with a deadline, then cleared deadline (`null`) removed;
+- archive → modification 409 and team change 409 → un-archive allowed; remove member; delete the empty project → 204, then 404.
+
+**Finding (backend, not fixed in this task):** deleting a project removes its activities but not its **notifications**; they keep referencing the deleted project (2 such notifications were removed by the cleanup script). To be handled with the notifications screen (TASK 18).
 
 Not verified: graceful shutdown on `SIGTERM` (Windows does not deliver POSIX signals to Node processes the same way; to be verified in the Docker task).

@@ -47,11 +47,11 @@ Software teams have to juggle projects, sprints, tasks, priorities, deadlines an
 | ID    | Module                          | Summary | Status |
 |-------|---------------------------------|---------|--------|
 | FR-01 | Authentication                  | Register/login with JWT, protected routes, role-based authorization. | Done (API + UI: sign in, sign up, protected pages, session expiry) |
-| FR-02 | User management                 | Admin manages users, roles, account activation. | In progress (backend done: list/search/filter, view, activate/deactivate, change role, admin bootstrap; UI planned; platform information in the admin dashboard) |
-| FR-03 | User profiles                   | Users view/update their profile and change their password. | In progress (backend done, UI planned) |
-| FR-04 | Developer skills                | Developers manage their skills (name, level, years of experience; used by AI-02). | In progress (backend done, UI planned) |
-| FR-05 | Project management              | CRUD on projects, status lifecycle, members. | In progress (backend done, UI planned) |
-| FR-06 | Team management                 | Manage project members/teams. | In progress (backend done: project members + developer directory; UI planned) |
+| FR-02 | User management                 | Admin manages users, roles, account activation. | Done (API + UI `/admin/users`: search, role/status filters, pagination, activate/deactivate, change role; admin bootstrap command). Platform figures belong to the admin dashboard (FR-13) |
+| FR-03 | User profiles                   | Users view/update their profile and change their password. | Done (API + UI `/profile`: personal information, password change) |
+| FR-04 | Developer skills                | Developers manage their skills (name, level, years of experience; used by AI-02). | Done (API + UI `/profile`: add, edit, remove skills; AI-02 itself is planned) |
+| FR-05 | Project management              | CRUD on projects, status lifecycle, members. | Done (API + UI: project list, creation/edition form, project page with status changes, archiving and deletion) |
+| FR-06 | Team management                 | Manage project members/teams. | Done (API + UI: team on the project page, developer directory searchable by name and skill, add/remove members) |
 | FR-07 | Sprint management               | CRUD on sprints within a project, status lifecycle. | In progress (backend done, UI planned) |
 | FR-08 | Task management                 | CRUD on tasks, assignment, workflow transitions. | In progress (backend done, UI planned) |
 | FR-09 | Kanban board                    | Visualize tasks by workflow column; BLOCKED tasks identifiable. | In progress (board API done, UI planned) |
@@ -59,7 +59,7 @@ Software teams have to juggle projects, sprints, tasks, priorities, deadlines an
 | FR-11 | Activity history                | Log task/sprint/project events. | In progress (backend done, UI planned) |
 | FR-12 | Notifications                   | Notify users of relevant events. | In progress (backend done, UI planned) |
 | FR-13 | Dashboard                       | Project indicators and charts. | In progress (API done incl. workload & platform indicators; charts UI planned; AI risk indicators with AI-03) |
-| FR-14 | Search and filters              | Search/filter projects and tasks. | In progress (API done: list filters + global search; UI planned) |
+| FR-14 | Search and filters              | Search/filter projects and tasks. | In progress (API done: list filters + global search; UI: project search and status filter, developer search by skill done; task filters and global search planned) |
 | FR-15 | AI features                     | AI-01, AI-02, AI-03 (see [ai.md](ai.md)). | Planned |
 
 ### 5.1 Project

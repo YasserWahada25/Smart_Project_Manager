@@ -1,6 +1,8 @@
 const request = require('supertest');
 const { createApp } = require('../src/app');
 const { Project } = require('../src/models/project.model');
+const { Activity } = require('../src/models/activity.model');
+const { Notification } = require('../src/models/notification.model');
 const { startTestDatabase, stopTestDatabase, clearTestDatabase } = require('./helpers/db');
 const { createAdmin, createManager, createDeveloper, createProject, bearer } = require('./helpers/factories');
 
@@ -242,6 +244,18 @@ describe('DELETE /api/v1/projects/:id', () => {
 
     expect((await api.remove(dev, project.id)).status).toBe(403);
     expect(await Project.findById(project.id)).not.toBeNull();
+  });
+
+  it('also deletes the history and the notifications of the project', async () => {
+    const project = await createProject(manager);
+    await api.addMember(manager, project.id, dev.id);
+    await api.removeMember(manager, project.id, dev.id);
+    expect(await Notification.countDocuments({ project: project._id })).toBe(2);
+
+    expect((await api.remove(manager, project.id)).status).toBe(204);
+
+    expect(await Activity.countDocuments({ project: project._id })).toBe(0);
+    expect(await Notification.countDocuments({ project: project._id })).toBe(0);
   });
 });
 

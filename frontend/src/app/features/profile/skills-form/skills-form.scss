@@ -1,0 +1,49 @@
+.skill {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  .name {
+    flex: 2;
+  }
+
+  .level {
+    flex: 1.4;
+  }
+
+  .years {
+    flex: 0.8;
+  }
+
+  .remove {
+    margin-top: 4px;
+  }
+
+  // On phones each skill takes several lines.
+  @media (max-width: 599px) {
+    flex-wrap: wrap;
+    gap: 0 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    .name {
+      flex: 1 1 100%;
+    }
+
+    .level,
+    .years {
+      flex: 1;
+    }
+  }
+}
+
+.empty {
+  margin: 0 0 8px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.list-error {
+  margin: 0 0 8px;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-small);
+}
