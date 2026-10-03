@@ -2,8 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { ChartConfiguration } from 'chart.js';
+import { of } from 'rxjs';
 
 import { ChartView } from '../../shared/components/chart/chart';
+import { testRisk } from '../../testing/test-data';
+import { AiRiskService } from '../ai-risk/ai-risk.service';
 import { ActiveSprintCard } from './active-sprint-card/active-sprint-card';
 import { testActiveSprint, testIndicators, testWorkloadRow } from '../../testing/dashboard-data';
 import { TaskCharts } from './task-charts/task-charts';
@@ -83,8 +86,11 @@ describe('WorkloadTable', () => {
 });
 
 describe('ActiveSprintCard', () => {
-  it('shows the progress and the days left, and links to the sprint board', async () => {
-    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+  it('shows the progress, the days left and the AI delay risk, and links to the sprint board', async () => {
+    const risk = vi.fn(() => of(testRisk()));
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: AiRiskService, useValue: { risk } }],
+    });
     const fixture = TestBed.createComponent(ActiveSprintCard);
     fixture.componentRef.setInput('sprint', testActiveSprint({ daysRemaining: -2 }));
     await fixture.whenStable();
@@ -98,5 +104,7 @@ describe('ActiveSprintCard', () => {
     expect(text).toContain('1 blocked');
     expect(text).toContain('2 days late');
     expect(element.querySelector('.days')?.classList).toContain('alert');
+    expect(risk).toHaveBeenCalledWith('s1');
+    expect(text).toContain('Delay risk (AI): High (82%)');
   });
 });

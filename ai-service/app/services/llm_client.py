@@ -17,6 +17,7 @@ logger = logging.getLogger("ai-service")
 
 TEMPERATURE = 0.2  # low: the same document should give (almost) the same plan
 MAX_COMPLETION_TOKENS = 12_000
+CHAT_MAX_COMPLETION_TOKENS = 2_000  # assistant answers are short
 
 
 class LlmError(Exception):
@@ -56,6 +57,32 @@ class OpenAiClient:
             response = self._post(payload)
         return self._parse(response)
 
+    def chat(self, messages: list[dict], tools: list[dict]) -> dict:
+        """One Chat Completions turn with tools (AI-04): the assistant message (content and/or tool_calls)."""
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": "auto",
+            "temperature": TEMPERATURE,
+            "max_completion_tokens": CHAT_MAX_COMPLETION_TOKENS,
+        }
+        response = self._post(payload)
+        if response.status_code == 400 and "temperature" in response.text:
+            payload.pop("temperature")
+            response = self._post(payload)
+        self._check_status(response)
+        try:
+            choice = response.json()["choices"][0]
+            message = choice["message"]
+        except (ValueError, KeyError, IndexError, TypeError):
+            raise LlmError("unexpected answer format") from None
+        if message.get("refusal"):
+            raise LlmError("the model refused to answer")
+        if choice.get("finish_reason") == "length":
+            raise LlmError("the answer was cut (conversation too long)")
+        return message
+
     def _post(self, payload: dict) -> httpx.Response:
         try:
             with httpx.Client(timeout=self._timeout, transport=self._transport) as client:
@@ -66,7 +93,7 @@ class OpenAiClient:
             logger.warning("OpenAI unreachable: %s", type(exc).__name__)
             raise LlmError("OpenAI is unreachable") from None
 
-    def _parse(self, response: httpx.Response) -> dict:
+    def _check_status(self, response: httpx.Response) -> None:
         status = response.status_code
         if status in (401, 403):
             logger.error("OpenAI rejected the API key (HTTP %s): check OPENAI_API_KEY", status)
@@ -76,6 +103,9 @@ class OpenAiClient:
         if status >= 400:
             logger.warning("OpenAI error HTTP %s: %s", status, _error_message(response))
             raise LlmError(f"OpenAI error {status}")
+
+    def _parse(self, response: httpx.Response) -> dict:
+        self._check_status(response)
         try:
             choice = response.json()["choices"][0]
             message = choice["message"]

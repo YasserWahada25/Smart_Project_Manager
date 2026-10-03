@@ -4,11 +4,12 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 
 import { ActiveSprint, describeDaysRemaining } from '../../../core/models/dashboard';
+import { SprintRiskIndicator } from '../../ai-risk/sprint-risk/sprint-risk';
 
-/** Active sprint: progress in story points, tasks, days left; links to its board. */
+/** Active sprint: progress in story points, tasks, days left, AI delay risk; links to its board. */
 @Component({
   selector: 'app-active-sprint-card',
-  imports: [DatePipe, RouterLink, MatProgressBarModule],
+  imports: [DatePipe, RouterLink, MatProgressBarModule, SprintRiskIndicator],
   template: `
     @let current = sprint();
     <article class="sprint">
@@ -39,6 +40,7 @@ import { ActiveSprint, describeDaysRemaining } from '../../../core/models/dashbo
       <p class="days" [class.alert]="current.daysRemaining < 0">
         {{ days() }} · ends {{ current.endDate | date: 'mediumDate' : 'UTC' }}
       </p>
+      <app-sprint-risk [sprintId]="current.id" />
     </article>
   `,
   styles: `

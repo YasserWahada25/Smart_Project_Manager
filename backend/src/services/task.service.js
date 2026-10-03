@@ -324,6 +324,7 @@ async function listMyTasks(actor, { page = PAGINATION.defaultPage, limit = PAGIN
 
 module.exports = {
   findViewableTask,
+  findManagedTask,
   createTask,
   listTasks,
   getTask,

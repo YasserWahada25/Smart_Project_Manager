@@ -112,6 +112,16 @@
                     }
                   </mat-select>
                 </mat-form-field>
+                <button
+                  mat-button
+                  type="button"
+                  class="recommend"
+                  [disabled]="busy()"
+                  (click)="recommend()"
+                >
+                  <mat-icon>auto_awesome</mat-icon>
+                  Recommend a developer
+                </button>
               } @else {
                 {{ current.assignee ? fullName(current.assignee) : 'Unassigned' }}
               }

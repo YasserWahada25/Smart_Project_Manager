@@ -142,6 +142,8 @@ Verify: `curl http://localhost:8000/api/v1/health` → `{"status":"ok","service"
 | `.venv/Scripts/python.exe -m pytest -q` | Tests (if the system temp folder is not writable, add `--basetemp <folder>`) |
 | `.venv/Scripts/python.exe -m flake8 app tests` | Lint (flake8 is used because `ruff`'s binary was blocked by Windows application control on the development machine) |
 | `.venv/Scripts/python.exe -m app.ml.task_type_model` | Re-train the task type classifier and print its cross-validation metrics (also done automatically when `app/ml/models/task_type.json` is missing or outdated) |
+| `.venv/Scripts/python.exe -m app.ml.sprint_risk_model` | Re-train the sprint delay risk model (AI-03) and print its test metrics (also automatic when `app/ml/models/sprint_risk.json` is missing or outdated) |
+| `.venv/Scripts/python.exe -m app.ml.sprint_risk_data` | Regenerate the synthetic sprint dataset `app/ml/data/sprint_risk.csv` (deterministic, seed 2026) |
 
 The model file is generated and git-ignored; no Internet access is needed when `OPENAI_API_KEY` is empty.
 

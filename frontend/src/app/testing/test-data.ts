@@ -3,6 +3,7 @@ import { computed, signal } from '@angular/core';
 
 import { AuthService } from '../core/auth/auth.service';
 import { AiPlan, PlanTask } from '../core/models/ai-plan';
+import { SprintRisk } from '../core/models/ai-risk';
 import { Project, ProjectMember } from '../core/models/project';
 import { Sprint } from '../core/models/sprint';
 import { Task } from '../core/models/task';
@@ -156,6 +157,50 @@ export function testPlan(overrides: Partial<AiPlan> = {}): AiPlan {
     },
     options: { startDate: '2026-10-05', sprintLengthDays: 14, capacityPerSprint: 20 },
     source: { filename: 'cahier.docx', characters: 1200 },
+    ...overrides,
+  };
+}
+
+/** AI-03 answer: high risk of sprint s1 with two factors. */
+export function testRisk(overrides: Partial<SprintRisk> = {}): SprintRisk {
+  return {
+    sprint: {
+      id: 's1',
+      name: 'Sprint 1',
+      status: 'ACTIVE',
+      startDate: '2026-10-05T00:00:00.000Z',
+      endDate: '2026-10-18T00:00:00.000Z',
+    },
+    asOf: '2026-10-12',
+    riskLevel: 'HIGH',
+    probability: 0.82,
+    method: 'model',
+    factors: [
+      {
+        code: 'progress_gap',
+        label: 'Behind schedule: 57% of the time elapsed, 20% of the story points done',
+        impact: 2.1,
+      },
+      { code: 'blocked_ratio', label: '1 blocked task (50% of the open tasks)', impact: 0.6 },
+    ],
+    measures: {
+      total: 3,
+      done: 1,
+      blocked: 1,
+      highComplexityOpen: 0,
+      unassignedOpen: 0,
+      totalPoints: 10,
+      donePoints: 2,
+      teamSize: 2,
+      historicalVelocity: null,
+    },
+    features: { progress_gap: 0.37 },
+    model: {
+      name: 'logistic regression (7 features, synthetic sprints)',
+      accuracy: 0.864,
+      rocAuc: 0.934,
+    },
+    warnings: [],
     ...overrides,
   };
 }

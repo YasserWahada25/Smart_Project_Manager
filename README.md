@@ -59,7 +59,7 @@ Details: [docs/architecture.md](docs/architecture.md).
 .
 ├── frontend/          Angular application          (all screens, incl. "Plan with AI")
 ├── backend/           Express.js REST API           (all features + AI gateway)
-├── ai-service/        FastAPI AI service            (health, AI-01 planning)
+├── ai-service/        FastAPI AI service            (health, AI-01 planning, AI-02 recommendation, AI-03 risk model)
 ├── docs/              Project documentation
 ├── docker-compose.yml Docker orchestration          (not created yet)
 ├── .env.example       Environment variable template
@@ -200,8 +200,8 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 | TASK 20 | FastAPI AI service setup (structure, health, service token, Pydantic, pytest) | Done |
 | TASK 21 | Backend ↔ AI gateway (HTTP client, timeouts, error handling, AI status) | Done |
 | TASK 22 | AI-01 Sprint & task planning from the specification (OpenAI + local analyzer fallback, complexity estimation, review then apply, UI) | Done |
-| TASK 23 | AI-02 Developer recommendation (scoring, endpoint, backend route, UI) | Planned |
-| TASK 24 | AI-03 Sprint delay risk prediction (dataset, ML model, metrics, endpoint, backend route, UI) | Planned |
+| TASK 23 | AI-02 Developer recommendation (scoring, endpoint, backend route, UI) | Done |
+| TASK 24 | AI-03 Sprint delay risk prediction (dataset, ML model, metrics, endpoint, backend route, UI) | Done |
 | TASK 25 | AI-04 Manager assistant chat (OpenAI tool calling on the project data, changes applied only after the manager confirms, sprint summary) | Planned |
 
 ### Phase 5 — Delivery

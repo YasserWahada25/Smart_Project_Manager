@@ -1,6 +1,6 @@
 # Functional Demonstration
 
-> Current state: the application opens in a browser (`http://localhost:4200`): sign up, sign in, sign out, the home page (live status of frontend, backend and MongoDB), **My profile** (personal information, skills, password) and, for administrators, **Users** (account administration) work, as well as **Projects** (list, creation, project page, status, team built from the developer directory). Sprints, tasks, the Kanban board, comments, history, notifications, dashboards and search work too. **Steps 1–7 and 10 can be shown in the browser**; AI steps 8–9 are not implemented yet.
+> Current state: the application opens in a browser (`http://localhost:4200`): sign up, sign in, sign out, the home page (live status of frontend, backend and MongoDB), **My profile** (personal information, skills, password) and, for administrators, **Users** (account administration) work, as well as **Projects** (list, creation, project page, status, team built from the developer directory). Sprints, tasks, the Kanban board, comments, history, notifications, dashboards and search work too. **All 10 steps can be shown in the browser.**
 > Rule: the demo only uses functionality that actually exists. A step is marked *Available* only after it has been implemented and verified.
 
 ## 1. Target scenario
@@ -14,8 +14,8 @@
 | 5 | Create/manage tasks | Implemented (UI: **Tasks** tab, task form, task page: assignment, moves, comments + API), verified as above |
 | 6 | Use the Kanban board | Implemented (UI: **Board** tab, "Move to" menu on each card + API), verified as above |
 | 7 | Generate tasks using AI (AI-01) | Implemented (UI: project → **Sprints** → **Plan with AI**: paste the specification or attach a file, review, apply + API + AI service), verified by automated tests and an end-to-end HTTP scenario (local analyzer; OpenAI when a key is set) |
-| 8 | Get a developer recommendation (AI-02) | Not available |
-| 9 | Predict sprint delay risk (AI-03) | Not available |
+| 8 | Get a developer recommendation (AI-02) | Implemented (UI: task page → **Recommend a developer** → Assign + API + AI service), verified by automated tests and an end-to-end HTTP scenario |
+| 9 | Predict sprint delay risk (AI-03) | Implemented (UI: risk badge and factors on the active sprint — Sprints tab, project Dashboard tab, Dashboard page — + API + AI service), verified by automated tests and an end-to-end HTTP scenario |
 | 10 | View dashboard analytics | Implemented (UI: **Dashboard** page and project **Dashboard** tab, Chart.js charts + API), verified as above |
 
 ## 2. Demo data
@@ -58,3 +58,19 @@ Prerequisites: the AI service is running (`uvicorn`, see [deployment.md](deploym
 5. Review: rename a sprint, open a task to change its type, priority, points or skills, move a task to another sprint or to the backlog, delete one.
 6. **Apply the plan**: toast "Plan applied: N tasks and M sprints created", the Sprints tab lists the new PLANNED sprints; the Tasks tab and the Board show the TODO tasks; the Activity tab shows "created N tasks in M sprints with the AI planner".
 
+### Step 8 — Recommend a developer (AI-02)
+
+Prerequisites: the AI service is running; the team has developers who filled in their skills on **My profile** (e.g. one EXPERT in Angular already busy with tasks, one BEGINNER in Angular who knows Node.js, one Python developer).
+
+1. As the manager, open a task with required skills (e.g. "Login page", 8 points, skills Angular and Node.js).
+2. In **Details**, click **Recommend a developer**: the dialog lists the members best first, with their score out of 100, matching and missing skills, open points and an explanation; the formula is recalled at the top, warnings explain gaps ("nobody has: Node.js").
+3. Click **Assign** on the chosen developer: the dialog closes, the assignee is updated, the history shows the assignment and the developer is notified.
+4. Open a task without skills whose title names a technology (e.g. "Write the Docker compose file"): the skills are inferred from the text (warning shown).
+
+### Step 9 — Sprint delay risk (AI-03)
+
+Prerequisites: the AI service is running; a project with an **active** sprint containing estimated tasks (ideally a previous completed sprint, which gives the team's usual pace).
+
+1. Open the project's **Sprints** tab: the active sprint shows "Delay risk (AI): High (…%)" (or Low / Medium) with up to three reasons, e.g. "Needs 3.9× the usual pace", "Behind schedule: 50% of the time elapsed, 10% of the story points done", "2 blocked tasks".
+2. The same indicator appears on the active sprint of the project **Dashboard** tab and of the global **Dashboard** page.
+3. Move tasks to Done (or unblock them), reload: the risk goes down. A sprint whose end date is passed with points left is HIGH; an empty sprint is LOW.

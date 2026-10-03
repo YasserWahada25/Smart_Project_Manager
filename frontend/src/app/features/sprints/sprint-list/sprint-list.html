@@ -60,6 +60,9 @@
                 }
               </p>
             }
+            @if (sprint.status === 'ACTIVE') {
+              <app-sprint-risk [sprintId]="sprint.id" />
+            }
           </mat-card-content>
           <mat-card-actions class="actions">
             <a mat-button routerLink="../tasks" [queryParams]="{ sprint: sprint.id }">
