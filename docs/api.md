@@ -915,6 +915,38 @@ AI-03: delay risk of a **planned or active** sprint (409 for a completed or canc
 
 `method`: `model` (logistic regression) or `rule` (no estimated task, all points done, end date passed). `historicalVelocity`: story points per day of the last 3 completed sprints of the project (`null` if none). Errors: 404 (outsider), 409 (closed sprint), 503 / 504 / 502. Model: [ai.md](ai.md) § 4.3.
 
+#### `POST /api/v1/projects/:id/ai/assistant/chat` — project manager, project not archived
+
+AI-04: one message of the manager → the assistant's reply. **Nothing is changed**: the changes it prepares come back as `proposals`.
+
+```json
+{ "messages": [
+    { "role": "user", "content": "Which tasks are late?" },
+    { "role": "assistant", "content": "1 late task: «Login page»." },
+    { "role": "user", "content": "Assign it to Bob" }
+] }
+```
+
+1–20 messages, `role` `user` or `assistant` (the last one `user`), `content` 1–4 000 characters. → 200:
+
+```json
+{
+  "reply": "Prepared, waiting for your confirmation: Assign «Login page» to Bob Martin.",
+  "proposals": [
+    { "id": "8c0e…", "tool": "assign_task", "arguments": { "taskId": "...", "assigneeId": "..." },
+      "summary": "Assign «Login page» to Bob Martin" }
+  ],
+  "toolsUsed": ["get_project_overview", "list_tasks", "assign_task"],
+  "model": "gpt-4o-mini"
+}
+```
+
+Errors: 503 `LLM_NOT_CONFIGURED` (no `OPENAI_API_KEY` in the AI service) or `AI_UNAVAILABLE`, 502 (OpenAI failure or invalid answer), 504, 400 (conversation), 403 / 404 / 409 (access).
+
+#### `POST /api/v1/projects/:id/ai/assistant/actions` — project manager, project not archived
+
+Applies a proposal the manager confirmed: `{ "tool": "create_task" | "update_task" | "assign_task" | "change_task_status" | "create_sprint", "arguments": { … } }`. The arguments are validated by the rules of the matching REST route (§ 1.10, § 1.11) and the change goes through the same service (history, notifications). → **201** `{ "tool", "message": "«Login page» assigned to Bob Martin.", "task" | "sprint" }`. 400 (unknown tool — there is no delete tool — or invalid arguments), 404 (task not in the project), 409 (transition not allowed, closed sprint…), 403 (not the manager).
+
 ## 2. FastAPI AI service (internal API)
 
 Called only by the Express backend, never by the browser. Base URL `AI_SERVICE_URL` (default `http://localhost:8000`). Interactive documentation (Swagger UI) at `/docs` while the service runs.
@@ -931,7 +963,8 @@ Called only by the Express backend, never by the browser. Base URL `AI_SERVICE_U
 | POST | `/api/v1/ai/projects/plan` | AI-01: sprints and tasks from a specification | Done (TASK 22) |
 | POST | `/api/v1/ai/developers/recommend` | AI-02 Developer recommendation | Done (TASK 23) |
 | POST | `/api/v1/ai/sprints/predict-risk` | AI-03 Sprint delay risk | Done (TASK 24) |
-| POST | `/api/v1/ai/sprints/summary` | Optional: sprint summary | Optional |
+| POST | `/api/v1/ai/assistant/chat` | AI-04 Manager assistant (one turn) | Done (TASK 25) |
+| POST | `/api/v1/ai/sprints/summary` | Optional: sprint summary | Covered by AI-04 ("Summarize the sprint") |
 
 ### 2.2 Details
 
@@ -993,3 +1026,19 @@ Errors: 413 (too large), 415 (other extension), 422 (empty, corrupted, password-
 ```
 
 Rules: `endDate` ≥ `startDate`; done values ≤ totals; blocked, high-complexity and unassigned counts ≤ open tasks; `historicalVelocity` ≥ 0 or `null`. Response: `riskLevel`, `probability`, `method`, `factors[{code, label, impact}]`, `features` (the 7 values), `model` (name, version, accuracy, rocAuc, f1), `warnings`.
+
+#### `POST /api/v1/ai/assistant/chat`
+
+```json
+{
+  "messages": [
+    { "role": "user", "content": "Which tasks are late?" },
+    { "role": "assistant", "content": "", "toolCalls": [ { "id": "c1", "name": "list_tasks", "arguments": { "overdue": true } } ] },
+    { "role": "tool", "toolCallId": "c1", "content": "{\"total\":1,\"tasks\":[…]}" }
+  ],
+  "project": { "name": "Shop", "status": "ACTIVE", "technologies": ["Angular"], "manager": "Sara Manager" },
+  "today": "2026-10-03"
+}
+```
+
+1–80 messages (`user`, `assistant` with optional `toolCalls`, `tool` with `toolCallId`; ≤ 20 000 characters each). → `{ "type": "message" | "tool_calls", "content", "toolCalls": [{ "id", "name", "arguments", "error" }], "model" }`; `error` is set when the arguments do not match the tool schema. 503 `LLM_NOT_CONFIGURED` without `OPENAI_API_KEY`; 502 when OpenAI fails.

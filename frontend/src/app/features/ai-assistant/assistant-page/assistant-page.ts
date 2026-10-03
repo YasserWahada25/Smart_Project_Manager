@@ -195,9 +195,10 @@ export class AssistantPage {
   private history(): AssistantMessage[] {
     return this.entries()
       .map((entry): AssistantMessage => {
-        const outcomes = entry.proposals
-          .filter((view) => view.state !== 'pending' && view.state !== 'applying')
-          .map((view) => `[${OUTCOME_LABELS[view.state]}: ${view.proposal.summary}]`);
+        const outcomes = entry.proposals.flatMap((view) => {
+          const label = OUTCOME_LABELS[view.state];
+          return label ? [`[${label}: ${view.proposal.summary}]`] : [];
+        });
         const content = [entry.content, ...outcomes]
           .join('\n')
           .slice(0, ASSISTANT_LIMITS.messageMaxLength);
@@ -218,7 +219,8 @@ export class AssistantPage {
   }
 }
 
-const OUTCOME_LABELS: Record<Exclude<ProposalState, 'pending' | 'applying'>, string> = {
+/** What the assistant is told about each handled proposal (pending ones are not mentioned). */
+const OUTCOME_LABELS: Partial<Record<ProposalState, string>> = {
   applied: 'Confirmed and applied by the manager',
   dismissed: 'Dismissed by the manager',
   failed: 'Failed when applied',

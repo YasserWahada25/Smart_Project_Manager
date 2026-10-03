@@ -74,3 +74,12 @@ Prerequisites: the AI service is running; a project with an **active** sprint co
 1. Open the project's **Sprints** tab: the active sprint shows "Delay risk (AI): High (…%)" (or Low / Medium) with up to three reasons, e.g. "Needs 3.9× the usual pace", "Behind schedule: 50% of the time elapsed, 10% of the story points done", "2 blocked tasks".
 2. The same indicator appears on the active sprint of the project **Dashboard** tab and of the global **Dashboard** page.
 3. Move tasks to Done (or unblock them), reload: the risk goes down. A sprint whose end date is passed with points left is HIGH; an empty sprint is LOW.
+
+### Bonus — Manager assistant (AI-04)
+
+Prerequisites: `OPENAI_API_KEY` set in `ai-service/.env` (without it, the **Assistant** tab explains that a key is needed).
+
+1. As the manager, open the project's **Assistant** tab and click the suggestion "Which tasks are late or blocked?": the assistant reads the tasks and answers with their titles.
+2. Ask "Assign the late task to the developer with the lightest workload": the answer contains a proposed change ("Assign «…» to …") with **Confirm** / **Dismiss**; nothing is changed yet.
+3. Click **Confirm**: the change is applied (toast), visible in the task page, the history and the developer's notifications.
+4. Ask "Delete the backlog": the assistant explains that deletions are done by the manager in the interface.

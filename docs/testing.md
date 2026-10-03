@@ -1,6 +1,6 @@
 # Testing
 
-> Current state: **backend** (Jest + Supertest + in-memory MongoDB, 325 tests), **frontend** (Vitest, 329 tests) and **AI service** (pytest, 103 tests) suites in place; end-to-end checks against the real services after each feature (TASK 22: 17/17).
+> Current state: **backend** (Jest + Supertest + in-memory MongoDB, 357 tests), **frontend** (Vitest, 349 tests) and **AI service** (pytest, 146 tests) suites in place; end-to-end checks against the real services after each feature (TASK 22: 17/17, TASK 23: 10/10, TASK 24: 11/11, TASK 25: 12/12).
 > Results are recorded here only after tests have actually been executed.
 
 ## 1. Strategy
@@ -94,6 +94,10 @@ cd ai-service
 | `tests/aiClient.test.js` | Unit + API | AI client (TASK 21): service token and JSON body sent; 503 when not configured or unreachable; 504 on timeout; content refused by the AI service → 400 with its details; 5xx, refused token or invalid body → 502. `GET /ai/status`: 401 without token, available with the LLM state, reasons when unavailable (never an error) |
 | `tests/aiPlan.test.js` | API (in-memory MongoDB, mocked AI client) | AI-01 (TASK 22). **Plan:** specification, project context and team skills sent; uploaded file extracted and joined to the pasted text; default options; missing / short text, invalid options, unsupported file (415) refused; reserved to the manager of an active project; duplicate skills of the AI answer removed; AI refusal forwarded (400), AI down (503); invalid AI answers → 502; default start date (today, project start, day after the last sprint). **Apply:** PLANNED sprints + TODO tasks + one `AI_PLAN_APPLIED` activity; every field validated; empty plan, too many tasks or sprints, dates in the wrong order refused; nothing left when the creation fails midway; manager only |
 
+| `tests/aiRecommendation.test.js` | API (in-memory MongoDB, mocked AI service) | AI-02 (TASK 23): task and **active** members sent with their workload (open tasks / points in every project, the task itself excluded) and experience (DONE tasks, skill counts); ranking returned with the developers' public fields; current assignee marked; no developer → empty answer without AI call; invalid AI answers (unknown id, score > 100, duplicate, wrong method, missing breakdown) → 502; AI down → 503; manager only (member / admin 403, outsider 404, archived 409, invalid id 400) |
+| `tests/aiRisk.test.js` | API (in-memory MongoDB, mocked AI service) | AI-03 (TASK 24): sprint measures (total, done, blocked, open 8+ points, unassigned, points), active team size, velocity of the last completed sprint, today's date; validated risk returned with the measures; no history → `historicalVelocity: null`; any viewer (admin included), outsider 404; closed sprint 409 without AI call; invalid answers (level, probability, factor, feature, model) → 502; timeout → 504 |
+| `tests/aiAssistant.test.js` | API (in-memory MongoDB, mocked AI service) | AI-04 (TASK 25): conversation and project context sent; read tools run on the project data (tasks, overview) and returned to the model; **write tools become proposals with readable summaries and change nothing**; invalid references (task of another project, non-member, forbidden transition), invalid arguments and unknown tools (`delete_task`) reported to the model; step limit (6); 503 `LLM_NOT_CONFIGURED`; invalid AI answer 502; conversation validation (empty, last not user, too long, `system` role); manager only. **Actions:** create task (history), assign, block, update (move to backlog), create sprint; same validation as the REST API (400 / 409 / 404), no delete tool; manager only |
+
 `tests/user.model.test.js` also covers (TASK 05): duplicate skill names and unknown levels rejected by the schema, > 50 skills rejected, `passwordChangedAt` set on change but not at creation, `isTokenIssuedBeforePasswordChange` boundaries.
 | `tests/user.model.test.js` | Unit (in-memory MongoDB) | Defaults (DEVELOPER, active, timestamps); password hashed on save and checked by `comparePassword`; no re-hash when another field changes; password not selected by default; JSON without `password`/`_id`/`__v`; unknown role rejected; unique email index (case-insensitive through lowercase) |
 
@@ -155,6 +159,12 @@ cd ai-service
 | `features/ai-plan/ai-plan.service.spec.ts` | AI-01 (TASK 22): multipart form (text, file, start date, options), empty text / missing file / automatic date not sent, AI errors left to the page (no global toast), reviewed plan posted as JSON |
 | `features/ai-plan/ai-plan-page/ai-plan-page.spec.ts` | Analyzer shown (local: the document stays on the servers; OpenAI: it is sent to OpenAI); generation disabled when the AI service is down; ≥ 20 characters or a file; file type and size checked before upload; option ranges; spinner then error with the input kept; review (method, stats, warnings, sprint names, points vs capacity, backlog); edit + move (Material menu harness) + delete + remove a sprint → exact apply payload (no epic), toast, navigation to the Sprints tab; add a sprint (next number and dates); invalid plan refused before sending; backend field errors shown on the matching fields; Back keeps the input; reserved to the manager of a non-archived project |
 
+| `features/ai-recommendation/recommend-dialog/recommend-dialog.spec.ts` | AI-02 (TASK 23): ranking with score, matching / missing skills, explanation, formula and warnings; current assignee without button; assign → dialog closes with the updated task; refused assignment → toast, dialog stays; AI error with retry → empty list message; `AiRecommendationService` (GET without global toast) |
+| `features/ai-risk/sprint-risk/sprint-risk.spec.ts` | AI-03 (TASK 24): level, probability and factors; low risk and warnings; reload when the sprint changes; discreet message when the AI service is unavailable; `AiRiskService` (GET without global toast) |
+| `features/ai-assistant/assistant-page/assistant-page.spec.ts` | AI-04 (TASK 25): explanation and suggestions; unavailable without OpenAI key or AI service (Send disabled); Enter sends, "thinking" state, history sent back; proposal applied only after **Confirm** (toast, result, outcome appended to the history sent to the assistant); dismiss; refused proposal shows the reason; error gives the question back; new conversation; manager of an active project only; `AiAssistantService` (chat without global toast, apply) |
+
+`task-detail.spec.ts` also covers the "Recommend a developer" button (manager only, assignment from the dialog); `dashboard-widgets.spec.ts`, `dashboard-pages.spec.ts` and `sprint-list.spec.ts` the risk indicator on active sprints (only the active sprint is requested); `project-shell.spec.ts` the **Assistant** tab (manager only).
+
 `core/models/activity.spec.ts` also covers `AI_PLAN_APPLIED` ("created 12 tasks in 3 sprints with the AI planner", singular, backlog only); `sprint-list.spec.ts` the "Plan with AI" link (manager only).
 
 ### AI service test inventory (`ai-service/tests/`)
@@ -168,6 +178,9 @@ cd ai-service
 | `test_sprint_planner.py` | Packing by priority within the capacity, gaps filled by the same priority, a lower priority never before a higher one, dates / names / objective, oversized task alone with a warning, at most 20 sprints then backlog (+ excluded tasks), deadline warning, no task → no sprint |
 | `test_ml.py` | Normalisation (case, accents), features (stop words dropped, lexicon cues), Naive Bayes learns and survives serialisation, unknown words ignored, cross-validation metrics per class, type prediction, low confidence → FEATURE, model trained when the file is missing |
 | `test_llm_client.py` | Strict structured-output request, retry without temperature, HTTP / format errors → `LlmError`, timeout and network errors, the API key never logged |
+| `test_recommendation.py` | AI-02 (TASK 23): skill keys (case, accents, punctuation, aliases; C++ ≠ C#); formula of a full match (exact breakdown and score); ranking balancing skills, workload and experience; beginner halved on 8+ points; workload 0 beyond capacity, ties by load then name; skills inferred from the text; neutral score without skills; warnings and `limit`; route, validation (400) and token |
+| `test_sprint_risk.py` | AI-03 (TASK 24): features of a snapshot (ratios, caps, usual pace); logistic regression learns a separable rule and survives serialisation; ROC AUC / metrics / stratified split helpers; dataset reproducible (seed) and balanced; trained model ≥ 0.8 accuracy, ≥ 0.9 ROC AUC and better F1 than the baseline rule (saved in a temporary folder); risk levels; on-track sprint LOW; late sprint HIGH with its 3 factors and labels; rules (empty, all done, overdue); a MEDIUM risk always names a cause; warnings; route and validation |
+| `test_assistant.py` | AI-04 (TASK 25): tools match their Pydantic schemas, all strict, no delete tool; system prompt rules (proposals only, no deletion, untrusted data) and project; tool-call validation (valid → cleaned arguments; wrong points, unknown tool, bad JSON, extra field → error); 503 without key; final answer and the payload sent to OpenAI (tools, system prompt); tool calls returned with validation errors; previous tool calls and results sent back in OpenAI format; OpenAI failures (429, cut, empty) → 502; token and body validation |
 | `test_planning_api.py` | Token required on both routes; plan with the local analyzer; plan with the (mocked) LLM; invalid or failed LLM answer → local fallback with a warning; long document truncated for the LLM; request validation; no requirement → 422; extraction of a Word document, unsupported / too large files, missing file |
 
 `layouts/main-layout/main-layout.spec.ts` and `features/home/home.spec.ts` also cover the user menu (name, role, logout) and the greeting.
@@ -228,6 +241,9 @@ cd ai-service
 | 2026-10-03 | TASK 22 | Frontend | `npm run lint` / `npm run format:check` / `npm run build` | Pass / pass / success; initial bundle 344.7 kB raw / 95.8 kB transferred (the AI plan page is lazy-loaded). Run with Node 24.21 (the machine's Node 22.21.1 is refused by Angular CLI 22) |
 | 2026-10-03 | TASK 22 | AI service | `pytest -q` / `flake8 app tests` / `python -m app.ml.task_type_model` | 103 tests passed (+1: several markers in one bracket) / clean / accuracy 0.916, macro F1 0.921 (Python 3.12.5, new virtual environment) |
 | 2026-10-03 | TASK 22 | Backend | `npm test` / `npm run lint` / `npm audit --omit=dev` | 22 suites, 325 tests passed / 0 errors / 0 vulnerabilities (backend unchanged by the end of TASK 22) |
+| 2026-10-03 | TASK 23 | All | pytest / Jest / Vitest + lint, format, build | AI service 117 tests (+14), flake8 clean; backend 23 suites, 335 tests (+10); frontend 53 files, 335 tests (+6), lint / format pass, build success, initial bundle 344.7 kB. Node 22.22.3 installed by the supervisor (Angular CLI runs natively) |
+| 2026-10-03 | TASK 24 | AI service | `pytest -q` / `python -m app.ml.sprint_risk_model` | 135 tests (+18); test set: accuracy 0.864, precision 0.875, recall 0.847, F1 0.861, ROC AUC 0.934 (baseline rule: accuracy 0.696, F1 0.573) |
+| 2026-10-03 | TASK 24–25 | All | pytest / Jest / Vitest + lint, format, build, audit | AI service **146 tests**, flake8 clean; backend **25 suites, 357 tests**, lint 0 errors, 0 vulnerabilities; frontend **55 files, 349 tests**, lint / format pass, build success, initial bundle 348.6 kB raw / 97.0 kB transferred, 0 vulnerabilities |
 
 ### Manual verification (TASK 02)
 
@@ -376,5 +392,32 @@ Cleanup: tasks, sprints and project deleted through the API, the 4 `@smoke.test`
 **Finding fixed in this task:** check 7b first failed — `(Must, 5 pts)` left `(Must` in the title and the priority at MEDIUM, because MoSCoW tags and points were only recognised in separate brackets. The parser now reads several markers in one bracket (`_metadata_group`, new pytest case).
 
 Not verified: the OpenAI path against the real API (no key on the development machine; covered by mocked tests), and the page in a real browser by the supervisor (covered by component tests).
+
+### End-to-end verification (TASK 23, AI-02)
+
+Separate backend instance (port 3001, same code, the supervisor's own backend on 3000 left untouched) + AI service (8000) + local MongoDB `smart_project_manager`, throw-away `@smoke.test` accounts. **10/10 checks passed:** manager + 3 developers with skills (Angular EXPERT 3 years; angular BEGINNER + NodeJS INTERMEDIATE; Python + Docker) → workload (13 open points for the expert) and experience (1 Angular task DONE by the beginner) → `GET /tasks/:id/ai/recommendations` for an 8-point Angular + Node.js task in 55 ms → ranking Bob 54 > Alice 39 > Carol 25, exactly the documented formula (beginner halved on 8 points, workload 0.35 for 13 / 20 points) → `NodeJS` matched `Node.js`, missing skills listed → assignment of the recommended developer, then marked `isAssignee` → task without skills: Docker inferred from its title → member developer 403, outsider 404 → project without developer: empty list with an explanation. Data deleted (5 accounts, 2 projects).
+
+### End-to-end verification (TASK 24, AI-03)
+
+Same setup. **11/11 checks passed:** a completed sprint (14 points in 14 days → velocity 1) and an active sprint at 50 % of its time with 3 / 30 points done, 2 blocked tasks, 2 open tasks of 8 points, 1 unassigned → `GET /sprints/:id/ai/risk` in 49 ms → **HIGH** (model), measures exact, 3 readable factors ("Needs 3.9× the usual pace…", "Behind schedule: 50% of the time elapsed, 10% of the story points done", "1.9 points per member and per day…"), model metrics returned → a sprint on track **LOW** for a member developer, with the "no completed sprint yet" warning → empty planned sprint LOW by rule → planned sprint with tasks predicted by the model → overdue active sprint HIGH by rule (probability 1) → completed sprint 409, outsider 404 → the project dashboard exposes the active sprint shown with its risk. Data deleted with mongosh in `smart_project_manager` only (started sprints cannot be deleted through the API): 3 projects, 5 sprints, 15 tasks, their activities and notifications, 4 accounts.
+
+### End-to-end verification (TASK 25, AI-04)
+
+Two chains on the same database: **3001 → AI service 8000** (real configuration, no OpenAI key) and **3002 → AI service 8001 → simulated OpenAI server (8090)**, a local script that answers like a model using the tools (it decides from the conversation it receives). **12/12 checks passed:**
+
+1. manager, developer, project with a late and a future task;
+2. without key: chat → 503 `LLM_NOT_CONFIGURED` with the instruction to set `OPENAI_API_KEY`;
+3. confirmed actions work without the LLM: create task (assigned), create sprint, move to In progress, update (priority, sprint) → 201;
+4. invalid arguments 400, `delete_task` 400, developer 403;
+5. the applied actions appear in the project history;
+6. second chain reports the LLM configured (`mock-model`);
+7. "Which tasks are late?" → the backend ran `list_tasks` on the real data → "1 late task(s): «Late login page»." (the future task is not listed);
+8. the "OpenAI" server received the 9 tools (no delete), the system prompt with the rules and the project name, and the key header from the AI service only;
+9. "Assign the late task to the developer" (with the history) → overview + tasks read, **one proposal** "Assign «Late login page» to Dev25 Smoke", the task still unassigned;
+10. confirmation → 201, task assigned, the developer notified;
+11. invalid tool arguments (4 story points) refused by the AI service and reported back to the model, no proposal;
+12. developer 403, forged `system` message 400.
+
+Data deleted (1 project, 3 tasks, 1 sprint, activities, notifications, 2 accounts). **Not verified:** the behaviour of a real OpenAI model (answers, tool choice, injection resistance) — no key was available.
 
 Not verified: graceful shutdown on `SIGTERM` (Windows does not deliver POSIX signals to Node processes the same way; to be verified in the Docker task).
