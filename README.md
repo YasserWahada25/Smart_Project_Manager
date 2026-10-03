@@ -6,7 +6,7 @@ University mini-project — *AI for Software Engineering*.
 
 Smart Project Manager is a web platform that helps software teams manage projects, teams, sprints, tasks, priorities, deadlines and workload. An AI module assists the team with automatic task generation, developer recommendation and sprint delay-risk prediction.
 
-> **Project status:** the Express.js REST API and the Angular frontend cover every non-AI feature (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). The **FastAPI AI service** runs the first AI feature, **AI-01 "Plan with AI"**: the manager pastes or uploads the specification, the AI (OpenAI, or a local analyzer with a Naive Bayes classifier) proposes the sprints and tasks, the manager reviews them and applies the plan. Next: AI-02 developer recommendation, AI-03 sprint delay risk, AI-04 manager assistant, then delivery (Docker, demo data, CI).
+> **Project status:** the Express.js REST API and the Angular frontend cover every non-AI feature (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). The **FastAPI AI service** provides the four AI features: **AI-01 "Plan with AI"** (specification → sprints and tasks reviewed by the manager; OpenAI or a local analyzer with a Naive Bayes classifier), **AI-02** developer recommendation (transparent scoring), **AI-03** sprint delay risk (logistic regression) and **AI-04** manager assistant (OpenAI with tools; changes applied only after confirmation). Next: delivery (Docker, demo data, security and CI, final report).
 > See [Development progress](#development-progress) for what is actually implemented.
 
 ---
@@ -59,7 +59,7 @@ Details: [docs/architecture.md](docs/architecture.md).
 .
 ├── frontend/          Angular application          (all screens, incl. "Plan with AI")
 ├── backend/           Express.js REST API           (all features + AI gateway)
-├── ai-service/        FastAPI AI service            (health, AI-01 planning, AI-02 recommendation, AI-03 risk model)
+├── ai-service/        FastAPI AI service            (health, AI-01 planning, AI-02 recommendation, AI-03 risk model, AI-04 assistant)
 ├── docs/              Project documentation
 ├── docker-compose.yml Docker orchestration          (not created yet)
 ├── .env.example       Environment variable template
@@ -202,7 +202,7 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 | TASK 22 | AI-01 Sprint & task planning from the specification (OpenAI + local analyzer fallback, complexity estimation, review then apply, UI) | Done |
 | TASK 23 | AI-02 Developer recommendation (scoring, endpoint, backend route, UI) | Done |
 | TASK 24 | AI-03 Sprint delay risk prediction (dataset, ML model, metrics, endpoint, backend route, UI) | Done |
-| TASK 25 | AI-04 Manager assistant chat (OpenAI tool calling on the project data, changes applied only after the manager confirms, sprint summary) | Planned |
+| TASK 25 | AI-04 Manager assistant chat (OpenAI tool calling on the project data, changes applied only after the manager confirms, sprint summary) | Done |
 
 ### Phase 5 — Delivery
 

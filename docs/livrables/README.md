@@ -21,4 +21,7 @@ Les fichiers ne contiennent jamais de secret (aucune valeur des `.env`).
 |---|---|---|---|
 | TASK 01–21 | Backend, interface hors IA, service FastAPI, liaison backend ↔ IA | Résumés dans [bilan.md](../bilan.md) § 5 et prompts dans [prompts.md](../prompts.md) § A.3 (antérieurs à cette consigne) | Terminées |
 | TASK 22 | AI-01 « Plan with AI » : sprints et tâches générés depuis le cahier des charges | [TASK-22.md](TASK-22.md) | Terminée |
-| TASK 23 | AI-02 recommandation de développeur | — | Prévue |
+| TASK 23 | AI-02 recommandation de développeur (score transparent compétences / charge / expérience) | [TASK-23.md](TASK-23.md) | Terminée |
+| TASK 24 | AI-03 risque de retard d'un sprint (régression logistique, jeu de données simulé) | [TASK-24.md](TASK-24.md) | Terminée |
+| TASK 25 | AI-04 assistant du manager (chat OpenAI avec outils, confirmation avant modification) | [TASK-25.md](TASK-25.md) | Terminée |
+| TASK 26 | Docker et Docker Compose | — | Prévue |

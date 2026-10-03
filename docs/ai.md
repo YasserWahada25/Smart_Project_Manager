@@ -1,6 +1,6 @@
 # AI Features and Models
 
-> Current state: **AI-01 (planning from the specification, TASK 22), AI-02 (developer recommendation, TASK 23) and AI-03 (sprint delay risk, TASK 24) are implemented.** AI-04 is planned (TASK 25).
+> Current state: **AI-01 (planning from the specification, TASK 22), AI-02 (developer recommendation, TASK 23) and AI-03 (sprint delay risk, TASK 24) and AI-04 (manager assistant, TASK 25) are implemented.**
 > Each feature section is completed (approach, data, model, metrics, endpoint) when the feature is implemented.
 
 ## 1. Principles
@@ -17,7 +17,7 @@
 | AI-01 | Sprint & task planning from the specification (includes automatic task generation and complexity estimation) | Specification pasted and/or uploaded (.txt, .md, .pdf, .docx), project context, team skills, sprint options | Sprints (dates, objective) containing structured tasks: title, description, type, priority, required skills, story points; backlog; warnings | **Done** (TASK 22) |
 | AI-02 | Developer recommendation | Task required skills (or skills found in its text), developer skills and levels, current workload, previous experience | Ranked developers: compatibility score 0–100, matching / missing skills, score breakdown, explanation | **Done** (TASK 23) |
 | AI-03 | Sprint delay risk prediction | Total/completed/blocked/unassigned tasks, open high-complexity tasks, story points, dates, team size, velocity of the previous sprints | Risk level (`LOW`/`MEDIUM`/`HIGH`), probability, main contributing factors | **Done** (TASK 24) |
-| AI-04 | Manager assistant (chat) | Manager message + project data (through backend tools) | Answers, and changes proposed then applied only after the manager confirms | Planned (TASK 25) |
+| AI-04 | Manager assistant (chat) | Manager message + project data (through backend tools) | Answers, and changes proposed then applied only after the manager confirms | **Done** (TASK 25) |
 | OPT-1 | Task complexity estimation | — | — | Covered by AI-01 (story points per task) |
 | OPT-2 | Automatic sprint summary | — | — | Optional |
 | OPT-3 | Intelligent task prioritization | — | — | Optional |
@@ -214,3 +214,24 @@ score = round(100 × (0.60 × skills + 0.25 × workload + 0.15 × experience))  
 - Synthetic training data (see caveat); the thresholds 0.35 / 0.65 are conventions.
 - The sprint is measured in story points: unestimated work is invisible; the velocity uses the last 3 completed sprints of the project, whatever the team changes.
 - Days are calendar days (weekends and holidays are not modelled).
+
+### 4.4 AI-04 — Manager assistant (LLM with tools)
+
+**Problem.** Idea of the supervisor (prompt #23): a chat in which the manager asks about the project ("which tasks are late?", "summarize the sprint", "who is free?") and asks for changes ("create a task…", "assign…", "move… to the next sprint"), instead of navigating through several screens.
+
+**Approach.** An LLM (OpenAI, function calling) with **9 tools** executed by the Express backend — the only component that touches MongoDB:
+
+| Kind | Tools | Execution |
+|---|---|---|
+| Read | `get_project_overview`, `list_tasks`, `get_sprint_risk` (AI-03), `recommend_developers` (AI-02) | Immediately, with the manager's rights, limited to the project (50 tasks per list) |
+| Write | `create_task`, `update_task`, `assign_task`, `change_task_status`, `create_sprint` | **Never executed by the model**: each call becomes a proposal shown in plain language ("Assign «Login page» to Bob Martin"); applied only when the manager clicks **Confirm**, through the same validation rules and services as the REST API (history, notifications) |
+
+There is **no delete tool**. The chat acts on the project **data**, never on the application code. Prompt, tool schemas, validation and security: [prompts.md](prompts.md) Part B.
+
+**Why no local fallback.** Unlike AI-01, understanding free questions and choosing tools requires an LLM; without `OPENAI_API_KEY` the backend answers 503 `LLM_NOT_CONFIGURED` and the page explains how to enable the assistant (AI-01 to AI-03 keep working).
+
+**Safeguards.** Manager of a non-archived project only; ≤ 20 messages of ≤ 4 000 characters per request, no `system` message accepted from the browser; ≤ 6 model calls and ≤ 12 tool calls per message; tool arguments validated by Pydantic (AI service) then every id checked inside the project (backend); invalid calls are returned to the model as errors (it can correct itself); untrusted data rule in the prompt; the conversation is kept in the page only (not stored).
+
+**Evaluation.** No key was available during development: the behaviour of a real model is **not measured**. The loop, the proposals, the confirmations and the safeguards are verified by automated tests with a mocked OpenAI (pytest, Jest, Vitest) and by an end-to-end run of the real services against a **simulated OpenAI server** that calls the tools (12/12 checks, [testing.md](testing.md)).
+
+**Limits.** Quality depends on the model; answers are not cached; the conversation is lost when leaving the page; only five kinds of change are possible (no deletion, no member management, no sprint status change).
