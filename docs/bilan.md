@@ -1,6 +1,8 @@
 # Bilan du projet — Smart Project Manager
 
-> **Point d'étape au 3 octobre 2026, après la TASK 19** : 19 tâches terminées sur 29. Toute la partie fonctionnelle hors IA est en place (API et interface). Le développement s'arrête ici, avant le service IA (TASK 20), à la demande du superviseur.
+> **Point d'étape au 3 octobre 2026, 12 h, au milieu de la TASK 22** : 21 tâches terminées sur 29 (TASK 20 et 21 : service FastAPI et liaison avec le backend). La TASK 22 (AI-01, planification des sprints et des tâches depuis le cahier des charges) est faite côté service IA (102 tests) et backend (325 tests au total) ; restent l'écran Angular, la vérification de bout en bout et la documentation. Le travail s'est arrêté à cause de la limite d'utilisation de l'agent : **la reprise est décrite dans [handoff.md](handoff.md)**.
+>
+> Les sections ci-dessous datent de la TASK 19, sauf le § 7 (plan revu). Elles seront mises à jour à la fin de la TASK 22.
 > Ce document est mis à jour à la fin de chaque tâche. L'état de référence reste dans le [README](../README.md#development-progress) et les autres fichiers de `docs/`. La liste détaillée des prompts est dans [prompts.md](prompts.md) (partie A).
 >
 > Sources : le dépôt, les rapports rendus à la fin de chaque tâche et l'historique des échanges entre le superviseur humain et l'agent IA (Claude Code).
@@ -126,12 +128,39 @@
 
 | Tâche | Contenu |
 |---|---|
-| **20** (prochaine, quand le superviseur le demandera) | Mise en place de FastAPI : structure, endpoint de santé, Pydantic, tests pytest |
-| 21 | Liaison backend ↔ service IA : client HTTP, délais d'attente, gestion des erreurs |
-| 22 | AI-03 : prédiction du risque de retard d'un sprint (dataset, modèle ML, métriques, écran) |
-| 23 | AI-02 : recommandation de développeur selon les compétences et la charge |
-| 24 | AI-01 : génération de tâches par un LLM (prompt, validation du JSON, enregistrement, écran) |
-| 25 | Optionnel : estimation de la complexité, résumé de sprint |
+Ordre revu le 3 octobre (prompts #22 et #23 de [prompts.md](prompts.md)).
+
+| Tâche | Contenu | État |
+|---|---|---|
+| 20 | Mise en place de FastAPI : structure, endpoint de santé, jeton de service, Pydantic, tests pytest | Terminée |
+| 21 | Liaison backend ↔ service IA : client HTTP, délais d'attente, gestion des erreurs, état de l'IA dans l'interface | Terminée |
+| **22** | **AI-01 : planification depuis le cahier des charges.** Le manager colle le texte ou dépose un fichier (.txt, .md, .pdf, .docx) ; OpenAI (ou, sans clé ou en cas d'échec, l'analyseur local : règles + classifieur Naive Bayes) en tire les tâches (type, priorité, story points, compétences) ; le service répartit les tâches en sprints selon la capacité ; le manager relit, modifie, puis valide la création | En cours : service IA et API backend terminés et testés ; reste l'écran Angular, la vérification de bout en bout et la documentation ([handoff.md](handoff.md) § 3) |
+| 23 | AI-02 : recommandation de développeur selon les compétences et la charge | Prévue |
+| 24 | AI-03 : prédiction du risque de retard d'un sprint (dataset, modèle ML, métriques, écran) | Prévue |
+| 25 | **AI-04 : assistant du manager (chat)**, voir ci-dessous | Prévue |
+
+#### TASK 25 — Assistant du manager (chat), plan
+
+Idée du superviseur (prompt #23) : un chat dans l'application qui discute avec le manager et modifie la plateforme à sa demande (ajouter, modifier, corriger).
+
+- **Ce qu'il pourra faire :**
+  - répondre sur le projet (avancement, tâches en retard ou bloquées, charge de l'équipe, résumé d'un sprint) ;
+  - **proposer des modifications** : créer, modifier ou déplacer des tâches et des sprints, assigner un développeur, changer une priorité ou une estimation ;
+  - utiliser les autres fonctions IA (planification AI-01, recommandation AI-02, risque AI-03).
+- **Fonctionnement :**
+  1. Angular (panneau de chat) envoie le message au backend Express.
+  2. Express le transmet au service IA, qui appelle OpenAI avec une liste d'**outils** (function calling).
+  3. Le modèle choisit un outil. Le service IA ne touche jamais MongoDB : c'est le backend qui exécute l'outil, avec **les droits du manager connecté** (seulement ses projets) et la validation existante.
+  4. Les lectures sont exécutées tout de suite. **Chaque modification est d'abord présentée au manager** (« créer la tâche X dans le sprint 2 ? ») et n'est appliquée qu'après son clic sur « Confirmer ».
+  5. Chaque action appliquée est inscrite dans l'historique du projet.
+- **Sécurité :**
+  - aucune suppression sans confirmation ;
+  - nombre d'appels d'outils limité par message ;
+  - le texte des tâches et des commentaires est traité comme des données, jamais comme des instructions (protection contre l'injection de prompt) ;
+  - la clé OpenAI reste dans `ai-service/.env`.
+- **Limites assumées :**
+  - le chat agit sur les **données** de la plateforme (projets, sprints, tâches, assignations), **pas sur le code source** de l'application : modifier le code en production serait dangereux et hors du périmètre du projet ;
+  - il exige une clé OpenAI : sans clé, le panneau indique que l'assistant est indisponible (les autres fonctions IA gardent leur analyseur local).
 
 ### Phase 5 — Livraison
 

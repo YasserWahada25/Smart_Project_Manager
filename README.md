@@ -175,12 +175,12 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 
 | Task    | Scope                                                        | Status |
 |---------|--------------------------------------------------------------|--------|
-| TASK 20 | FastAPI AI service setup (structure, health, Pydantic, pytest) | Planned |
-| TASK 21 | Backend ↔ AI gateway (HTTP client, timeouts, error handling, AI health) | Planned |
-| TASK 22 | AI-03 Sprint delay risk prediction (dataset, ML model, metrics, endpoint, backend route, UI) | Planned |
+| TASK 20 | FastAPI AI service setup (structure, health, service token, Pydantic, pytest) | Done |
+| TASK 21 | Backend ↔ AI gateway (HTTP client, timeouts, error handling, AI status) | Done |
+| TASK 22 | AI-01 Sprint & task planning from the specification (OpenAI + local analyzer fallback, complexity estimation, review then apply, UI) | In progress |
 | TASK 23 | AI-02 Developer recommendation (scoring, endpoint, backend route, UI) | Planned |
-| TASK 24 | AI-01 Automatic task generation (LLM prompt, JSON validation, persistence, UI) | Planned |
-| TASK 25 | Optional AI features (complexity estimation, sprint summary) | Optional |
+| TASK 24 | AI-03 Sprint delay risk prediction (dataset, ML model, metrics, endpoint, backend route, UI) | Planned |
+| TASK 25 | AI-04 Manager assistant chat (OpenAI tool calling on the project data, changes applied only after the manager confirms, sprint summary) | Planned |
 
 ### Phase 5 — Delivery
 
@@ -205,6 +205,7 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 | [docs/deployment.md](docs/deployment.md)         | Environment, Docker, deployment                  |
 | [docs/demo.md](docs/demo.md)                     | Functional demonstration scenario                |
 | [docs/bilan.md](docs/bilan.md)                   | Progress report, updated after each task, and log of the supervisor ↔ AI agent exchanges (in French) |
+| [docs/handoff.md](docs/handoff.md)               | Resume point for the next agent: rules, exact state of TASK 22, remaining steps, commands, pitfalls |
 
 ### Technical report mapping
 

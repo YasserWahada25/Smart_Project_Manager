@@ -20,6 +20,9 @@ const activityController = require('../controllers/activity.controller');
 const { projectActivitiesRules } = require('../validators/comment.validator');
 const dashboardController = require('../controllers/dashboard.controller');
 const { projectDashboardRules } = require('../validators/dashboard.validator');
+const aiPlanController = require('../controllers/aiPlan.controller');
+const { generatePlanRules, applyPlanRules } = require('../validators/aiPlan.validator');
+const { singleDocument } = require('../middleware/upload');
 
 const router = Router();
 
@@ -48,5 +51,17 @@ router.get('/:id/activities', validate(projectActivitiesRules), activityControll
 
 // Project dashboard
 router.get('/:id/dashboard', validate(projectDashboardRules), dashboardController.project);
+
+// AI-01: sprints and tasks proposed from the specification (multipart: text and/or file), then
+// created once reviewed by the manager. The project is checked before the file is read.
+router.post(
+  '/:id/ai/plan',
+  validate(projectIdRules),
+  aiPlanController.loadManagedProject,
+  singleDocument('file'),
+  validate(generatePlanRules),
+  aiPlanController.generate,
+);
+router.post('/:id/ai/plan/apply', validate(applyPlanRules), aiPlanController.loadManagedProject, aiPlanController.apply);
 
 module.exports = router;

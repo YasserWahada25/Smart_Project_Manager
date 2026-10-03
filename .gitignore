@@ -33,6 +33,8 @@ env/
 .ruff_cache/
 *.egg-info/
 .ipynb_checkpoints/
+# Generated ML model: retrained automatically from app/ml/data (python -m app.ml.task_type_model)
+ai-service/app/ml/models/
 
 # ---------- Tests / coverage ----------
 coverage/

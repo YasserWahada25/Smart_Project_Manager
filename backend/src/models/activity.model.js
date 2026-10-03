@@ -18,6 +18,8 @@ const ACTIVITY_TYPES = Object.freeze({
   TASK_STATUS_CHANGED: 'TASK_STATUS_CHANGED',
   TASK_DELETED: 'TASK_DELETED',
   COMMENT_ADDED: 'COMMENT_ADDED',
+  // AI-01: sprints and tasks created from a reviewed AI plan (details: { sprints, tasks, method }).
+  AI_PLAN_APPLIED: 'AI_PLAN_APPLIED',
 });
 
 const { ObjectId } = mongoose.Schema.Types;

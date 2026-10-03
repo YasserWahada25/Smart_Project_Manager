@@ -1,0 +1,156 @@
+text,type
+L'utilisateur peut créer un compte avec son email et un mot de passe,FEATURE
+Le client peut ajouter un produit à son panier,FEATURE
+Afficher la liste des produits avec leur prix et leur photo,FEATURE
+Permettre au gestionnaire de créer une nouvelle commande,FEATURE
+Le système envoie un email de confirmation après chaque commande,FEATURE
+L'administrateur peut gérer les catégories de produits,FEATURE
+Paiement en ligne par carte bancaire avec Stripe,FEATURE
+Recherche de produits par nom et par catégorie,FEATURE
+Le client peut suivre l'état de sa livraison,FEATURE
+Tableau de bord des ventes pour le responsable commercial,FEATURE
+L'enseignant peut publier une note pour chaque étudiant,FEATURE
+Réservation d'une salle de réunion depuis le calendrier,FEATURE
+Exporter la liste des clients au format Excel,FEATURE
+Le patient peut prendre rendez-vous avec un médecin,FEATURE
+Gestion des stocks avec alerte quand un produit est épuisé,FEATURE
+Messagerie interne entre les membres de l'équipe,FEATURE
+As a customer I want to save my favourite products,FEATURE
+Users can upload a profile picture,FEATURE
+The manager can approve or reject leave requests,FEATURE
+Display the order history of the customer,FEATURE
+Create a REST API to list the invoices,FEATURE
+Allow users to reset their password by email,FEATURE
+Add a page to manage the delivery addresses,FEATURE
+Send a push notification when a message is received,FEATURE
+Generate a monthly PDF report of the sales,FEATURE
+As an admin I want to block a user account,FEATURE
+Integrate the Google Maps API to show the stores,FEATURE
+The application lets the driver accept a delivery,FEATURE
+Implement the shopping cart checkout flow,FEATURE
+Multi-language support for French and English,FEATURE
+Corriger l'erreur 500 lors de la validation du panier,BUG
+Le bouton d'inscription ne fonctionne pas sur mobile,BUG
+Le total de la commande est mal calculé quand il y a une remise,BUG
+Résoudre le plantage de l'application au démarrage,BUG
+Les images des produits ne s'affichent pas sur Safari,BUG
+Correction du problème de connexion après expiration de la session,BUG
+Le filtre par date renvoie des résultats erronés,BUG
+Les emails de confirmation partent en double,BUG
+La pagination saute une page de résultats,BUG
+Anomalie : le mot de passe est refusé alors qu'il est correct,BUG
+Fix the crash when the user uploads a large file,BUG
+The login page shows a blank screen on Firefox,BUG
+Fix wrong currency format in the invoice,BUG
+Search returns duplicated results,BUG
+Resolve the memory leak in the notification service,BUG
+The date picker displays the wrong month,BUG
+Fix broken link in the footer,BUG
+Users are logged out randomly after a few minutes,BUG
+The export button throws an exception,BUG
+Fix the off-by-one error in the sprint progress,BUG
+Repair the failing payment callback,BUG
+Defect: the cart is emptied after refreshing the page,BUG
+Améliorer le temps de chargement de la page d'accueil,IMPROVEMENT
+Optimiser les requêtes de la base de données pour la recherche,IMPROVEMENT
+Revoir l'ergonomie du formulaire d'inscription,IMPROVEMENT
+Améliorer l'affichage sur mobile du tableau de bord,IMPROVEMENT
+Refactoriser le module de facturation pour le rendre plus lisible,IMPROVEMENT
+Mettre en cache les catalogues pour réduire la charge du serveur,IMPROVEMENT
+Rendre les messages d'erreur plus clairs pour l'utilisateur,IMPROVEMENT
+Moderniser le design de la page produit,IMPROVEMENT
+Réduire la taille des images pour accélérer le site,IMPROVEMENT
+Simplifier le parcours de commande en deux étapes,IMPROVEMENT
+Improve the performance of the product list,IMPROVEMENT
+Refactor the authentication service,IMPROVEMENT
+Optimize the SQL queries of the reporting module,IMPROVEMENT
+Enhance the accessibility of the forms,IMPROVEMENT
+Reduce the bundle size of the web application,IMPROVEMENT
+Polish the user interface of the settings page,IMPROVEMENT
+Speed up the search with an index,IMPROVEMENT
+Clean up the legacy code of the cart module,IMPROVEMENT
+Improve the responsiveness of the dashboard on tablets,IMPROVEMENT
+Upgrade the UI library to the latest version,IMPROVEMENT
+Better error messages on the checkout page,IMPROVEMENT
+Rework the navigation menu to reduce the number of clicks,IMPROVEMENT
+Écrire les tests unitaires du service de paiement,TESTING
+Tests d'intégration de l'API des commandes,TESTING
+Tests de bout en bout du parcours d'achat,TESTING
+Mettre en place des tests de charge sur la recherche,TESTING
+Tester la compatibilité avec les navigateurs principaux,TESTING
+Campagne de recette avec les utilisateurs finaux,TESTING
+Écrire les scénarios de test de l'inscription,TESTING
+Vérifier la couverture de tests du module de facturation,TESTING
+Tests de non-régression avant la mise en production,TESTING
+Valider les règles de calcul des remises par des tests,TESTING
+Write unit tests for the order service,TESTING
+Add end-to-end tests for the login flow,TESTING
+Load testing of the API with 1000 users,TESTING
+Integration tests of the payment gateway,TESTING
+Test the application on Android and iOS devices,TESTING
+User acceptance testing of the dashboard,TESTING
+Increase the test coverage of the backend to 80%,TESTING
+Regression tests before each release,TESTING
+QA of the checkout process,TESTING
+Automated tests of the REST endpoints,TESTING
+Test plan for the reporting module,TESTING
+Rédiger la documentation de l'API REST,DOCUMENTATION
+Écrire le guide utilisateur de l'application,DOCUMENTATION
+Documenter l'architecture technique du projet,DOCUMENTATION
+Rédiger le manuel d'installation,DOCUMENTATION
+Mettre à jour le README du projet,DOCUMENTATION
+Documenter les règles de gestion de la facturation,DOCUMENTATION
+Rédiger le rapport technique final,DOCUMENTATION
+Créer un tutoriel vidéo pour les nouveaux utilisateurs,DOCUMENTATION
+Rédiger la documentation Swagger des endpoints,DOCUMENTATION
+Faire le dictionnaire de données de la base,DOCUMENTATION
+Write the API documentation with OpenAPI,DOCUMENTATION
+Write the user manual,DOCUMENTATION
+Document the deployment procedure,DOCUMENTATION
+Update the README with the setup instructions,DOCUMENTATION
+Write the technical specifications of the module,DOCUMENTATION
+Create the onboarding guide for developers,DOCUMENTATION
+Document the database schema,DOCUMENTATION
+Write the release notes,DOCUMENTATION
+Prepare the training material for the users,DOCUMENTATION
+Write the architecture decision records,DOCUMENTATION
+Mettre en place l'intégration continue avec GitHub Actions,DEVOPS
+Déployer l'application sur un serveur de production,DEVOPS
+Conteneuriser le backend avec Docker,DEVOPS
+Configurer Docker Compose pour l'environnement de développement,DEVOPS
+Mettre en place la sauvegarde automatique de la base de données,DEVOPS
+Configurer la supervision et les alertes du serveur,DEVOPS
+Automatiser le déploiement continu,DEVOPS
+Mettre en place un environnement de recette,DEVOPS
+Configurer le nom de domaine et le certificat HTTPS,DEVOPS
+Centraliser les logs de l'application,DEVOPS
+Set up the CI pipeline with GitHub Actions,DEVOPS
+Deploy the application on AWS,DEVOPS
+Create the Dockerfile of the frontend,DEVOPS
+Configure Kubernetes for the production cluster,DEVOPS
+Set up monitoring with Prometheus and Grafana,DEVOPS
+Automate the database backups,DEVOPS
+Configure the staging environment,DEVOPS
+Set up continuous delivery to the cloud,DEVOPS
+Infrastructure as code with Terraform,DEVOPS
+Configure log aggregation for the services,DEVOPS
+Chiffrer les mots de passe des utilisateurs,SECURITY
+Protéger l'API contre les injections SQL,SECURITY
+Mettre en place l'authentification à deux facteurs,SECURITY
+Limiter le nombre de tentatives de connexion,SECURITY
+Audit de sécurité de l'application,SECURITY
+Conformité RGPD des données personnelles,SECURITY
+Protection contre les attaques XSS et CSRF,SECURITY
+Gestion des rôles et des permissions des utilisateurs,SECURITY
+Chiffrement des données sensibles en base,SECURITY
+Journaliser les accès aux données confidentielles,SECURITY
+Hash the passwords with bcrypt,SECURITY
+Protect the API with JWT authentication,SECURITY
+Add rate limiting to the login endpoint,SECURITY
+Penetration testing of the web application,SECURITY
+GDPR compliance of the customer data,SECURITY
+Prevent cross-site scripting in the comments,SECURITY
+Encrypt sensitive data at rest,SECURITY
+Implement role-based access control,SECURITY
+Fix the vulnerabilities reported by the security scan,SECURITY
+Store secrets in a vault instead of the code,SECURITY

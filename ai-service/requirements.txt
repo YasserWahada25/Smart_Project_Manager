@@ -7,6 +7,3 @@ httpx==0.28.1
 python-multipart==0.0.32
 pypdf==6.19.0
 python-docx==1.2.0
-scikit-learn==1.9.1
-numpy==2.5.3
-joblib==1.6.0
