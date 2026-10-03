@@ -4,7 +4,8 @@ from pydantic import BaseModel
 
 
 class LlmStatus(BaseModel):
-    provider: Literal["openai"]
+    # openai, gemini, groq, ollama or custom (detected from OPENAI_BASE_URL).
+    provider: str
     configured: bool
     model: str | None
 

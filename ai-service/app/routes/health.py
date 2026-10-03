@@ -15,7 +15,7 @@ def health(settings: Annotated[Settings, Depends(get_settings)]) -> HealthRespon
         status="ok",
         service="smart-project-manager-ai",
         llm=LlmStatus(
-            provider="openai",
+            provider=settings.llm_provider[0],
             configured=settings.llm_enabled,
             model=settings.openai_model if settings.llm_enabled else None,
         ),

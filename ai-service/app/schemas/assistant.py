@@ -26,6 +26,8 @@ class ToolCall(BaseModel):
     arguments: dict[str, Any] = Field(default_factory=dict)
     # Set by the AI service when the arguments do not match the tool schema.
     error: str | None = None
+    # Provider data attached to the call, sent back unchanged on the next turn (Gemini "thought_signature").
+    extra: dict[str, Any] | None = None
 
 
 class ChatMessage(BaseModel):

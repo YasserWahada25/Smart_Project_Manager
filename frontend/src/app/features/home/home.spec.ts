@@ -73,6 +73,7 @@ describe('Home', () => {
       of(status('up')),
     );
     expect(text(withLlm)).toContain('Python + FastAPI · OpenAI gpt-4o-mini');
+    expect(text(withLlm)).not.toContain('Google Gemini');
 
     TestBed.resetTestingModule();
     const notConfigured = await renderWithAi(

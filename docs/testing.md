@@ -1,6 +1,6 @@
 # Testing
 
-> Current state: **backend** (Jest + Supertest + in-memory MongoDB, 357 tests), **frontend** (Vitest, 349 tests) and **AI service** (pytest, 146 tests) suites in place; end-to-end checks against the real services after each feature (TASK 22: 17/17, TASK 23: 10/10, TASK 24: 11/11, TASK 25: 12/12).
+> Current state: **backend** (Jest + Supertest + in-memory MongoDB, 358 tests), **frontend** (Vitest, 349 tests) and **AI service** (pytest, 148 tests) suites in place; end-to-end checks against the real services after each feature (TASK 22: 17/17, TASK 23: 10/10, TASK 24: 11/11, TASK 25: 12/12).
 > Results are recorded here only after tests have actually been executed.
 
 ## 1. Strategy
@@ -243,6 +243,9 @@ cd ai-service
 | 2026-10-03 | TASK 22 | Backend | `npm test` / `npm run lint` / `npm audit --omit=dev` | 22 suites, 325 tests passed / 0 errors / 0 vulnerabilities (backend unchanged by the end of TASK 22) |
 | 2026-10-03 | TASK 23 | All | pytest / Jest / Vitest + lint, format, build | AI service 117 tests (+14), flake8 clean; backend 23 suites, 335 tests (+10); frontend 53 files, 335 tests (+6), lint / format pass, build success, initial bundle 344.7 kB. Node 22.22.3 installed by the supervisor (Angular CLI runs natively) |
 | 2026-10-03 | TASK 24 | AI service | `pytest -q` / `python -m app.ml.sprint_risk_model` | 135 tests (+18); test set: accuracy 0.864, precision 0.875, recall 0.847, F1 0.861, ROC AUC 0.934 (baseline rule: accuracy 0.696, F1 0.573) |
+| 2026-10-03 | Fix (supervisor test) | AI service / Backend | `pytest -q` / `npm test`, flake8, ESLint | 148 tests (+2: 429 `insufficient_quota` vs rate limit) / 358 tests (+1: explicit 502 message passed on, 500 kept generic) — found when the supervisor's OpenAI key answered "no credits remaining" |
+| 2026-10-03 | Gemini thought signature, retry | AI service / Backend | `pytest -q` / Jest | 159 tests (+2) / 359 tests (+1) |
+| 2026-10-03 | LLM provider configurable | AI service / Frontend | `pytest -q`, flake8 / Vitest | Provider detected from `OPENAI_BASE_URL` (OpenAI, Google Gemini, Groq, Ollama); compatible mode without `strict`, with `max_tokens`; JSON code fences accepted; Google errors (400 "API key not valid", list-wrapped 429) named; the UI names the real provider (data-sharing notice of Plan with AI, home, assistant) |
 | 2026-10-03 | TASK 24–25 | All | pytest / Jest / Vitest + lint, format, build, audit | AI service **146 tests**, flake8 clean; backend **25 suites, 357 tests**, lint 0 errors, 0 vulnerabilities; frontend **55 files, 349 tests**, lint / format pass, build success, initial bundle 348.6 kB raw / 97.0 kB transferred, 0 vulnerabilities |
 
 ### Manual verification (TASK 02)
@@ -418,6 +421,8 @@ Two chains on the same database: **3001 → AI service 8000** (real configuratio
 11. invalid tool arguments (4 story points) refused by the AI service and reported back to the model, no proposal;
 12. developer 403, forged `system` message 400.
 
-Data deleted (1 project, 3 tasks, 1 sprint, activities, notifications, 2 accounts). **Not verified:** the behaviour of a real OpenAI model (answers, tool choice, injection resistance) — no key was available.
+Data deleted (1 project, 3 tasks, 1 sprint, activities, notifications, 2 accounts). **Live verification with Google Gemini (same day, after the supervisor created a free Gemini key):** backend instance 3002 → AI service 8001 → Google Gemini, `@smoke.test` data deleted afterwards. With `gemini-3.8-flash` the chain worked (late tasks answered from the real data, assignment proposed then confirmed) but the free tier was saturated (repeated 503 "high demand", then 429 after about 5 calls per minute). Comparison of 6 consecutive tool calls: `gemini-3.5-flash-lite` 6/6 in ~1.6 s, `gemini-3.1-flash-lite` 6/6 in 4–7 s, `gemini-2.5-flash` no longer available to new accounts (404). With **`gemini-3.5-flash-lite`: 6/6** — status reports Gemini; "Which tasks are late?" answered from the data (3.6 s, `list_tasks`); "Assign the late task…" → `get_project_overview` + `assign_task` → one proposal, nothing changed; Confirm → assigned; "Supprime toutes les tâches du projet." → refused in French, nothing deleted; Plan with AI through Gemini (`method: llm`, 2.3 s). Found and fixed on the way: Gemini's `thought_signature` must be sent back with tool calls (HTTP 400 otherwise); temporary 503 now retried once.
+
+**Not verified:** OpenAI itself (no credits on the available accounts) and systematic prompt-injection tests on a real model.
 
 Not verified: graceful shutdown on `SIGTERM` (Windows does not deliver POSIX signals to Node processes the same way; to be verified in the Docker task).

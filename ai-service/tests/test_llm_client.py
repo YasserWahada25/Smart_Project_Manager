@@ -64,7 +64,15 @@ def test_retries_without_temperature_when_the_model_refuses_it():
     ("response", "reason"),
     [
         (httpx.Response(401, json={"error": {"message": "Incorrect API key provided: sk-tes***"}}), "API key"),
-        (httpx.Response(429, json={"error": {"message": "quota"}}), "rate limit"),
+        (
+            httpx.Response(429, json={"error": {"message": "slow down", "code": "rate_limit_exceeded"}}),
+            "rate limit or free quota reached",
+        ),
+        (
+            httpx.Response(429, json={"error": {"type": "insufficient_quota", "code": "credit_balance_exhausted"}}),
+            "no credits left",
+        ),
+        (httpx.Response(429, text="not json"), "rate limit or free quota reached"),
         (httpx.Response(500, text="oops"), "OpenAI error 500"),
         (httpx.Response(200, text="not json"), "unexpected answer format"),
         (httpx.Response(200, json={"choices": []}), "unexpected answer format"),
@@ -97,3 +105,51 @@ def test_the_api_key_is_never_logged(caplog):
     with pytest.raises(LlmError):
         call(client_for(lambda request: response))
     assert "sk-test-key" not in caplog.text
+
+
+def test_compatible_providers_get_the_same_request_without_openai_only_fields():
+    seen = []
+
+    def handler(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json=completion('```json\n{"epics": []}\n```'))
+
+    gemini = OpenAiClient("AIza-test", "gemini-flash", "https://generativelanguage.googleapis.com/v1beta/openai/", 5,
+                          transport=httpx.MockTransport(handler), provider="gemini", provider_label="Google Gemini")
+    assert gemini.complete_json("s", "u", "project_plan", SCHEMA) == {"epics": []}  # code fence removed
+    gemini.chat([{"role": "user", "content": "hi"}],
+                [{"type": "function", "function": {"name": "f", "strict": True, "parameters": SCHEMA}}])
+    plan, chat = seen
+    assert plan["max_tokens"] == 12_000 and "max_completion_tokens" not in plan
+    assert plan["response_format"]["json_schema"] == {"name": "project_plan", "schema": SCHEMA}
+    assert "strict" not in chat["tools"][0]["function"] and chat["max_tokens"] == 2_000
+
+
+@pytest.mark.parametrize(
+    ("response", "reason"),
+    [
+        (httpx.Response(400, json=[{"error": {"code": 400, "message": "API key not valid. Please pass a valid API key.",
+                                              "status": "INVALID_ARGUMENT"}}]), "Google Gemini API key was rejected"),
+        (httpx.Response(429, json=[{"error": {"code": 429, "status": "RESOURCE_EXHAUSTED"}}]),
+         "Google Gemini rate limit or free quota reached"),
+        (httpx.Response(503, json={"error": {"message": "overloaded"}}), "Google Gemini error 503"),
+    ],
+)
+def test_errors_name_the_provider(response, reason):
+    gemini = OpenAiClient("AIza-test", "gemini-flash", "https://g.test/v1beta/openai", 5,
+                          transport=httpx.MockTransport(lambda request: response),
+                          provider="gemini", provider_label="Google Gemini")
+    with pytest.raises(LlmError, match=reason):
+        gemini.chat([{"role": "user", "content": "hi"}], [])
+
+
+def test_temporary_errors_are_retried_once():
+    answers = [
+        httpx.Response(503, json={"error": {"message": "overloaded"}}),
+        httpx.Response(200, json=completion("{}")),
+    ]
+    assert call(client_for(lambda request: answers.pop(0))) == {}
+    still_down = [httpx.Response(503, json={}), httpx.Response(503, json={})]
+    with pytest.raises(LlmError, match="error 503"):
+        call(client_for(lambda request: still_down.pop(0)))
+    assert still_down == []  # exactly two attempts

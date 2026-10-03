@@ -102,6 +102,16 @@ describe('AiPlanPage', () => {
       await render({ status: of(OPENAI) });
       expect(text()).toContain('Analyzer: OpenAI gpt-4o-mini');
       expect(text()).toContain('The specification is sent to OpenAI');
+
+      TestBed.resetTestingModule();
+      await render({
+        status: of({
+          available: true,
+          llm: { provider: 'gemini', configured: true, model: 'gemini-3.8-flash' },
+        }),
+      });
+      expect(text()).toContain('Analyzer: Google Gemini gemini-3.8-flash');
+      expect(text()).toContain('The specification is sent to Google Gemini');
     });
 
     it('cannot generate while the AI service is down', async () => {

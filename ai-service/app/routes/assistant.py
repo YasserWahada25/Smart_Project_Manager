@@ -19,5 +19,5 @@ def assistant_chat(
 ) -> ChatResponse:
     """One turn of the manager assistant: the answer, or the tool calls the backend must run."""
     if llm is None:
-        raise ApiError(503, "The assistant needs an OpenAI API key (OPENAI_API_KEY)", code="LLM_NOT_CONFIGURED")
+        raise ApiError(503, "The assistant needs an LLM API key (OPENAI_API_KEY)", code="LLM_NOT_CONFIGURED")
     return chat(request, llm)

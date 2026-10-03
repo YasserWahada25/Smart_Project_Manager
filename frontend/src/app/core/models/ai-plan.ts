@@ -15,7 +15,7 @@ export const PLAN_LIMITS = {
   capacityPerSprint: { min: 3, max: 200, default: 20 },
 } as const;
 
-/** Analyzer that produced the plan: OpenAI, or the local rules + Naive Bayes classifier. */
+/** Analyzer that produced the plan: the LLM (OpenAI, Google Gemini…), or the local rules + Naive Bayes classifier. */
 export type PlanMethod = 'llm' | 'local';
 
 /** Task proposed by the AI (not stored yet). */

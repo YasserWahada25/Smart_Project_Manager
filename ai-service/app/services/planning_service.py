@@ -1,7 +1,8 @@
 """AI-01 — plan of a project from its specification (hybrid).
 
-1. Analysis: OpenAI when OPENAI_API_KEY is set (structured outputs), otherwise — or when the call
-   fails — the local analyzer (requirement_parser + task_enricher). The answer says which one ran.
+1. Analysis: the LLM (OpenAI, Google Gemini… — any OpenAI-compatible API) when OPENAI_API_KEY is set
+   (structured outputs), otherwise — or when the call fails — the local analyzer (requirement_parser +
+   task_enricher). The answer says which one ran.
 2. Planning: sprint_planner splits the tasks into sprints, the same way for both analyzers.
 Nothing is stored: the backend shows the plan to the manager, who reviews it before creating anything.
 """
@@ -36,7 +37,7 @@ def build_plan(request: PlanRequest, llm: OpenAiClient | None, settings: Setting
             method, model = "llm", llm.model
         except LlmError as exc:
             logger.warning("LLM analysis failed (%s): local analyzer used", exc)
-            warnings.append(f"OpenAI could not analyse the document ({exc}): the local analyzer was used instead.")
+            warnings.append(f"{llm.label} could not analyse the document ({exc}): the local analyzer was used instead.")
     if result is None:
         result = _analyze_locally(request, language, warnings)
         method, model = "local", LOCAL_MODEL
@@ -81,7 +82,7 @@ def _analyze_with_llm(
     document = request.text
     if len(document) > max_chars:
         document = document[:max_chars]
-        warnings.append(f"The document is long: only its first {max_chars} characters were sent to OpenAI.")
+        warnings.append(f"The document is long: only its first {max_chars} characters were sent to {llm.label}.")
     project = request.project
     answer = llm.complete_json(
         SYSTEM_PROMPT,
@@ -94,10 +95,12 @@ def _analyze_with_llm(
     except ValidationError as exc:
         logger.warning("Invalid LLM answer: %s", exc.errors()[:3])
         raise LlmError("the answer does not match the expected schema") from None
-    return _tasks_from_llm(plan, warnings)
+    return _tasks_from_llm(plan, warnings, llm.label)
 
 
-def _tasks_from_llm(plan: LlmPlan, warnings: list[str]) -> tuple[list[PlannedTask], list[PlannedTask]]:
+def _tasks_from_llm(
+    plan: LlmPlan, warnings: list[str], label: str = "The LLM"
+) -> tuple[list[PlannedTask], list[PlannedTask]]:
     """The schema is valid: cut what is too long, drop empty or duplicate tasks."""
     tasks: list[PlannedTask] = []
     excluded: list[PlannedTask] = []
@@ -131,7 +134,7 @@ def _tasks_from_llm(plan: LlmPlan, warnings: list[str]) -> tuple[list[PlannedTas
         raise LlmError("the answer contains no task")
     limit = min(MAX_TASKS, MAX_LLM_TASKS)
     if total > limit:
-        warnings.append(f"OpenAI proposed {total} tasks: only the first {limit} are kept.")
+        warnings.append(f"{label} proposed {total} tasks: only the first {limit} are kept.")
         tasks = tasks[:limit]
         excluded = excluded[: max(limit - len(tasks), 0)]
     return tasks, excluded

@@ -186,6 +186,17 @@ describe('POST /api/v1/projects/:id/ai/assistant/chat', () => {
     ]);
   });
 
+  it('sends the provider data of a tool call back unchanged (Gemini thought_signature)', async () => {
+    const extra = { google: { thought_signature: 'c2lnbmF0dXJl' } };
+    const turn = toolCalls(['get_project_overview']);
+    turn.toolCalls[0].extra = extra;
+    turns.push(turn, message('Done.'));
+
+    await chat(manager);
+
+    expect(sentTurns[1].messages[1].toolCalls[0]).toEqual({ id: 'call_0', name: 'get_project_overview', arguments: {}, extra });
+  });
+
   it('stops after the maximum number of steps', async () => {
     for (let i = 0; i < 10; i += 1) turns.push(toolCalls(['get_project_overview']));
     const res = await chat(manager);

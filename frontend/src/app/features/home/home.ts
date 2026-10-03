@@ -16,7 +16,12 @@ import { APP_NAME } from '../../core/app.constants';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApiError } from '../../core/models/api-error';
 import { ROLE_LABELS } from '../../core/models/user';
-import { AiStatus, ServiceState, SystemStatus } from '../../core/models/system-status';
+import {
+  AiStatus,
+  ServiceState,
+  SystemStatus,
+  llmProviderLabel,
+} from '../../core/models/system-status';
 import { HealthService } from '../../core/services/health.service';
 import { ErrorState } from '../../shared/components/error-state/error-state';
 import { LoadingState } from '../../shared/components/loading-state/loading-state';
@@ -101,7 +106,7 @@ export class Home {
   }
 }
 
-/** "Python + FastAPI · OpenAI gpt-4o-mini", "· local analyzer (no LLM key)", or why it is down. */
+/** "Python + FastAPI · Google Gemini gemini-…", "· local analyzer (no LLM key)", or why it is down. */
 function aiDetail(status: AiStatus): string {
   if (!status.available) {
     return status.reason === 'NOT_CONFIGURED'
@@ -110,6 +115,6 @@ function aiDetail(status: AiStatus): string {
   }
   const llm = status.llm;
   return llm?.configured
-    ? `Python + FastAPI · OpenAI ${llm.model ?? ''}`.trim()
+    ? `Python + FastAPI · ${llmProviderLabel(llm.provider)} ${llm.model ?? ''}`.trim()
     : 'Python + FastAPI · local analyzer (no LLM key)';
 }

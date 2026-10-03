@@ -18,6 +18,18 @@ export interface AiStatus {
   llm: { provider: string; configured: boolean; model: string | null } | null;
 }
 
+/** Display name of the LLM provider reported by the AI service (detected from OPENAI_BASE_URL). */
+const LLM_PROVIDER_LABELS: Record<string, string> = {
+  openai: 'OpenAI',
+  gemini: 'Google Gemini',
+  groq: 'Groq',
+  ollama: 'Ollama',
+};
+
+export function llmProviderLabel(provider: string | null | undefined): string {
+  return (provider && LLM_PROVIDER_LABELS[provider]) || 'the LLM provider';
+}
+
 /** Availability of the backend and its database, as shown to the user. */
 export interface SystemStatus {
   backend: ServiceState;
