@@ -5,7 +5,8 @@
  *  - 503 AI_UNAVAILABLE  — not configured or unreachable;
  *  - 504 AI_TIMEOUT      — no answer in time;
  *  - 400                 — the submitted content was refused (type, size, nothing usable…);
- *  - 502 AI_ERROR        — the AI service failed or answered something unusable.
+ *  - 502 AI_ERROR        — the AI service failed or answered something unusable (its own message
+ *                          when it explains the failure with a 502, e.g. no LLM credits).
  */
 const { config } = require('../config/env');
 const ApiError = require('../utils/ApiError');
@@ -62,6 +63,11 @@ async function request(path, { method = 'GET', json, form, timeoutMs = config.ai
       throw ApiError.badRequest(remote.message, remote.details?.length ? remote.details : undefined);
     }
     logger.error(`AI service error ${response.status}: ${remote?.message ?? 'no error body'}`);
+    // 502 = a failure the AI service explains itself (e.g. "the OpenAI account has no credits left"):
+    // its message is safe to show. Other errors (500…) stay generic.
+    if (response.status === 502 && typeof remote?.message === 'string' && remote.message.length <= 300) {
+      throw failed(remote.message);
+    }
     throw failed();
   }
   if (payload === null) throw failed('The AI service returned an invalid response');

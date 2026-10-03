@@ -107,7 +107,8 @@ export class AssistantPage {
       return 'The AI service is not available: the assistant cannot answer for now.';
     }
     return (
-      'The assistant needs an OpenAI API key: set OPENAI_API_KEY in ai-service/.env and restart ' +
+      'The assistant needs an LLM API key: set OPENAI_API_KEY (OpenAI, Google Gemini or another ' +
+      'OpenAI-compatible provider) in ai-service/.env and restart ' +
       'the AI service. The other AI features keep working with their local models.'
     );
   }

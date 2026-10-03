@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormArray,
@@ -37,7 +44,7 @@ import {
   TaskPriority,
   TaskType,
 } from '../../../core/models/task';
-import { AiStatus } from '../../../core/models/system-status';
+import { AiStatus, llmProviderLabel } from '../../../core/models/system-status';
 import { HealthService } from '../../../core/services/health.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LoadingState } from '../../../shared/components/loading-state/loading-state';
@@ -158,6 +165,10 @@ export class AiPlanPage {
   protected readonly file = signal<File | null>(null);
   protected readonly fileError = signal<string | null>(null);
   protected readonly aiStatus = signal<AiStatus | null>(null);
+  /** "OpenAI", "Google Gemini"… (the data-sharing notice names the real provider). */
+  protected readonly providerLabel = computed(() =>
+    llmProviderLabel(this.aiStatus()?.llm?.provider),
+  );
   protected readonly generating = signal(false);
   protected readonly inputError = signal<string | null>(null);
 

@@ -4,7 +4,7 @@ import pytest
 from fastapi import APIRouter, Depends
 from pydantic import ValidationError
 
-from app.config import Settings, get_settings
+from app.config import Settings, detect_provider, get_settings
 from app.security import require_backend_token
 
 
@@ -70,3 +70,17 @@ def test_ai_routes_require_the_backend_token(protected, auth_headers):
     assert missing.json()["error"]["message"] == "Invalid or missing service token"
     assert wrong.status_code == 401
     assert right.status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("base_url", "expected"),
+    [
+        ("https://api.openai.com/v1", ("openai", "OpenAI")),
+        ("https://generativelanguage.googleapis.com/v1beta/openai/", ("gemini", "Google Gemini")),
+        ("https://api.groq.com/openai/v1", ("groq", "Groq")),
+        ("http://localhost:11434/v1", ("ollama", "Ollama")),
+        ("https://llm.example.org/v1", ("custom", "the LLM provider")),
+    ],
+)
+def test_the_provider_is_detected_from_the_base_url(base_url, expected):
+    assert detect_provider(base_url) == expected

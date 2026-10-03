@@ -90,6 +90,18 @@ describe('AI client', () => {
       message: 'The AI service returned an invalid response',
     });
   });
+
+  it('passes on the explanation of a 502 from the AI service (e.g. no OpenAI credits), never of a 500', async () => {
+    const reason = 'The assistant could not answer: the OpenAI account has no credits left';
+    fetchMock.mockResolvedValueOnce(jsonResponse(502, { error: { code: 'BAD_GATEWAY', message: reason } }));
+    await expect(aiClient.request('/x')).rejects.toMatchObject({ statusCode: 502, code: 'AI_ERROR', message: reason });
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: { message: 'Traceback (most recent call last)…' } }));
+    await expect(aiClient.request('/x')).rejects.toMatchObject({
+      statusCode: 502,
+      message: 'The AI service failed to process the request',
+    });
+  });
 });
 
 describe('GET /api/v1/ai/status', () => {

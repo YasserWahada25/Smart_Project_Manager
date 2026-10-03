@@ -143,7 +143,7 @@ cp .env.example .env    # set AI_SERVICE_TOKEN (same value in backend/.env); OPE
 .venv/Scripts/python.exe -m uvicorn app.main:app --port 8000
 ```
 
-Generate the shared token with `python -c "import secrets; print(secrets.token_hex(32))"` and put it in **both** `ai-service/.env` and `backend/.env` (`AI_SERVICE_TOKEN`). Without `OPENAI_API_KEY`, the local analyzer is used and no data leaves your machine.
+Generate the shared token with `python -c "import secrets; print(secrets.token_hex(32))"` and put it in **both** `ai-service/.env` and `backend/.env` (`AI_SERVICE_TOKEN`). Without `OPENAI_API_KEY`, the local analyzer is used and no data leaves your machine. The LLM can be OpenAI or any OpenAI-compatible provider (Google Gemini with a free key, Groq, Ollama…): set `OPENAI_BASE_URL` and `OPENAI_MODEL` accordingly (examples in `ai-service/.env.example`).
 
 Check it is running: `GET http://localhost:8000/api/v1/health` → `200 {"status":"ok", ...}`; the home page of the application then shows the AI service as operational. Project managers find **Plan with AI** on the Sprints tab of their projects.
 

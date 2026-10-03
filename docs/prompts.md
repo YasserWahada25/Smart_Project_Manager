@@ -109,7 +109,7 @@ Un même prompt peut relever de plusieurs types (le #17, par exemple).
 | Item | Value |
 |------|-------|
 | Code | `ai-service/app/prompts/project_plan.py` (`PROMPT_VERSION = "project-plan-v1"`), `app/services/llm_client.py`, `app/services/planning_service.py` |
-| Provider / model | OpenAI Chat Completions (`POST {OPENAI_BASE_URL}/chat/completions`), model `OPENAI_MODEL` (default `gpt-4o-mini`) |
+| Provider / model | Any OpenAI-compatible Chat Completions API (`POST {OPENAI_BASE_URL}/chat/completions`): OpenAI by default (`gpt-4o-mini`), configured for **Google Gemini** (`gemini-3.5-flash-lite`) on the development machine; on non-OpenAI providers the `strict` flag is dropped and `max_tokens` replaces `max_completion_tokens` |
 | Mode | **Structured outputs**: `response_format = {"type": "json_schema", "json_schema": {"name": "project_plan", "strict": true, "schema": PLAN_SCHEMA}}` |
 | Parameters | `temperature` 0.2 (the same document should give almost the same plan; sent again without it if the model refuses it), `max_completion_tokens` 12 000 |
 | Timeout | `LLM_TIMEOUT_SECONDS` (default 60 s), inside the backend timeout `AI_TIMEOUT_MS` (90 s) |
@@ -263,7 +263,7 @@ The document is the pasted text and/or the text extracted from the file, cut at 
 |---|---|
 | Timeout / network error | `no answer within N s` / `OpenAI is unreachable` |
 | 401 / 403 | `the OpenAI API key was rejected` (logged as an error: check `OPENAI_API_KEY`) |
-| 429 | `OpenAI rate limit or quota exceeded` |
+| 429 | `the OpenAI account has no credits left (add credits in the OpenAI billing settings)` when OpenAI reports `insufficient_quota`, otherwise `OpenAI rate limit reached, try again in a moment` |
 | Other HTTP error | `OpenAI error <status>` |
 | Refusal, cut answer, invalid JSON, schema mismatch, no task | explicit reason (`the answer does not match the expected schema`…) |
 
@@ -280,7 +280,7 @@ The document is the pasted text and/or the text extracted from the file, cut at 
 | Item | Value |
 |------|-------|
 | Code | `ai-service/app/prompts/assistant.py` (`PROMPT_VERSION = "assistant-v1"`), `app/services/assistant.py`, `app/services/llm_client.py` (`chat`); backend `backend/src/services/aiAssistant.service.js` |
-| Provider / model | OpenAI Chat Completions with **function calling** (`tools`, `tool_choice: "auto"`, every function in **strict** mode), model `OPENAI_MODEL` (default `gpt-4o-mini`) |
+| Provider / model | OpenAI-compatible Chat Completions with **function calling** (`tools`, `tool_choice: "auto"`, every function in **strict** mode on OpenAI; same tools without `strict` on other providers), model `OPENAI_MODEL` — OpenAI by default, **Google Gemini** on the development machine |
 | Parameters | `temperature` 0.2 (retried without it if refused), `max_completion_tokens` 2 000 |
 | Timeout | `LLM_TIMEOUT_SECONDS` (60 s) per call; the backend makes at most 6 calls per manager message, each within `AI_TIMEOUT_MS` |
 | Endpoints | AI service `POST /api/v1/ai/assistant/chat` (one turn), called by backend `POST /api/v1/projects/:id/ai/assistant/chat` (the loop) |
@@ -367,7 +367,9 @@ There is **no delete tool**. The full JSON schemas are in `TOOLS` (`ai-service/a
 2. Backend: the answer shape is checked (type, content, tool calls) → otherwise 502. Every id is resolved **inside the manager's project** (task, sprint, active member), workflow moves are checked against the allowed transitions; problems are returned to the model as tool errors.
 3. Confirmation: the action endpoint re-runs the express-validator rules of the matching REST route (`createTaskRules`, `updateTaskRules`, `assignRules`, `changeStatusRules`, `createSprintRules`) and the services (permissions, archived project, open sprint…).
 
-**Error handling** — OpenAI failures (timeout, network, 401/403 key, 429 quota, refusal, cut answer, empty answer) → AI service 502 with the reason → backend 502, shown in the page; the question is given back to the input. More than 6 turns → a polite "could not finish" answer with the proposals prepared so far.
+**Provider specifics** — Gemini 3 attaches a `thought_signature` to each tool call (`extra_content.google`) and refuses the next turn without it: the AI service keeps it in the opaque `extra` field of the tool call, the backend passes it through unchanged, and it is sent back with the history. Temporary provider errors (HTTP 500 / 502 / 503, e.g. "model overloaded") are retried once after 2 s.
+
+**Error handling** — LLM failures (timeout, network, 401/403 key, 429 quota, refusal, cut answer, empty answer) → AI service 502 with the reason → backend 502 **with the same reason** (e.g. "The assistant could not answer: the OpenAI account has no credits left…"), shown in the page; the question is given back to the input. More than 6 turns → a polite "could not finish" answer with the proposals prepared so far.
 
 **Security considerations**
 

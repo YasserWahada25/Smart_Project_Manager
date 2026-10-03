@@ -1,7 +1,7 @@
 """AI-04 — one turn of the manager assistant (stateless).
 
 The backend sends the whole conversation of the current exchange (user / assistant messages, previous
-tool calls and their results); this service adds the system prompt and the tools, calls OpenAI, and
+tool calls and their results); this service adds the system prompt and the tools, calls the LLM, and
 returns either the final answer or the tool calls the model wants, with their arguments validated
 (`error` is set when they do not match the tool schema, so the backend can report it to the model).
 """
@@ -31,15 +31,22 @@ def to_openai_messages(request: ChatRequest) -> list[dict]:
             messages.append({
                 "role": "assistant",
                 "content": message.content or None,
-                "tool_calls": [
-                    {"id": call.id, "type": "function",
-                     "function": {"name": call.name, "arguments": json.dumps(call.arguments, ensure_ascii=False)}}
-                    for call in message.toolCalls
-                ],
+                "tool_calls": [_openai_tool_call(call) for call in message.toolCalls],
             })
         else:
             messages.append({"role": message.role, "content": message.content})
     return messages
+
+
+def _openai_tool_call(call: ToolCall) -> dict:
+    payload = {
+        "id": call.id,
+        "type": "function",
+        "function": {"name": call.name, "arguments": json.dumps(call.arguments, ensure_ascii=False)},
+    }
+    if call.extra:
+        payload["extra_content"] = call.extra  # Gemini requires its thought_signature back
+    return payload
 
 
 def validate_call(call_id: str, name: str, raw_arguments: str) -> ToolCall:
@@ -68,7 +75,7 @@ def chat(request: ChatRequest, llm: OpenAiClient) -> ChatResponse:
     try:
         message = llm.chat(to_openai_messages(request), TOOLS)
     except LlmError as exc:
-        logger.warning("Assistant: OpenAI failed (%s)", exc)
+        logger.warning("Assistant: %s failed (%s)", llm.label, exc)
         raise ApiError(502, f"The assistant could not answer: {exc}") from None
     raw_calls = message.get("tool_calls") or []
     content = (message.get("content") or "").strip()
@@ -79,6 +86,9 @@ def chat(request: ChatRequest, llm: OpenAiClient) -> ChatResponse:
     calls = []
     for raw in raw_calls[:MAX_TOOL_CALLS]:
         function = raw.get("function") or {}
-        calls.append(validate_call(str(raw.get("id") or ""), str(function.get("name") or ""),
-                                   function.get("arguments") or "{}"))
+        call = validate_call(str(raw.get("id") or ""), str(function.get("name") or ""),
+                             function.get("arguments") or "{}")
+        if isinstance(raw.get("extra_content"), dict):
+            call.extra = raw["extra_content"]
+        calls.append(call)
     return ChatResponse(type="tool_calls", content=content, toolCalls=calls, model=llm.model)

@@ -1,7 +1,7 @@
 /**
  * AI-04 — manager assistant (chat) of a project.
  *
- * chat(): the backend drives the conversation. It sends the messages to the AI service (which calls OpenAI
+ * chat(): the backend drives the conversation. It sends the messages to the AI service (which calls the LLM
  * with the tools), runs the READ tools itself with the rights of the signed-in manager (project data only),
  * and turns every WRITE tool call into a PROPOSAL: nothing is changed until the manager confirms it.
  * executeAction(): runs a confirmed proposal through the usual validation rules and services (same checks,
@@ -277,7 +277,11 @@ function parseTurn(payload) {
         call.arguments !== null &&
         typeof call.arguments === 'object' &&
         !Array.isArray(call.arguments) &&
-        (call.error === null || call.error === undefined || typeof call.error === 'string'),
+        (call.error === null || call.error === undefined || typeof call.error === 'string') &&
+        // Opaque provider data (Gemini thought_signature), sent back unchanged on the next turn.
+        (call.extra === null ||
+          call.extra === undefined ||
+          (typeof call.extra === 'object' && !Array.isArray(call.extra) && JSON.stringify(call.extra).length <= 20000)),
     ) &&
     (payload.type === 'message' ? payload.content.trim().length > 0 : calls.length > 0);
   if (!valid) {
@@ -294,7 +298,7 @@ async function assertAssistantAvailable() {
     throw new ApiError(
       503,
       'LLM_NOT_CONFIGURED',
-      'The assistant needs an OpenAI API key: set OPENAI_API_KEY in ai-service/.env and restart the AI service',
+      'The assistant needs an LLM API key: set OPENAI_API_KEY (OpenAI, Google Gemini or another OpenAI-compatible provider) in ai-service/.env and restart the AI service',
     );
   }
 }
@@ -331,7 +335,7 @@ async function chat(actor, projectId, { messages }) {
     conversation.push({
       role: 'assistant',
       content: turn.content,
-      toolCalls: calls.map(({ id, name, arguments: args }) => ({ id, name, arguments: args })),
+      toolCalls: calls.map(({ id, name, arguments: args, extra }) => ({ id, name, arguments: args, ...(extra ? { extra } : {}) })),
     });
     for (const call of calls) {
       toolsUsed.push(call.name);

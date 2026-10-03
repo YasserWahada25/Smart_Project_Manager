@@ -22,7 +22,7 @@
   <section class="summary" aria-label="Proposed plan">
     <p class="method">
       @if (current.method === 'llm') {
-        Proposed by <strong>OpenAI</strong> ({{ current.model }}).
+        Proposed by <strong>{{ providerLabel() }}</strong> ({{ current.model }}).
       } @else {
         Proposed by the <strong>local analyzer</strong> (rules + Naive Bayes classifier).
       }
@@ -285,9 +285,9 @@
           {{ status.reason === 'NOT_CONFIGURED' ? '(not configured)' : '(not running)' }}: the plan
           cannot be generated for now.
         } @else if (status.llm?.configured) {
-          Analyzer: <strong>OpenAI {{ status.llm?.model }}</strong
-          >. The specification is sent to OpenAI to be analysed; the local analyzer takes over if
-          OpenAI fails.
+          Analyzer: <strong>{{ providerLabel() }} {{ status.llm?.model }}</strong
+          >. The specification is sent to {{ providerLabel() }} to be analysed; the local analyzer
+          takes over if {{ providerLabel() }} fails.
         } @else {
           Analyzer: <strong>local</strong> (rules + Naive Bayes classifier). The specification does
           not leave your servers.

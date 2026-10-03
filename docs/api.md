@@ -784,7 +784,7 @@ The backend is the only caller of the AI service (`AI_SERVICE_URL`, shared secre
 | 503 | `AI_UNAVAILABLE` | `AI_SERVICE_TOKEN` not set, or the AI service is unreachable |
 | 504 | `AI_TIMEOUT` | No answer within `AI_TIMEOUT_MS` |
 | 400 | `BAD_REQUEST` | The AI service refused the submitted content (unreadable file, scanned PDF, no requirement found…): its message is returned |
-| 502 | `AI_ERROR` | The AI service failed or returned something that does not match the contract |
+| 502 | `AI_ERROR` | The AI service failed or returned something that does not match the contract. When the AI service explains the failure itself with a 502 (e.g. "the OpenAI account has no credits left"), its message is returned; other failures keep a generic message |
 
 #### `GET /api/v1/ai/status` — any authenticated user
 
@@ -1041,4 +1041,4 @@ Rules: `endDate` ≥ `startDate`; done values ≤ totals; blocked, high-complexi
 }
 ```
 
-1–80 messages (`user`, `assistant` with optional `toolCalls`, `tool` with `toolCallId`; ≤ 20 000 characters each). → `{ "type": "message" | "tool_calls", "content", "toolCalls": [{ "id", "name", "arguments", "error" }], "model" }`; `error` is set when the arguments do not match the tool schema. 503 `LLM_NOT_CONFIGURED` without `OPENAI_API_KEY`; 502 when OpenAI fails.
+1–80 messages (`user`, `assistant` with optional `toolCalls`, `tool` with `toolCallId`; ≤ 20 000 characters each). → `{ "type": "message" | "tool_calls", "content", "toolCalls": [{ "id", "name", "arguments", "error", "extra" }], "model" }`; `error` is set when the arguments do not match the tool schema; `extra` carries provider data that must be sent back unchanged with the tool call on the next turn (Gemini `thought_signature`). 503 `LLM_NOT_CONFIGURED` without `OPENAI_API_KEY`; 502 when OpenAI fails.

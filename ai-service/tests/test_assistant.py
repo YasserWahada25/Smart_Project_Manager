@@ -94,7 +94,7 @@ def test_tool_calls_are_validated_and_returned(client, auth_headers):
     payload = response.json()
     assert payload["type"] == "tool_calls"
     first, second = payload["toolCalls"]
-    assert first == {"id": "call_0", "name": "list_tasks", "arguments": {"overdue": True}, "error": None}
+    assert first == {"id": "call_0", "name": "list_tasks", "arguments": {"overdue": True}, "error": None, "extra": None}
     assert second["name"] == "create_task" and second["error"].startswith("Invalid arguments: title")
 
 
@@ -135,3 +135,28 @@ def test_openai_failures_become_502(client, auth_headers, response, reason):
 def test_route_requires_the_token_and_a_valid_body(client, auth_headers):
     assert client.post(URL, json=body()).status_code == 401
     assert client.post(URL, json={**body(), "messages": []}, headers=auth_headers).status_code == 400
+
+
+def test_gemini_thought_signatures_are_kept_and_sent_back(client, auth_headers):
+    signature = {"google": {"thought_signature": "c2lnbmF0dXJl"}}
+    seen = []
+
+    def handler(request):
+        seen.append(json.loads(request.content)["messages"])
+        if len(seen) == 1:
+            answer = openai_message(tool_calls=[("get_project_overview", {})])
+            answer["choices"][0]["message"]["tool_calls"][0]["extra_content"] = signature
+            return httpx.Response(200, json=answer)
+        return httpx.Response(200, json=openai_message("Done."))
+
+    use_llm(client, handler)
+    first = client.post(URL, json=body(), headers=auth_headers).json()
+    call = first["toolCalls"][0]
+    assert call["extra"] == signature
+    history = [
+        {"role": "user", "content": "Overview?"},
+        {"role": "assistant", "content": "", "toolCalls": [call]},
+        {"role": "tool", "toolCallId": call["id"], "content": "{}"},
+    ]
+    client.post(URL, json=body(history), headers=auth_headers)
+    assert seen[1][2]["tool_calls"][0]["extra_content"] == signature

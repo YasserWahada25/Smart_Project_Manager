@@ -102,9 +102,9 @@ describe('AssistantPage', () => {
     ]);
   });
 
-  it('is unavailable without an OpenAI key or AI service', async () => {
+  it('is unavailable without an LLM key or AI service', async () => {
     await render({ status: of(NO_KEY) });
-    expect(text()).toContain('The assistant needs an OpenAI API key');
+    expect(text()).toContain('The assistant needs an LLM API key');
     expect(button('Send')!.disabled).toBe(true);
 
     TestBed.resetTestingModule();

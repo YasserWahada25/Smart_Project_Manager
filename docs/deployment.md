@@ -56,9 +56,9 @@ Loaded by `ai-service/app/config.py` (pydantic-settings) from `ai-service/.env`;
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `AI_SERVICE_TOKEN` | **Yes** | — | Same value as in `backend/.env`, at least 32 characters. Generate: `python -c "import secrets; print(secrets.token_hex(32))"` |
-| `OPENAI_API_KEY` | No | empty | OpenAI key. **Empty = local analyzer only** (no data sent to OpenAI). Set by the supervisor only, never committed |
-| `OPENAI_MODEL` | No | `gpt-4o-mini` | Any chat model of the account that supports structured outputs |
-| `OPENAI_BASE_URL` | No | `https://api.openai.com/v1` | OpenAI-compatible endpoint |
+| `OPENAI_API_KEY` | No | empty | Key of the LLM provider (OpenAI `sk-…`, Google Gemini `AIza…`…). **Empty = local analyzer only** (no data sent to any LLM) and assistant unavailable. Set by the supervisor only, never committed |
+| `OPENAI_MODEL` | No | `gpt-4o-mini` | Chat model supporting tools and structured outputs (e.g. `gpt-4o-mini`, `gemini-3.5-flash-lite`) |
+| `OPENAI_BASE_URL` | No | `https://api.openai.com/v1` | Any **OpenAI-compatible** Chat Completions endpoint; the provider is detected from it: OpenAI (strict structured outputs), Google Gemini `https://generativelanguage.googleapis.com/v1beta/openai/` (free key on Google AI Studio), Groq `https://api.groq.com/openai/v1`, Ollama `http://localhost:11434/v1`. Non-OpenAI providers get the same requests without the OpenAI-only `strict` flags and with `max_tokens`; answers are validated by Pydantic in every case. **Current configuration of the project: Google Gemini** (the OpenAI account had no API credits) |
 | `LLM_TIMEOUT_SECONDS` | No | `60` | Timeout of the OpenAI call (> 0, ≤ 300); keep it below the backend `AI_TIMEOUT_MS` |
 | `LLM_MAX_DOCUMENT_CHARS` | No | `30000` | Longer documents are cut before being sent to OpenAI (1 000–200 000) |
 | `MAX_UPLOAD_BYTES` | No | `5242880` | Largest specification file (5 MB) |
