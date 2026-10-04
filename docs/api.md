@@ -945,7 +945,19 @@ Errors: 503 `LLM_NOT_CONFIGURED` (no `OPENAI_API_KEY` in the AI service) or `AI_
 
 #### `POST /api/v1/projects/:id/ai/assistant/actions` — project manager, project not archived
 
-Applies a proposal the manager confirmed: `{ "tool": "create_task" | "update_task" | "assign_task" | "change_task_status" | "create_sprint", "arguments": { … } }`. The arguments are validated by the rules of the matching REST route (§ 1.10, § 1.11) and the change goes through the same service (history, notifications). → **201** `{ "tool", "message": "«Login page» assigned to Bob Martin.", "task" | "sprint" }`. 400 (unknown tool — there is no delete tool — or invalid arguments), 404 (task not in the project), 409 (transition not allowed, closed sprint…), 403 (not the manager).
+Applies a proposal the manager confirmed: `{ "proposalId": "<uuid>" }` — the tool and arguments **saved with the conversation** are used and the outcome is recorded on the proposal (`APPLIED` with the message, or `FAILED` with the error); 404 if the proposal is not in the manager's conversation, 409 if it was already applied. Without `proposalId` (direct call): `{ "tool": "create_task" | "update_task" | "assign_task" | "change_task_status" | "create_sprint", "arguments": { … } }`. For `create_task`, `sprintId` `null` or `'backlog'` means the backlog. The arguments are validated by the rules of the matching REST route (§ 1.10, § 1.11) and the change goes through the same service (history, notifications). → **201** `{ "tool", "message": "«Login page» assigned to Bob Martin.", "task" | "sprint" }`. 400 (unknown tool — there is no delete tool — or invalid arguments), 404 (task not in the project), 409 (transition not allowed, closed sprint…), 403 (not the manager).
+
+#### Saved conversation — project manager, project not archived
+
+The backend saves the conversation of each manager with the assistant of each project (collection `assistantconversations`, [database.md](database.md) § 5.8): every successful `chat` appends the manager's question and the reply with its proposals (`PENDING`). A failed request (503, 502, 504, 400) saves nothing. At most 200 messages are kept (the oldest are dropped).
+
+| Method | Path | Result |
+|---|---|---|
+| GET | `/api/v1/projects/:id/ai/assistant/conversation` | **200** `{ "messages": [{ "role": "user" \| "assistant", "content", "createdAt", "proposals": [{ "id", "tool", "arguments", "summary", "state": "PENDING" \| "APPLIED" \| "DISMISSED" \| "FAILED", "result"? }] }] }`, oldest first; `[]` when there is none |
+| DELETE | `/api/v1/projects/:id/ai/assistant/conversation` | **204** — "New conversation" |
+| POST | `/api/v1/projects/:id/ai/assistant/proposals/:proposalId/dismiss` | **200** `{ "id", "state": "DISMISSED" }`; 400 (invalid id), 404 (not in the conversation), 409 (already applied) |
+
+Each manager only sees their own conversation (403 for the other users of the project). The conversations of a deleted project are deleted with it.
 
 ## 2. FastAPI AI service (internal API)
 

@@ -1,6 +1,6 @@
 # Livrable — UX-5 : bouton « Ask AI » flottant et rond
 
-> Le bouton « Ask AI » (UX-4) devient une **bulle ronde flottante**, comme le bouton Gemini que le superviseur a pris en exemple. Réalisé le 4 octobre 2026. **Non commité.**
+> Le bouton « Ask AI » (UX-4) devient une **bulle ronde flottante**, comme le bouton Gemini que le superviseur a pris en exemple. Réalisé le 4 octobre 2026. Commit `bf78f00`.
 
 ## 1. Prompts à l'origine
 

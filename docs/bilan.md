@@ -10,7 +10,7 @@
 | Élément | État |
 |---|---|
 | Avancement | 25 tâches sur 29 : **phases 1 à 4 terminées** (backend, interface, service IA et ses quatre fonctions) |
-| Backend Express | 56 endpoints REST, 7 collections MongoDB ; **357 tests automatisés** |
+| Backend Express | 59 endpoints REST, 8 collections MongoDB ; **364 tests automatisés** |
 | Frontend Angular | Tous les écrans + « Plan with AI », recommandation de développeur, indicateur de risque, onglet « Assistant » ; **349 tests automatisés** |
 | Service IA (Python / FastAPI) | Santé, jeton de service, AI-01 à AI-04 ; 2 modèles ML (Naive Bayes, régression logistique) ; **146 tests automatisés** |
 | Vérifications de bout en bout | Sur la vraie base : 22/22 (backend), 21/21, 26/26, 35/35 (interface), **17/17 (TASK 22), 10/10 (TASK 23), 11/11 (TASK 24), 12/12 (TASK 25)** ; données de test supprimées à chaque fois |
@@ -55,7 +55,7 @@
 
 ## 4. Historique des échanges (résumé)
 
-43 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
+45 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
 
 | Période | Prompts | Résultat |
 |---|---|---|
@@ -72,6 +72,7 @@
 | 04/10 ≈ 11:00 | « se concentrer sur la partie UI… inspirer des plateformes existantes » ; choix : Linear, « Shell and visual identity » ; logo « Smart Manager » | Lot **UX-1** : identité visuelle, barre latérale à la Linear, thème clair / sombre / système, avatars ([livrable](livrables/UX-1.md)) |
 | 04/10 | « continuer vers les lots suivants » | Lots **UX-2** (glisser-déposer, ajout rapide), **UX-3** (palette Ctrl+K, panneau latéral), **UX-4** (accueil « Mon travail », « Ask AI ») — frontend 376 tests |
 | 04/10 | Commits affichés au nom de Nadhmi (PC utilisé) ; choix « b) » | Identité Git propre au dépôt (YasserWahada25) ; auteur des 6 commits réécrit, contenu identique ; push forcé après accord |
+| 04/10 | Bouton « Ask AI » comme celui de Gemini ; conversation de l'assistant perdue au changement de page | **UX-5** (bulle ronde flottante) ; **FIX-1** (conversation enregistrée dans MongoDB, état des propositions) — backend 364 tests, frontend 378 tests |
 
 ### Ce que montre cet échange
 
@@ -171,7 +172,7 @@ Idée du superviseur (prompt #23) : un chat dans l'application qui discute avec 
 - **Sécurité :** aucune suppression sans confirmation ; nombre d'appels d'outils limité ; le texte des tâches et des commentaires est traité comme des données (protection contre l'injection de prompt) ; la clé OpenAI reste dans `ai-service/.env`.
 - **Limites assumées :** le chat agit sur les **données** de la plateforme, **pas sur le code source** ; il exige une clé OpenAI (sans clé, le panneau indique que l'assistant est indisponible).
 
-Écarts par rapport au plan : la confirmation se fait proposition par proposition (boutons « Confirm » / « Dismiss ») ; la conversation n'est pas stockée ; cinq types de modification (pas de gestion de l'équipe ni des statuts de sprint).
+Écarts par rapport au plan : la confirmation se fait proposition par proposition (boutons « Confirm » / « Dismiss ») ; la conversation est enregistrée par manager et par projet (FIX-1, ajouté le 4 octobre) ; cinq types de modification (pas de gestion de l'équipe ni des statuts de sprint).
 
 ### Phase 5 — Livraison
 

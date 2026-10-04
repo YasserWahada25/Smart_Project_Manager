@@ -1,6 +1,6 @@
 # Database Design (MongoDB)
 
-> Current state: **collections `users`, `projects`, `sprints`, `tasks`, `comments`, `activities` and `notifications`.**
+> Current state: **collections `users`, `projects`, `sprints`, `tasks`, `comments`, `activities`, `notifications` and `assistantconversations`.**
 > Each collection is documented here (schema, validation, references, indexes) when its task implements it.
 
 ## 1. Technology
@@ -44,6 +44,7 @@ Tests use `mongodb-memory-server` (an in-memory MongoDB started by Jest), so no 
 | `comments`   | Comments on tasks | Implemented |
 | `activities` | Activity history | Implemented |
 | `notifications` | User notifications | Implemented |
+| `assistantconversations` | AI-04: conversation of a manager with the assistant of a project | Implemented |
 
 ## 4. Enumerations (from requirements)
 
@@ -222,3 +223,30 @@ Index `{ task: 1, createdAt: 1 }`: comments of a task in chronological order. Co
 |-------|---------------|
 | `{ recipient: 1, read: 1, createdAt: -1 }` | "My notifications" (all or unread only), newest first, and the unread counter |
 | `{ createdAt: 1 }` with `expireAfterSeconds: 7776000` (TTL, 90 days) | Automatic purge of old notifications (the notifications of a deleted project are removed with it) |
+
+### 5.8 `assistantconversations` — model `AssistantConversation` (`backend/src/models/assistantConversation.model.js`)
+
+One document per manager and project (AI-04 assistant). Deleted with the project, or by "New conversation".
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `project` | ObjectId → `projects` | required | |
+| `user` | ObjectId → `users` | required | The manager |
+| `messages[]` | embedded | ≤ 200 (oldest dropped) | Oldest first |
+| `messages.role` | String | `user` / `assistant` | |
+| `messages.content` | String | required, max 10 000 | |
+| `messages.createdAt` | Date | default now | |
+| `messages.proposals[]` | embedded | | Changes prepared by the assistant |
+| `proposals.id` | String | required (UUID) | |
+| `proposals.tool` | String | required | `create_task`, `update_task`, `assign_task`, `change_task_status`, `create_sprint` |
+| `proposals.argumentsJson` | String | required | Arguments as JSON text: their keys come from the LLM and must never be read as MongoDB operators |
+| `proposals.summary` | String | required | Text shown to the manager |
+| `proposals.state` | String | `PENDING` (default), `APPLIED`, `DISMISSED`, `FAILED` | |
+| `proposals.result` | String | max 500 | Message of the applied change, or reason of the failure |
+| `createdAt`, `updatedAt` | Date | auto | |
+
+**Indexes**
+
+| Index | Justification |
+|-------|---------------|
+| `{ project: 1, user: 1 }` unique | One conversation per manager and project, read and updated by this key |

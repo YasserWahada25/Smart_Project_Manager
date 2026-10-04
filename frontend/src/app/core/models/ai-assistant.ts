@@ -1,4 +1,4 @@
-/** AI-04 — manager assistant (docs/api.md § 1.17). The conversation lives in the page only. */
+/** AI-04 — manager assistant (docs/api.md § 1.17). The conversation is saved per manager and project. */
 export interface AssistantMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -22,6 +22,24 @@ export interface AssistantReply {
   /** Tools the assistant used to answer (read data, prepared changes). */
   toolsUsed: string[];
   model: string | null;
+}
+
+export type AssistantProposalState = 'PENDING' | 'APPLIED' | 'DISMISSED' | 'FAILED';
+
+/** GET /projects/:id/ai/assistant/conversation: the saved messages, oldest first. */
+export interface AssistantConversation {
+  messages: SavedAssistantMessage[];
+}
+
+export interface SavedAssistantMessage extends AssistantMessage {
+  proposals: SavedAssistantProposal[];
+  createdAt: string;
+}
+
+export interface SavedAssistantProposal extends AssistantProposal {
+  state: AssistantProposalState;
+  /** Result or error message once applied or failed. */
+  result?: string;
 }
 
 /** POST /projects/:id/ai/assistant/actions (201) */

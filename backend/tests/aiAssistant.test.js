@@ -245,6 +245,12 @@ describe('POST /api/v1/projects/:id/ai/assistant/actions', () => {
     expect(await Activity.countDocuments({ type: 'TASK_CREATED' })).toBe(1);
   });
 
+  it("creates a task in the backlog when the model writes sprintId 'backlog'", async () => {
+    const res = await action(manager, 'create_task', { title: 'API documentation', sprintId: 'backlog' });
+    expect(res.status).toBe(201);
+    expect(res.body.task).toMatchObject({ title: 'API documentation', sprint: null });
+  });
+
   it('assigns, moves, updates a task and creates a sprint', async () => {
     let res = await action(manager, 'assign_task', { taskId: task.id, assigneeId: dev.id });
     expect(res.body.message).toBe('«Login page» assigned to Bob Martin.');
@@ -276,5 +282,104 @@ describe('POST /api/v1/projects/:id/ai/assistant/actions', () => {
 
   it('is reserved to the project manager', async () => {
     expect((await action(dev, 'assign_task', { taskId: task.id, assigneeId: dev.id })).status).toBe(403);
+  });
+});
+
+describe('Saved assistant conversation', () => {
+  const conversation = (user, projectId = project.id) =>
+    request(app).get(`/api/v1/projects/${projectId}/ai/assistant/conversation`).set('Authorization', bearer(user));
+  const confirm = (user, proposalId) =>
+    request(app)
+      .post(`/api/v1/projects/${project.id}/ai/assistant/actions`)
+      .set('Authorization', bearer(user))
+      .send({ proposalId });
+  const dismiss = (user, proposalId) =>
+    request(app)
+      .post(`/api/v1/projects/${project.id}/ai/assistant/proposals/${proposalId}/dismiss`)
+      .set('Authorization', bearer(user));
+
+  async function proposeTwo() {
+    turns.push(
+      toolCalls(
+        ['assign_task', { taskId: task.id, assigneeId: dev.id }],
+        ['create_task', { title: 'Cart page', complexity: 4 }], // 4 is not a valid complexity
+      ),
+    );
+    turns.push(message('Two changes to confirm.'));
+    const res = await chat(manager, [{ role: 'user', content: '  Assign the login page  ' }]);
+    expect(res.status).toBe(200);
+    return res.body.proposals.map((proposal) => proposal.id);
+  }
+
+  it('keeps every exchange with its proposals, for the manager only', async () => {
+    expect((await conversation(manager)).body).toEqual({ messages: [] });
+    await proposeTwo();
+    turns.push(message('Bob has the lightest workload.'));
+    await chat(manager, [{ role: 'user', content: 'Who is free?' }]);
+
+    const res = await conversation(manager);
+    expect(res.status).toBe(200);
+    expect(res.body.messages.map((m) => [m.role, m.content])).toEqual([
+      ['user', 'Assign the login page'],
+      ['assistant', 'Two changes to confirm.'],
+      ['user', 'Who is free?'],
+      ['assistant', 'Bob has the lightest workload.'],
+    ]);
+    expect(res.body.messages[1].proposals[0]).toMatchObject({
+      tool: 'assign_task',
+      arguments: { taskId: task.id, assigneeId: dev.id },
+      summary: 'Assign «Login page» to Bob Martin',
+      state: 'PENDING',
+    });
+    expect(res.body.messages[0].createdAt).toEqual(expect.any(String));
+
+    expect((await conversation(dev)).status).toBe(403);
+    const other = await createManager();
+    const otherProject = await createProject(other);
+    expect((await conversation(other, otherProject.id)).body.messages).toEqual([]);
+  });
+
+  it('applies a saved proposal once and records its outcome', async () => {
+    const [assignId, createId] = await proposeTwo();
+
+    let res = await confirm(manager, assignId);
+    expect(res.status).toBe(201);
+    expect(res.body.message).toBe('«Login page» assigned to Bob Martin.');
+    expect((await Task.findById(task._id)).assignee).toEqual(dev._id);
+    expect((await confirm(manager, assignId)).status).toBe(409);
+
+    res = await confirm(manager, createId);
+    expect(res.status).toBe(400);
+
+    const [assign, create] = (await conversation(manager)).body.messages[1].proposals;
+    expect(assign).toMatchObject({ state: 'APPLIED', result: '«Login page» assigned to Bob Martin.' });
+    expect(create).toMatchObject({ state: 'FAILED', result: expect.stringMatching(/^Validation failed: /) });
+    expect(await Task.countDocuments()).toBe(1);
+  });
+
+  it('dismisses a proposal, refuses unknown ones and clears the conversation', async () => {
+    const [assignId] = await proposeTwo();
+
+    let res = await dismiss(manager, assignId);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ id: assignId, state: 'DISMISSED' });
+    expect((await conversation(manager)).body.messages[1].proposals[0].state).toBe('DISMISSED');
+    expect((await dismiss(dev, assignId)).status).toBe(403);
+    expect((await dismiss(manager, 'not-a-uuid')).status).toBe(400);
+    expect((await dismiss(manager, '00000000-0000-4000-8000-000000000000')).status).toBe(404);
+    expect((await confirm(manager, '00000000-0000-4000-8000-000000000000')).status).toBe(404);
+
+    res = await request(app)
+      .delete(`/api/v1/projects/${project.id}/ai/assistant/conversation`)
+      .set('Authorization', bearer(manager));
+    expect(res.status).toBe(204);
+    expect((await conversation(manager)).body.messages).toEqual([]);
+    expect((await confirm(manager, assignId)).status).toBe(404);
+  });
+
+  it('does not save a failed exchange', async () => {
+    llmConfigured = false;
+    expect((await chat(manager)).status).toBe(503);
+    expect((await conversation(manager)).body.messages).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const { mongoIdParam } = require('./common.validator');
 const { ASSISTANT_LIMITS, WRITE_TOOLS } = require('../services/aiAssistant.service');
 
@@ -23,13 +23,27 @@ const chatRules = [
     .withMessage(`content must be 1 to ${ASSISTANT_LIMITS.messageMaxLength} characters`),
 ];
 
-/** A proposal confirmed by the manager: its arguments are validated by the usual task / sprint rules. */
+const proposalIdRule = (chain) => chain.isUUID().withMessage('Invalid proposal id');
+
+/**
+ * A proposal confirmed by the manager: its arguments are validated by the usual task / sprint rules.
+ * With a proposalId, the saved proposal is applied (tool and arguments are then not needed).
+ */
 const actionRules = [
   projectIdRule,
-  body('tool').isIn(WRITE_TOOLS).withMessage(`tool must be one of: ${WRITE_TOOLS.join(', ')}`),
+  proposalIdRule(body('proposalId').optional()),
+  body('tool')
+    .if(body('proposalId').not().exists())
+    .isIn(WRITE_TOOLS)
+    .withMessage(`tool must be one of: ${WRITE_TOOLS.join(', ')}`),
   body('arguments')
+    .if(body('proposalId').not().exists())
     .custom((value) => value !== null && typeof value === 'object' && !Array.isArray(value))
     .withMessage('arguments must be an object'),
 ];
 
-module.exports = { chatRules, actionRules };
+const conversationRules = [projectIdRule];
+
+const dismissRules = [projectIdRule, proposalIdRule(param('proposalId'))];
+
+module.exports = { chatRules, actionRules, conversationRules, dismissRules };

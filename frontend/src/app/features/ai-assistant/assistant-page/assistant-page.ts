@@ -19,6 +19,8 @@ import {
   ASSISTANT_LIMITS,
   AssistantMessage,
   AssistantProposal,
+  AssistantProposalState,
+  SavedAssistantMessage,
 } from '../../../core/models/ai-assistant';
 import { ApiError } from '../../../core/models/api-error';
 import { AiStatus } from '../../../core/models/system-status';
@@ -52,7 +54,8 @@ const SUGGESTIONS = [
 /**
  * "Assistant" tab (AI-04, manager only): a chat about the project. The assistant reads the project
  * data through the backend; the changes it prepares are shown as proposals and applied only when
- * the manager clicks "Confirm". The conversation stays in the page (it is not stored).
+ * the manager clicks "Confirm". The backend saves the conversation and the outcome of each proposal: it is
+ * loaded back when the manager returns to the page.
  */
 @Component({
   selector: 'app-assistant-page',
@@ -84,6 +87,9 @@ export class AssistantPage {
     return status === null || (status.available && status.llm?.configured === true);
   });
   protected readonly entries = signal<Entry[]>([]);
+  /** The saved conversation is being loaded. */
+  protected readonly loading = signal(false);
+  protected readonly clearing = signal(false);
   protected readonly thinking = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly question = new FormControl('', {
@@ -98,6 +104,24 @@ export class AssistantPage {
       .subscribe({
         next: (status) => this.status.set(status),
         error: () => this.status.set({ available: false, reason: 'UNREACHABLE', llm: null }),
+      });
+    if (this.canEdit()) this.loadConversation();
+  }
+
+  private loadConversation(): void {
+    this.loading.set(true);
+    this.assistantService
+      .conversation(this.context.current.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ messages }) => {
+          this.entries.set(messages.map(toEntry));
+          this.loading.set(false);
+        },
+        error: () => {
+          this.errorMessage.set('The previous conversation could not be loaded.');
+          this.loading.set(false);
+        },
       });
   }
 
@@ -128,7 +152,9 @@ export class AssistantPage {
 
   protected send(): void {
     const text = this.question.value.trim();
-    if (!text || this.thinking() || this.question.invalid || !this.available()) return;
+    if (!text || this.thinking() || this.loading() || this.question.invalid || !this.available()) {
+      return;
+    }
     this.errorMessage.set(null);
     this.entries.update((entries) => [...entries, { role: 'user', content: text, proposals: [] }]);
     this.question.setValue('');
@@ -182,11 +208,26 @@ export class AssistantPage {
 
   protected dismiss(view: ProposalView): void {
     this.update(view, { state: 'dismissed' });
+    this.assistantService
+      .dismiss(this.context.current.id, view.proposal.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ error: () => this.update(view, { state: 'pending' }) });
   }
 
+  /** Deletes the saved conversation and starts a new one. */
   protected clear(): void {
-    this.entries.set([]);
-    this.errorMessage.set(null);
+    this.clearing.set(true);
+    this.assistantService
+      .clear(this.context.current.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.entries.set([]);
+          this.errorMessage.set(null);
+          this.clearing.set(false);
+        },
+        error: () => this.clearing.set(false),
+      });
   }
 
   /**
@@ -218,6 +259,25 @@ export class AssistantPage {
       })),
     );
   }
+}
+
+const SAVED_STATES: Record<AssistantProposalState, ProposalState> = {
+  PENDING: 'pending',
+  APPLIED: 'applied',
+  DISMISSED: 'dismissed',
+  FAILED: 'failed',
+};
+
+function toEntry(message: SavedAssistantMessage): Entry {
+  return {
+    role: message.role,
+    content: message.content,
+    proposals: message.proposals.map(({ state, result, ...proposal }) => ({
+      proposal,
+      state: SAVED_STATES[state],
+      result,
+    })),
+  };
 }
 
 /** What the assistant is told about each handled proposal (pending ones are not mentioned). */

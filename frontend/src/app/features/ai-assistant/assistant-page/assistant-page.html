@@ -4,7 +4,7 @@
     Assistant
   </h2>
   @if (entries().length > 0) {
-    <button mat-button type="button" [disabled]="thinking()" (click)="clear()">
+    <button mat-button type="button" [disabled]="thinking() || clearing()" (click)="clear()">
       <mat-icon>restart_alt</mat-icon>
       New conversation
     </button>
@@ -81,7 +81,12 @@
         }
       </article>
     } @empty {
-      @if (available()) {
+      @if (loading()) {
+        <div class="thinking" role="status">
+          <mat-progress-bar mode="indeterminate" aria-label="Loading the conversation" />
+          <span class="hint">Loading the conversation…</span>
+        </div>
+      } @else if (available()) {
         <div class="suggestions">
           <span class="hint">Try:</span>
           @for (suggestion of suggestions; track suggestion) {
@@ -119,7 +124,7 @@
     <button
       mat-flat-button
       type="submit"
-      [disabled]="thinking() || !available() || !question.value.trim()"
+      [disabled]="thinking() || loading() || !available() || !question.value.trim()"
     >
       <mat-icon>send</mat-icon>
       Send

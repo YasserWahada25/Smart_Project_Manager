@@ -6,6 +6,8 @@
  * and turns every WRITE tool call into a PROPOSAL: nothing is changed until the manager confirms it.
  * executeAction(): runs a confirmed proposal through the usual validation rules and services (same checks,
  * history and notifications as the interface). There is no delete tool.
+ * The conversation is saved (one per manager and project) with the outcome of each proposal, so that it is
+ * still there when the manager comes back to the page.
  */
 const crypto = require('crypto');
 const mongoose = require('mongoose');
@@ -13,6 +15,7 @@ const { validationResult, matchedData } = require('express-validator');
 const { Task, TASK_STATUSES } = require('../models/task.model');
 const { Sprint } = require('../models/sprint.model');
 const { User } = require('../models/user.model');
+const { AssistantConversation, PROPOSAL_STATES, CONVERSATION_LIMITS } = require('../models/assistantConversation.model');
 const { createTaskRules, updateTaskRules, changeStatusRules, assignRules } = require('../validators/task.validator');
 const { createSprintRules } = require('../validators/sprint.validator');
 const ApiError = require('../utils/ApiError');
@@ -328,7 +331,7 @@ async function chat(actor, projectId, { messages }) {
       }),
     );
     model = turn.model ?? model;
-    if (turn.type === 'message') return { reply: turn.content, proposals, toolsUsed, model };
+    if (turn.type === 'message') return saveExchange(project, actor, messages, { reply: turn.content, proposals, toolsUsed, model });
 
     const calls = turn.toolCalls.slice(0, ASSISTANT_LIMITS.maxToolCalls - toolsUsed.length);
     if (calls.length === 0) break;
@@ -347,12 +350,113 @@ async function chat(actor, projectId, { messages }) {
       });
     }
   }
-  return {
+  return saveExchange(project, actor, messages, {
     reply: 'I could not finish this request within the allowed number of steps. Please ask a more specific question.',
     proposals,
     toolsUsed,
     model,
+  });
+}
+
+// ---------- saved conversation ----------
+const conversationFilter = (project, actor) => ({ project: project._id, user: actor._id });
+
+function proposalView(proposal) {
+  return {
+    id: proposal.id,
+    tool: proposal.tool,
+    arguments: JSON.parse(proposal.argumentsJson),
+    summary: proposal.summary,
+    state: proposal.state,
+    ...(proposal.result ? { result: proposal.result } : {}),
   };
+}
+
+/** Appends the manager's question and the reply. A storage failure is logged: the reply is still returned. */
+async function saveExchange(project, actor, messages, result) {
+  const question = messages[messages.length - 1].content;
+  const now = new Date();
+  try {
+    await AssistantConversation.updateOne(
+      conversationFilter(project, actor),
+      {
+        $push: {
+          messages: {
+            $each: [
+              { role: 'user', content: question, createdAt: now },
+              {
+                role: 'assistant',
+                content: result.reply.slice(0, CONVERSATION_LIMITS.replyMaxLength),
+                proposals: result.proposals.map(({ id, tool, arguments: args, summary }) => ({
+                  id,
+                  tool,
+                  argumentsJson: JSON.stringify(args),
+                  summary,
+                })),
+                createdAt: now,
+              },
+            ],
+            $slice: -CONVERSATION_LIMITS.maxStoredMessages,
+          },
+        },
+      },
+      { upsert: true },
+    );
+  } catch (err) {
+    logger.error(`Assistant conversation not saved: ${err.message}`);
+  }
+  return result;
+}
+
+/** The saved conversation of the signed-in manager, oldest message first. */
+async function getConversation(actor, projectId) {
+  const project = await access.findManagedProject(projectId, actor);
+  const conversation = await AssistantConversation.findOne(conversationFilter(project, actor)).lean();
+  return {
+    messages: (conversation?.messages ?? []).map((message) => ({
+      role: message.role,
+      content: message.content,
+      proposals: message.proposals.map(proposalView),
+      createdAt: message.createdAt,
+    })),
+  };
+}
+
+async function clearConversation(actor, projectId) {
+  const project = await access.findManagedProject(projectId, actor);
+  await AssistantConversation.deleteOne(conversationFilter(project, actor));
+}
+
+async function findProposal(project, actor, proposalId) {
+  const conversation = await AssistantConversation.findOne({
+    ...conversationFilter(project, actor),
+    'messages.proposals.id': proposalId,
+  }).lean();
+  const proposal = conversation?.messages.flatMap((message) => message.proposals).find((item) => item.id === proposalId);
+  if (!proposal) throw ApiError.notFound('Proposal not found in this conversation');
+  if (proposal.state === PROPOSAL_STATES.APPLIED) throw ApiError.conflict('This proposal has already been applied');
+  return proposal;
+}
+
+async function setProposalState(project, actor, proposalId, state, result) {
+  await AssistantConversation.updateOne(
+    conversationFilter(project, actor),
+    {
+      $set: {
+        'messages.$[].proposals.$[proposal].state': state,
+        'messages.$[].proposals.$[proposal].result': (result ?? '').slice(0, CONVERSATION_LIMITS.resultMaxLength),
+      },
+    },
+    { arrayFilters: [{ 'proposal.id': proposalId }] },
+  );
+}
+
+/** The manager dismissed a proposal (it can no longer be applied from the saved conversation). */
+async function dismissProposal(actor, projectId, proposalId) {
+  const project = await access.findManagedProject(projectId, actor);
+  await findProposal(project, actor, proposalId);
+  await setProposalState(project, actor, proposalId, PROPOSAL_STATES.DISMISSED);
+  return { id: proposalId, state: PROPOSAL_STATES.DISMISSED };
 }
 
 // ---------- confirmed proposals ----------
@@ -376,8 +480,29 @@ async function assertInProject(project, Model, id, label) {
   }
 }
 
-async function executeAction(actor, projectId, { tool, arguments: args }) {
+/**
+ * A confirmed proposal. With a proposalId, the tool and arguments saved with the conversation are used and
+ * the outcome (applied / failed) is recorded; without it, those of the request body.
+ */
+async function executeAction(actor, projectId, { proposalId, tool, arguments: args }) {
   const project = await access.findManagedProject(projectId, actor);
+  if (!proposalId) return applyTool(actor, project, tool, args);
+
+  const proposal = await findProposal(project, actor, proposalId);
+  try {
+    const result = await applyTool(actor, project, proposal.tool, JSON.parse(proposal.argumentsJson));
+    await setProposalState(project, actor, proposalId, PROPOSAL_STATES.APPLIED, result.message);
+    return result;
+  } catch (err) {
+    if (err instanceof ApiError) {
+      const details = err.details?.map((detail) => detail.message).join(', ');
+      await setProposalState(project, actor, proposalId, PROPOSAL_STATES.FAILED, details ? `${err.message}: ${details}` : err.message);
+    }
+    throw err;
+  }
+}
+
+async function applyTool(actor, project, tool, args) {
   const id = project.id;
   switch (tool) {
     case 'create_task': {
@@ -389,7 +514,8 @@ async function executeAction(actor, projectId, { tool, arguments: args }) {
         complexity: args.complexity,
         requiredSkills: args.requiredSkills,
         deadline: args.deadline,
-        sprint: args.sprintId ?? null,
+        // 'backlog' (the value of list_tasks and update_task) is accepted like null.
+        sprint: args.sprintId === 'backlog' ? null : (args.sprintId ?? null),
         assignee: args.assigneeId ?? null,
       }));
       const task = await taskService.createTask(actor, id, data);
@@ -442,4 +568,13 @@ async function executeAction(actor, projectId, { tool, arguments: args }) {
   }
 }
 
-module.exports = { chat, executeAction, ASSISTANT_LIMITS, READ_TOOLS, WRITE_TOOLS };
+module.exports = {
+  chat,
+  executeAction,
+  getConversation,
+  clearConversation,
+  dismissProposal,
+  ASSISTANT_LIMITS,
+  READ_TOOLS,
+  WRITE_TOOLS,
+};

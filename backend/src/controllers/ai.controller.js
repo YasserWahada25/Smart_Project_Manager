@@ -28,4 +28,27 @@ async function assistantAction(req, res) {
   res.status(201).json(await aiAssistantService.executeAction(req.user, req.params.id, req.body));
 }
 
-module.exports = { getStatus, recommendDevelopers, sprintRisk, assistantChat, assistantAction };
+/** AI-04: the saved conversation of the manager with the assistant of the project. */
+async function assistantConversation(req, res) {
+  res.json(await aiAssistantService.getConversation(req.user, req.params.id));
+}
+
+async function clearAssistantConversation(req, res) {
+  await aiAssistantService.clearConversation(req.user, req.params.id);
+  res.status(204).end();
+}
+
+async function dismissAssistantProposal(req, res) {
+  res.json(await aiAssistantService.dismissProposal(req.user, req.params.id, req.params.proposalId));
+}
+
+module.exports = {
+  getStatus,
+  recommendDevelopers,
+  sprintRisk,
+  assistantChat,
+  assistantAction,
+  assistantConversation,
+  clearAssistantConversation,
+  dismissAssistantProposal,
+};

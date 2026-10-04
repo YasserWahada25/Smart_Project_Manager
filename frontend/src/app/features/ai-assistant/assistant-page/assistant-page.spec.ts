@@ -6,7 +6,7 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
 import { apiErrorInterceptor } from '../../../core/http/api-error.interceptor';
-import { AssistantReply } from '../../../core/models/ai-assistant';
+import { AssistantConversation, AssistantReply } from '../../../core/models/ai-assistant';
 import { ApiError } from '../../../core/models/api-error';
 import { AiStatus } from '../../../core/models/system-status';
 import { User } from '../../../core/models/user';
@@ -43,22 +43,36 @@ const PROPOSAL = {
 
 describe('AssistantPage', () => {
   let fixture: ComponentFixture<AssistantPage>;
+  let conversation: ReturnType<typeof vi.fn>;
   let chat: ReturnType<typeof vi.fn>;
   let apply: ReturnType<typeof vi.fn>;
+  let dismiss: ReturnType<typeof vi.fn>;
+  let clear: ReturnType<typeof vi.fn>;
   let toast: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   async function render(
-    options: { status?: Observable<AiStatus>; user?: User; archived?: boolean } = {},
+    options: {
+      status?: Observable<AiStatus>;
+      user?: User;
+      archived?: boolean;
+      saved?: Observable<AssistantConversation>;
+    } = {},
   ) {
     chat = vi.fn(() => of(reply()));
     apply = vi.fn();
+    dismiss = vi.fn(() => of({}));
+    clear = vi.fn(() => of(undefined));
+    conversation = vi.fn(() => options.saved ?? of({ messages: [] }));
     toast = { success: vi.fn(), error: vi.fn() };
     TestBed.configureTestingModule({
       imports: [AssistantPage],
       providers: [
         ProjectContext,
         { provide: AuthService, useValue: fakeAuthService(options.user ?? testUser()) },
-        { provide: AiAssistantService, useValue: { chat, apply } },
+        {
+          provide: AiAssistantService,
+          useValue: { chat, apply, dismiss, clear, conversation },
+        },
         { provide: HealthService, useValue: { checkAi: () => options.status ?? of(READY) } },
         { provide: ToastService, useValue: toast },
         { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
@@ -177,6 +191,7 @@ describe('AssistantPage', () => {
 
     await say('Do it');
     await click('Dismiss: Assign');
+    expect(dismiss).toHaveBeenCalledWith('p1', 'p-1');
     expect(text()).toContain('Dismissed');
     await click('Confirm: Move');
     expect(text()).toContain('Not applied — Invalid status transition: TODO → DONE');
@@ -194,17 +209,67 @@ describe('AssistantPage', () => {
     expect(textarea().value).toBe('Summarize the sprint');
   });
 
-  it('starts a new conversation', async () => {
+  it('starts a new conversation (the saved one is deleted)', async () => {
     await render();
     await say('Hello');
     await click('New conversation');
+    expect(clear).toHaveBeenCalledWith('p1');
     expect(element().querySelectorAll('.message')).toHaveLength(0);
+  });
+
+  it('loads the saved conversation back, with the outcome of each proposal', async () => {
+    const saved = new Subject<AssistantConversation>();
+    await render({ saved });
+    expect(conversation).toHaveBeenCalledWith('p1');
+    expect(text()).toContain('Loading the conversation');
+    expect(text()).not.toContain('Try:');
+    expect(button('Send')!.disabled).toBe(true);
+
+    saved.next({
+      messages: [
+        { role: 'user', content: 'Assign the login page', proposals: [], createdAt: '2026-10-04' },
+        {
+          role: 'assistant',
+          content: 'Two changes to confirm.',
+          createdAt: '2026-10-04',
+          proposals: [
+            { ...PROPOSAL, state: 'APPLIED', result: '«Login page» assigned.' },
+            { ...PROPOSAL, id: 'p-2', summary: 'Create the task «Cart»', state: 'PENDING' },
+          ],
+        },
+      ],
+    });
+    saved.complete();
+    await fixture.whenStable();
+
+    expect(element().querySelectorAll('.message')).toHaveLength(2);
+    expect(text()).toContain('Applied — «Login page» assigned.');
+    expect(button('Confirm: Assign')).toBeUndefined();
+    expect(button('Confirm: Create')).toBeDefined();
+
+    await say('Thanks');
+    expect(chat.mock.lastCall![1]).toEqual([
+      { role: 'user', content: 'Assign the login page' },
+      {
+        role: 'assistant',
+        content:
+          'Two changes to confirm.\n[Confirmed and applied by the manager: Assign «Login page» to Youssef Alami]',
+      },
+      { role: 'user', content: 'Thanks' },
+    ]);
+  });
+
+  it('says when the saved conversation cannot be loaded', async () => {
+    await render({ saved: throwError(() => new Error('down')) });
+    expect(text()).toContain('The previous conversation could not be loaded.');
+    expect(text()).toContain('Try:');
   });
 
   it('is reserved to the manager of an active project', async () => {
     await render({ user: testUser({ id: 'd1', role: 'DEVELOPER' }) });
     expect(text()).toContain('available to the manager of an active project');
     expect(element().querySelector('textarea')).toBeNull();
+    expect(conversation).not.toHaveBeenCalled();
 
     TestBed.resetTestingModule();
     await render({ archived: true });
@@ -213,7 +278,7 @@ describe('AssistantPage', () => {
 });
 
 describe('AiAssistantService', () => {
-  it('posts the conversation (no global toast) and the confirmed proposal', () => {
+  it('posts the conversation (no global toast), the confirmed proposal and manages the saved conversation', () => {
     const toastError = vi.fn();
     TestBed.configureTestingModule({
       providers: [
@@ -238,11 +303,23 @@ describe('AiAssistantService', () => {
 
     service.apply('p1', PROPOSAL).subscribe();
     const applyRequest = http.expectOne('/api/v1/projects/p1/ai/assistant/actions');
-    expect(applyRequest.request.body).toEqual({
-      tool: 'assign_task',
-      arguments: PROPOSAL.arguments,
-    });
+    expect(applyRequest.request.body).toEqual({ proposalId: 'p-1' });
     applyRequest.flush({ tool: 'assign_task', message: 'ok' });
+
+    service.conversation('p1').subscribe({ error: () => undefined });
+    http
+      .expectOne({ method: 'GET', url: '/api/v1/projects/p1/ai/assistant/conversation' })
+      .flush({ error: { code: 'X', message: 'down' } }, { status: 500, statusText: 'Error' });
+    expect(toastError).not.toHaveBeenCalled();
+
+    service.clear('p1').subscribe();
+    http
+      .expectOne({ method: 'DELETE', url: '/api/v1/projects/p1/ai/assistant/conversation' })
+      .flush(null, { status: 204, statusText: 'No Content' });
+    service.dismiss('p1', 'p-1').subscribe();
+    http
+      .expectOne({ method: 'POST', url: '/api/v1/projects/p1/ai/assistant/proposals/p-1/dismiss' })
+      .flush({ id: 'p-1', state: 'DISMISSED' });
     http.verify();
   });
 });
