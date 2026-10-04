@@ -28,4 +28,5 @@ Les fichiers ne contiennent jamais de secret (aucune valeur des `.env`).
 | UX-2 | Glisser-déposer sur le Kanban et « + Add task » | [UX-2.md](UX-2.md) | Terminé |
 | UX-3 | Palette de commandes Ctrl+K et tâche en panneau latéral | [UX-3.md](UX-3.md) | Terminé |
 | UX-4 | Accueil « Mon travail » et bouton « Ask AI » global | [UX-4.md](UX-4.md) | Terminé |
+| UX-5 | Bouton « Ask AI » rond et flottant (style Gemini) | [UX-5.md](UX-5.md) | Terminé |
 | TASK 26 | Docker et Docker Compose | — | Prévue |

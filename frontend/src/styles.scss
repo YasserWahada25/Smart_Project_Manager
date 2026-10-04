@@ -187,12 +187,63 @@ kbd {
   }
 }
 
-// Global "Ask AI" button (MainLayout), bottom right.
+// Global "Ask AI" button (MainLayout): round, floating bottom right, logo gradient.
 .ask-ai-fab {
   position: fixed;
   right: 24px;
   bottom: 24px;
   z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #4f8bff 0%, #1f5eff 45%, #19b6e8 100%);
+  box-shadow:
+    0 6px 18px rgba(31, 94, 255, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+
+  svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+    transition: transform 300ms ease;
+  }
+
+  &:hover,
+  &[aria-expanded='true'] {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 26px rgba(31, 94, 255, 0.45),
+      0 3px 8px rgba(0, 0, 0, 0.25);
+
+    svg {
+      transform: rotate(90deg) scale(1.08);
+    }
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    svg {
+      transition: none;
+    }
+  }
 }
 
 .menu-mark {

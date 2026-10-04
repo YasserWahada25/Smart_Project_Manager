@@ -216,15 +216,18 @@
     <!-- Global "Ask AI" (Notion AI / ClickUp Brain style): the assistant of a managed project. -->
     @if (showAskAi()) {
       <button
-        mat-fab
-        extended
         type="button"
         class="ask-ai-fab"
         [matMenuTriggerFor]="askMenu"
+        matTooltip="Ask AI"
+        matTooltipPosition="left"
         aria-label="Ask AI"
       >
-        <mat-icon>auto_awesome</mat-icon>
-        Ask AI
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 2C12.6 7.4 16.6 11.4 22 12C16.6 12.6 12.6 16.6 12 22C11.4 16.6 7.4 12.6 2 12C7.4 11.4 11.4 7.4 12 2Z"
+          />
+        </svg>
       </button>
       <mat-menu #askMenu="matMenu" xPosition="before" yPosition="above">
         <div class="menu-section" role="presentation">Ask the AI assistant about…</div>
