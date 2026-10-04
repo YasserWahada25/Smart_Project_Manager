@@ -118,15 +118,15 @@ describe('App routing', () => {
       const harness = await RouterTestingHarness.create('/');
 
       expect(harness.routeNativeElement?.textContent).toContain('Welcome, Sara');
-      expect(harness.routeNativeElement?.querySelector('mat-toolbar')).not.toBeNull();
-      expect(title()).toBe('Home · Smart Project Manager');
+      expect(harness.routeNativeElement?.querySelector('nav[aria-label="Main"]')).not.toBeNull();
+      expect(title()).toBe('Home · Smart Manager');
     });
 
     it('shows the "page not found" page for unknown URLs', async () => {
       const harness = await RouterTestingHarness.create('/does/not/exist');
 
       expect(harness.routeNativeElement?.textContent).toContain('Page not found');
-      expect(title()).toBe('Page not found · Smart Project Manager');
+      expect(title()).toBe('Page not found · Smart Manager');
     });
 
     it('cannot open the login page (sent back home)', async () => {
@@ -139,75 +139,75 @@ describe('App routing', () => {
       const harness = await RouterTestingHarness.create('/profile');
 
       expect(harness.routeNativeElement?.textContent).toContain('My profile');
-      expect(title()).toBe('My profile · Smart Project Manager');
+      expect(title()).toBe('My profile · Smart Manager');
     });
 
     it('opens the projects, the creation form ("new" is not read as an id) and a project', async () => {
       const harness = await RouterTestingHarness.create('/projects');
-      expect(title()).toBe('Projects · Smart Project Manager');
+      expect(title()).toBe('Projects · Smart Manager');
       const heading = () => harness.routeNativeElement?.querySelector('h1')?.textContent;
 
       await harness.navigateByUrl('/projects/new');
       expect(heading()).toBe('New project');
-      expect(title()).toBe('New project · Smart Project Manager');
+      expect(title()).toBe('New project · Smart Manager');
 
       await harness.navigateByUrl('/projects/p1');
       expect(heading()).toBe('E-commerce platform');
-      expect(title()).toBe('Project · Smart Project Manager');
+      expect(title()).toBe('Project · Smart Manager');
     });
 
     it('opens the tabs of a project and a task page inside the project shell', async () => {
       const harness = await RouterTestingHarness.create('/projects/p1/sprints');
       const page = () => harness.routeNativeElement!;
       expect(page().querySelector('h1')?.textContent).toBe('E-commerce platform');
-      expect(page().querySelector('h2')?.textContent).toBe('Sprints');
-      expect(title()).toBe('Sprints · Smart Project Manager');
+      expect(page().querySelector('main h2')?.textContent).toBe('Sprints');
+      expect(title()).toBe('Sprints · Smart Manager');
 
       await harness.navigateByUrl('/projects/p1/tasks');
-      expect(page().querySelector('h2')?.textContent).toBe('Tasks');
+      expect(page().querySelector('main h2')?.textContent).toBe('Tasks');
       expect(page().querySelector('a.title')?.getAttribute('href')).toBe('/projects/p1/tasks/t1');
 
       await harness.navigateByUrl('/projects/p1/tasks/t1');
-      expect(page().querySelector('h2')?.textContent).toBe('Implement login page');
-      expect(title()).toBe('Task · Smart Project Manager');
+      expect(page().querySelector('main h2')?.textContent).toBe('Implement login page');
+      expect(title()).toBe('Task · Smart Manager');
 
       await harness.navigateByUrl('/projects/p1/board');
-      expect(page().querySelector('h2')?.textContent).toBe('Board');
-      expect(title()).toBe('Board · Smart Project Manager');
+      expect(page().querySelector('main h2')?.textContent).toBe('Board');
+      expect(title()).toBe('Board · Smart Manager');
 
       await harness.navigateByUrl('/projects/p1/activity');
-      expect(page().querySelector('h2')?.textContent).toBe('Activity');
-      expect(title()).toBe('Activity · Smart Project Manager');
+      expect(page().querySelector('main h2')?.textContent).toBe('Activity');
+      expect(title()).toBe('Activity · Smart Manager');
 
       await harness.navigateByUrl('/projects/p1/dashboard');
-      expect(page().querySelector('h2')?.textContent).toBe('Tasks');
-      expect(title()).toBe('Project dashboard · Smart Project Manager');
+      expect(page().querySelector('main h2')?.textContent).toBe('Tasks');
+      expect(title()).toBe('Project dashboard · Smart Manager');
     });
 
     it('opens the dashboard and the search (query read from the URL)', async () => {
       const harness = await RouterTestingHarness.create('/dashboard');
       expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Dashboard');
-      expect(title()).toBe('Dashboard · Smart Project Manager');
+      expect(title()).toBe('Dashboard · Smart Manager');
 
       await harness.navigateByUrl('/search?q=payment');
       expect(
         harness.routeNativeElement?.querySelector<HTMLInputElement>('app-search-page input')?.value,
       ).toBe('payment');
-      expect(title()).toBe('Search · Smart Project Manager');
+      expect(title()).toBe('Search · Smart Manager');
     });
 
     it('opens the notifications', async () => {
       const harness = await RouterTestingHarness.create('/notifications');
 
       expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Notifications');
-      expect(title()).toBe('Notifications · Smart Project Manager');
+      expect(title()).toBe('Notifications · Smart Manager');
     });
 
     it('opens "My tasks"', async () => {
       const harness = await RouterTestingHarness.create('/my-tasks');
 
       expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('My tasks');
-      expect(title()).toBe('My tasks · Smart Project Manager');
+      expect(title()).toBe('My tasks · Smart Manager');
     });
 
     it('cannot open the user administration without the ADMIN role', async () => {
@@ -239,7 +239,7 @@ describe('App routing', () => {
 
       expect(url()).toBe('/admin/users');
       expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Users');
-      expect(title()).toBe('Users · Smart Project Manager');
+      expect(title()).toBe('Users · Smart Manager');
     });
   });
 
@@ -251,7 +251,7 @@ describe('App routing', () => {
 
       expect(url()).toBe('/login?returnUrl=%2Fsome%2Fpage');
       expect(harness.routeNativeElement?.textContent).toContain('Sign in');
-      expect(title()).toBe('Sign in · Smart Project Manager');
+      expect(title()).toBe('Sign in · Smart Manager');
     });
 
     it('can open the registration page', async () => {

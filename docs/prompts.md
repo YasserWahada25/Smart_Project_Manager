@@ -2,7 +2,7 @@
 
 This file has two parts:
 
-- **Part A — Development prompts** (in French, like the exchanges): the prompts exchanged between the human supervisor and the AI development agents (Claude Code) to build the project, from the start (2 October 2026) to the end of TASK 25 (3 October 2026, last AI feature). Kept up to date with the progress report [bilan.md](bilan.md) and the per-task deliverables in [livrables/](livrables/README.md).
+- **Part A — Development prompts** (in French, like the exchanges): the prompts exchanged between the human supervisor and the AI development agents (Claude Code) to build the project, from the start (2 October 2026) to the UX work (4 October 2026). Kept up to date with the progress report [bilan.md](bilan.md) and the per-task deliverables in [livrables/](livrables/README.md).
 - **Part B — LLM prompts of the application** (deliverable 3): the prompts the application itself sends to an LLM. Implemented: **AI-01** (planning from the specification, TASK 22) and **AI-04** (manager assistant with tools, TASK 25). AI-02 and AI-03 use no LLM (transparent scoring and a logistic regression, see [ai.md](ai.md)).
 
 ---
@@ -63,6 +63,15 @@ Heures locales (Tunis). Les messages sont cités tels qu'ils ont été écrits ;
 | 26 | ≈ 12:38 | « attend je vus ajoute les env » (en cours de tâche) | L'agent n'a pas créé les `.env` et a attendu ceux du superviseur pour la vérification de bout en bout (seuls les noms des variables ont été contrôlés, jamais les valeurs) | `backend/.env` et `ai-service/.env` fournis ; pas de clé OpenAI → analyseur local |
 | 27 | ≈ 12:50 | Copie du terminal : `ng serve` → « The Angular CLI requires a minimum of v22.22.3 » (en cours de tâche) | Diagnostic : Node 22.21.1 installé, Angular 22 exige ≥ 22.22.3. L'agent a exécuté les outils Angular avec un Node 24 portable (dossier temporaire) et recommande d'installer Node 24 LTS | Tests, lint et build Angular exécutés |
 | 28 | 13:13 | « continuer vers Tasks 23-24-25 une fois pour toutes » (après le commit `55cc554` « task 22 finished » du superviseur et la mise à jour de Node en 22.22.3) | Consigne de groupe : les trois tâches IA restantes enchaînées, chacune avec tests, vérification de bout en bout, documentation et livrable, puis arrêt avant la TASK 26. Aucune clé OpenAI : AI-04 vérifiée avec des tests simulés et un serveur OpenAI simulé | TASK 23 (AI-02, 10/10), TASK 24 (AI-03, 11/11), TASK 25 (AI-04, 12/12) terminées |
+| 29 | 03/10 ≈ 14:15 | « je veux tester tous les fonctionnalités deja implemnter avant d'ajouter une autre chose donner un plan pour tester tous » | Plan de test manuel en 6 parties (préparation, comptes, projets, sprints/tâches/Kanban, fonctions IA, cas d'erreur), avec le résultat attendu de chaque étape | Plan donné dans la conversation |
+| 30 | ≈ 14:25 | « j'ai bien ajouter le key au niveau de .env verifier » + capture de l'onglet Assistant | Vérification sans afficher la clé : ligne `OPENAI_API_KEY=` vide sur le disque (fichier non enregistré) | Clé enregistrée puis service IA redémarré |
+| 31 | ≈ 14:32 | Capture : « The AI service failed to process the request » + journal `429 Too Many Requests` | Appel minimal à OpenAI : clé valide mais **aucun crédit API** (`insufficient_quota`). Correction : message clair (« the OpenAI account has no credits left ») transmis jusqu'à l'écran | Service IA 148, backend 358 tests |
+| 32 | ≈ 14:45 | Capture de la facturation OpenAI : « que-est-ce-qu'il faut faire bien que mon compte est pro » | L'abonnement ChatGPT Pro est séparé de l'API ; étapes pour acheter des crédits et coût estimé | — |
+| 33 | ≈ 14:50 | « je vous donne un ancien key deja placer et fonctionnels au sein d'une autre applicaton la placer dans notre application » + configuration (clé **masquée ici**) | Clé placée dans `ai-service/.env` sans être affichée ; test direct : même compte sans crédit. Recommandation : révoquer cette clé, exposée dans la conversation | — |
+| 34 | ≈ 14:55 | « y'a t-il une solution avec un autre modele pour la fonctionnement de ce feature » | Trois options compatibles avec le format OpenAI : Google Gemini (gratuit), Groq, Ollama (local) ; recommandation Gemini | — |
+| 35 | ≈ 15:00 | « donc on applique 1. Google Gemini » | Fournisseur de LLM rendu configurable (détecté depuis `OPENAI_BASE_URL`, mode compatible sans `strict`), interface qui nomme le vrai fournisseur | Service IA 157 tests |
+| 36 | ≈ 15:06 | « c'est fait » (clé Gemini enregistrée) | Tests réels : AI-01 OK ; AI-04 : `thought_signature` de Gemini à renvoyer (corrigé), modèle `gemini-3.8-flash` saturé → **`gemini-3.5-flash-lite`** ; nouvelle tentative sur les erreurs temporaires | **6/6** de bout en bout avec Gemini |
+| 37 | 04/10 ≈ 11:00 | « maintenant je veux se concentrer sur la partie UI pour optimiser l'experience utilisateur avec notre plateforme inspirer des differents plateforme deja existant et application l'un pour notre application » ; réponses aux questions : **Linear** comme référence, priorité **« Shell and visual identity »** ; puis « logo de notre appliation est …/frontend/public/logo.png Intitulé "Smart Manager" » | Audit comparé (Linear, Jira, Trello, Asana/ClickUp, Notion AI), découpage en lots UX ; lot **UX-1** : identité visuelle aux couleurs du logo, nouvelle barre latérale à la Linear, thème clair / sombre / système, avatars ; nom de l'application « Smart Manager » | Frontend 358 tests ; [livrable UX-1](livrables/UX-1.md) |
 
 ### A.4 Analyse
 
@@ -71,8 +80,8 @@ Un même prompt peut relever de plusieurs types (le #17, par exemple).
 | Type de prompt | Prompts | Exemples | Effet |
 |---|---|---|---|
 | Contexte | #1 | Prompt initial | Fixe la stack, les règles, la méthode et le format de rapport pour tout le projet |
-| Poursuite | #2, 3, 5, 6, 7, 9, 10, 11, 12, 18, 28 | « continuer », « continuer vers task 02 », « oui continuer » | Une tâche par prompt ; le rapport précédent indique la tâche suivante |
-| Information sur l'environnement | #4, 17 | Capture Compass, « python est bien installer » | Débloque une étape (base locale, service IA) |
+| Poursuite | #2, 3, 5, 6, 7, 9, 10, 11, 12, 18, 28, 35, 36 | « continuer », « continuer vers task 02 », « oui continuer » | Une tâche par prompt ; le rapport précédent indique la tâche suivante |
+| Information sur l'environnement | #4, 17, 30, 31, 32, 33 | Capture Compass, « python est bien installer » | Débloque une étape (base locale, service IA) |
 | Vérification et état | #14, 15, 16 | « a quel etape… », captures du navigateur, bilan | Contrôle humain du résultat réel |
 | Consigne de méthode | #8, 17, 19, 20, 21, 28 | Phase entière, bilan après chaque tâche, tout le hors-IA, arrêt avant l'IA, ce fichier | Change la façon de travailler de l'agent pour la suite |
 | Commande | #13 | `/compact` | Gestion du contexte de la conversation |

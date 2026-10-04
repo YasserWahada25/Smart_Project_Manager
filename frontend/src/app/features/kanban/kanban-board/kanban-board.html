@@ -58,8 +58,8 @@
                     <p class="reason">{{ task.blockedReason }}</p>
                   }
                   <div class="card-footer">
-                    <span class="assignee">
-                      <mat-icon aria-hidden="true">person</mat-icon>
+                    <span class="assignee person">
+                      <app-avatar [person]="task.assignee" size="small" />
                       {{ task.assignee ? fullName(task.assignee) : 'Unassigned' }}
                     </span>
                     @if (canMove(task)) {

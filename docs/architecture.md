@@ -82,15 +82,16 @@ frontend/
 │   │   │   ├── models/                     api-error, pagination, user, project, sprint, task, comment, activity
 │   │   │   │                               (+ describeActivity), notification, dashboard, system-status, ai-plan, ai-recommendation, ai-risk, ai-assistant
 │   │   │   ├── routing/app-title.strategy.ts  "<page> · Smart Project Manager"
-│   │   │   └── services/                   health, toast (snack bar loaded on demand), notification (unread count)
+│   │   │   └── services/                   health, toast (snack bar loaded on demand), notification (unread count), theme (light / dark / system)
 │   │   ├── shared/components/              loading-state, error-state, confirm-dialog (+ ConfirmService),
-│   │   │                                   tag-input (chips), chart (Chart.js canvas)
+│   │   │                                   tag-input (chips), chart (Chart.js canvas), avatar (initials on an identity color)
+│   │   ├── shared/colors.ts                identity colors (same person / project = same color) and initials
 │   │   ├── shared/forms/                   password validators (same policy as the backend), integer / tag list / "not before" date validators, form error helpers (backend field messages, incl. array paths)
 │   │   ├── shared/data/                    PagedList (filters + pagination, latest query wins), LoadMoreList ("Load more" feeds)
 │   │   ├── shared/dates.ts                 today / YYYY-MM-DD helpers
 │   │   ├── testing/                        test data, fake AuthService, test setup (excluded from the build)
-│   │   ├── layouts/main-layout/            toolbar (search, notifications bell, user menu) + side navigation filtered by role
-│   │   ├── layouts/auth-layout/            centered layout of the public pages
+│   │   ├── layouts/main-layout/            Linear-like sidebar: logo, search ("/" shortcut), navigation filtered by role (Inbox with unread count), the user's projects, account menu (profile, theme, log out); collapsible to icons; drawer + top bar on handsets
+│   │   ├── layouts/auth-layout/            centered layout of the public pages (Smart Manager logo and tagline)
 │   │   ├── features/
 │   │   │   ├── auth/login, auth/register   sign in / create an account (reactive forms)
 │   │   │   ├── home/                       welcome + system status (frontend → API → MongoDB)
@@ -117,7 +118,7 @@ frontend/
 │   │   ├── app.routes.ts                   lazy-loaded routes inside MainLayout; project tabs are child routes
 │   │   └── app.ts                          root component (<router-outlet>; preloads the toast code after the first render)
 │   ├── environments/                       environment.ts / environment.development.ts (apiUrl)
-│   ├── styles.scss                         Material 3 theme (azure/blue), toast styles
+│   ├── styles.scss                         Material 3 theme (logo blue / cyan, Inter, density −1, light-dark tokens), toast styles, shared helpers
 │   └── index.html
 ├── proxy.conf.json                         dev server: /api → http://localhost:3000
 ├── angular.json, eslint.config.js, .prettierrc
@@ -131,7 +132,8 @@ frontend/
 | Angular 22, **standalone components**, **zoneless** change detection, **signals** | Current Angular defaults: no NgModules, less boilerplate, fine-grained updates |
 | `OnPush` + signals in components | Predictable rendering, works with zoneless |
 | **Lazy-loaded routes** (`loadComponent`) inside a `MainLayout` shell | Each page is downloaded on first visit; the initial bundle only contains the shell |
-| **Angular Material 3** (azure/blue theme, Material Symbols icons) | Consistent, accessible, responsive components; colors from `--mat-sys-*` variables |
+| **Angular Material 3** (blue / cyan theme from the Smart Manager logo, Material Symbols icons) | Consistent, accessible, responsive components; colors from `--mat-sys-*` variables |
+| **Visual identity "Smart Manager", Linear-inspired** (UX-1) | Neutral surfaces and thin borders (`--spm-*` tokens), Inter font, compact density, sidebar navigation with the user's projects, avatars with identity colors; **light / dark / system theme** (`ThemeService`: class on `<html>`, saved in `localStorage`, applied before the first paint by a small script in `index.html`; Material colors switch through `color-scheme`, charts use a palette per theme) |
 | **Dev proxy** (`proxy.conf.json`) and `apiUrl = '/api/v1'` in every environment | The browser only talks to its own origin (no CORS in dev); the same URL works behind a reverse proxy in production |
 | **Functional HTTP interceptor** `apiErrorInterceptor` | Every HTTP error becomes an `ApiError` mirroring the backend error format; network/5xx errors show a toast automatically, 4xx are handled by the page (validation messages). A request can opt out with the `SKIP_ERROR_TOAST` context token |
 | Shared `LoadingState` / `ErrorState` components | Same loading and error presentation on every page (with "Try again") |

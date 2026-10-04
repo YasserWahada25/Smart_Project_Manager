@@ -29,6 +29,7 @@ import { ErrorState } from '../../../shared/components/error-state/error-state';
 import { LoadMoreList } from '../../../shared/data/load-more-list';
 import { ProjectContext } from '../../projects/project-context';
 import { CommentService } from '../comment.service';
+import { Avatar } from '../../../shared/components/avatar/avatar';
 
 const PAGE_SIZE = 20;
 
@@ -46,6 +47,7 @@ const contentValidators = [
 @Component({
   selector: 'app-task-comments',
   imports: [
+    Avatar,
     DatePipe,
     ReactiveFormsModule,
     MatFormFieldModule,

@@ -15,6 +15,7 @@ import { ConfirmService } from '../../../shared/components/confirm-dialog/confir
 import { AddMembersDialog, AddMembersDialogData } from '../add-members-dialog/add-members-dialog';
 import { ProjectContext } from '../project-context';
 import { ProjectService } from '../project.service';
+import { Avatar } from '../../../shared/components/avatar/avatar';
 
 /**
  * "Overview" tab of a project: description, dates, manager, technologies and team. The
@@ -22,7 +23,7 @@ import { ProjectService } from '../project.service';
  */
 @Component({
   selector: 'app-project-overview',
-  imports: [DatePipe, MatCardModule, MatButtonModule, MatIconModule],
+  imports: [Avatar, DatePipe, MatCardModule, MatButtonModule, MatIconModule],
   templateUrl: './project-overview.html',
   styleUrl: './project-overview.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

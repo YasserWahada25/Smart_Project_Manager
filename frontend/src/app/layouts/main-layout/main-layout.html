@@ -1,51 +1,48 @@
-<mat-sidenav-container class="container">
+<mat-sidenav-container class="container" autosize>
   <mat-sidenav
     #drawer
     class="sidenav"
+    [class.compact]="compact()"
     [mode]="isHandset() ? 'over' : 'side'"
     [opened]="!isHandset()"
     [attr.role]="isHandset() ? 'dialog' : 'navigation'"
+    aria-label="Sidebar"
   >
-    <mat-toolbar class="sidenav-header">Menu</mat-toolbar>
-    <mat-nav-list>
-      @for (item of navItems(); track item.path) {
-        <a
-          mat-list-item
-          [routerLink]="item.path"
-          routerLinkActive
-          #link="routerLinkActive"
-          [routerLinkActiveOptions]="{ exact: item.path === '/' }"
-          [activated]="link.isActive"
-          (click)="isHandset() && drawer.close()"
-        >
-          <mat-icon matListItemIcon aria-hidden="true">{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
+    <div class="sidebar">
+      <div class="sidebar-top">
+        <a routerLink="/" class="brand" [attr.aria-label]="appName + ', home'">
+          <img src="logo-mark.png" alt="" width="28" height="28" />
+          @if (!compact()) {
+            <span class="brand-name">{{ appName }}</span>
+          }
         </a>
-      }
-    </mat-nav-list>
-  </mat-sidenav>
+        @if (!isHandset()) {
+          <button
+            mat-icon-button
+            type="button"
+            class="collapse-button"
+            [attr.aria-label]="collapsed() ? 'Expand the sidebar' : 'Collapse the sidebar'"
+            [attr.aria-expanded]="!collapsed()"
+            (click)="toggleCollapsed()"
+          >
+            <mat-icon>{{ collapsed() ? 'left_panel_open' : 'left_panel_close' }}</mat-icon>
+          </button>
+        }
+      </div>
 
-  <mat-sidenav-content>
-    <mat-toolbar class="toolbar">
-      @if (isHandset()) {
-        <button mat-icon-button type="button" aria-label="Open the menu" (click)="drawer.toggle()">
-          <mat-icon>menu</mat-icon>
-        </button>
-      }
-      <a routerLink="/" class="brand">
-        <mat-icon aria-hidden="true">dashboard_customize</mat-icon>
-        <span>{{ appName }}</span>
-      </a>
-
-      <span class="spacer"></span>
-
-      @if (isHandset()) {
-        <a mat-icon-button routerLink="/search" class="toolbar-icon" aria-label="Search">
-          <mat-icon>search</mat-icon>
+      @if (compact()) {
+        <a
+          class="nav-item"
+          routerLink="/search"
+          aria-label="Search"
+          matTooltip="Search"
+          matTooltipPosition="right"
+        >
+          <mat-icon aria-hidden="true">search</mat-icon>
         </a>
       } @else {
         <form
-          class="toolbar-search"
+          class="sidebar-search"
           role="search"
           (submit)="$event.preventDefault(); search(query.value)"
         >
@@ -57,40 +54,119 @@
             placeholder="Search projects and tasks"
             aria-label="Search projects and tasks"
           />
+          <kbd aria-hidden="true">/</kbd>
         </form>
       }
 
-      @if (user(); as current) {
-        <a
-          mat-icon-button
-          routerLink="/notifications"
-          class="notifications-button"
-          [attr.aria-label]="
-            unreadCount() > 0 ? 'Notifications, ' + unreadCount() + ' unread' : 'Notifications'
-          "
-        >
-          <mat-icon
-            [matBadge]="unreadCount()"
-            [matBadgeHidden]="unreadCount() === 0"
-            matBadgeColor="warn"
-            matBadgeSize="small"
-            aria-hidden="true"
-            >notifications</mat-icon
+      <nav class="nav" aria-label="Main">
+        @for (item of navItems(); track item.path) {
+          <a
+            class="nav-item"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+            [attr.aria-label]="
+              item.inbox && unreadCount() > 0
+                ? item.label + ', ' + unreadCount() + ' unread'
+                : compact()
+                  ? item.label
+                  : null
+            "
+            [matTooltip]="compact() ? item.label : ''"
+            matTooltipPosition="right"
+            (click)="isHandset() && drawer.close()"
           >
-        </a>
+            <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+            @if (!compact()) {
+              <span class="label">{{ item.label }}</span>
+            }
+            @if (item.inbox && unreadCount() > 0) {
+              <span class="count" [class.dot]="compact()" aria-hidden="true">{{
+                compact() ? '' : unreadCount()
+              }}</span>
+            }
+          </a>
+        }
+      </nav>
+
+      <section class="projects" aria-labelledby="sidebar-projects">
+        <div class="section-header">
+          @if (!compact()) {
+            <h2 id="sidebar-projects">Projects</h2>
+          } @else {
+            <h2 id="sidebar-projects" class="visually-hidden">Projects</h2>
+          }
+          @if (canCreateProject() && !compact()) {
+            <a
+              mat-icon-button
+              class="add-button"
+              routerLink="/projects/new"
+              aria-label="New project"
+              matTooltip="New project"
+            >
+              <mat-icon>add</mat-icon>
+            </a>
+          }
+        </div>
+        <ul>
+          @for (project of projects(); track project.id) {
+            <li>
+              <a
+                class="nav-item project-item"
+                [class.archived]="project.status === 'ARCHIVED'"
+                [routerLink]="['/projects', project.id]"
+                routerLinkActive="active"
+                [attr.aria-label]="compact() ? project.name : null"
+                [matTooltip]="compact() ? project.name : ''"
+                matTooltipPosition="right"
+                (click)="isHandset() && drawer.close()"
+              >
+                <span
+                  class="project-mark"
+                  [style.background]="projectColor(project)"
+                  aria-hidden="true"
+                  >{{ projectInitial(project) }}</span
+                >
+                @if (!compact()) {
+                  <span class="label">{{ project.name }}</span>
+                }
+              </a>
+            </li>
+          } @empty {
+            @if (!compact()) {
+              <li class="empty">
+                No project yet.
+                @if (canCreateProject()) {
+                  <a routerLink="/projects/new">Create one</a>
+                }
+              </li>
+            }
+          }
+        </ul>
+        @if (projectsTotal() > projects().length && !compact()) {
+          <a class="more" routerLink="/projects">All projects ({{ projectsTotal() }})</a>
+        }
+      </section>
+
+      <span class="grow"></span>
+
+      @if (user(); as current) {
         <button
-          mat-button
           type="button"
-          class="user-button"
+          class="account"
           [matMenuTriggerFor]="userMenu"
           aria-label="Account menu"
         >
-          <mat-icon>account_circle</mat-icon>
-          @if (!isHandset()) {
-            <span class="user-name">{{ current.firstName }}</span>
+          <app-avatar [person]="current" />
+          @if (!compact()) {
+            <span class="account-text">
+              <span class="account-name">{{ current.firstName }} {{ current.lastName }}</span>
+              <span class="menu-role">{{ roleLabel() }}</span>
+            </span>
+            <mat-icon aria-hidden="true">unfold_more</mat-icon>
           }
         </button>
-        <mat-menu #userMenu="matMenu" xPosition="before">
+        <mat-menu #userMenu="matMenu" xPosition="after" yPosition="above">
           <div class="menu-header" role="presentation">
             <span class="menu-name">{{ current.firstName }} {{ current.lastName }}</span>
             <span class="menu-role">{{ roleLabel() }}</span>
@@ -100,14 +176,49 @@
             <mat-icon>person</mat-icon>
             <span>My profile</span>
           </a>
+          <mat-divider />
+          <div class="menu-section" role="presentation">Theme</div>
+          @for (option of themeOptions; track option.mode) {
+            <button
+              mat-menu-item
+              type="button"
+              role="menuitemradio"
+              [attr.aria-checked]="theme.mode() === option.mode"
+              (click)="theme.setMode(option.mode)"
+            >
+              <mat-icon>{{ option.icon }}</mat-icon>
+              <span>{{ option.label }}</span>
+              @if (theme.mode() === option.mode) {
+                <mat-icon class="menu-check" aria-hidden="true">check</mat-icon>
+              }
+            </button>
+          }
+          <mat-divider />
           <button mat-menu-item type="button" (click)="logout()">
             <mat-icon>logout</mat-icon>
             <span>Log out</span>
           </button>
         </mat-menu>
       }
-    </mat-toolbar>
+    </div>
+  </mat-sidenav>
 
+  <mat-sidenav-content>
+    @if (isHandset()) {
+      <header class="mobile-bar">
+        <button mat-icon-button type="button" aria-label="Open the menu" (click)="drawer.toggle()">
+          <mat-icon>menu</mat-icon>
+        </button>
+        <a routerLink="/" class="brand" [attr.aria-label]="appName + ', home'">
+          <img src="logo-mark.png" alt="" width="24" height="24" />
+          <span class="brand-name">{{ appName }}</span>
+        </a>
+        <span class="grow"></span>
+        <a mat-icon-button routerLink="/search" aria-label="Search">
+          <mat-icon>search</mat-icon>
+        </a>
+      </header>
+    }
     <main class="content">
       <router-outlet />
     </main>

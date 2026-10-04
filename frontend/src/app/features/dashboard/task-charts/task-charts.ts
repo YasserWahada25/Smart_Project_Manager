@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ChartConfiguration } from 'chart.js';
 
 import { TaskIndicators } from '../../../core/models/dashboard';
@@ -8,23 +8,32 @@ import {
   TASK_STATUSES,
   TASK_STATUS_LABELS,
 } from '../../../core/models/task';
+import { ThemeService } from '../../../core/services/theme.service';
 import { ChartView } from '../../../shared/components/chart/chart';
 
 /**
  * Both charts compare counts per category: one hue, horizontal bars, the categories named on
  * the axis (no color legend needed). Values are also listed as text (accessible table view).
- * Color validated with the data-viz palette checker (contrast ≥ 3:1 on the light surface).
+ * One palette per theme (canvas colors cannot use CSS variables): the bar keeps a contrast ≥ 3:1
+ * with the surface and the text ≥ 4.5:1, in the light and the dark theme.
  */
-const BAR_COLOR = '#2a78d6';
-const GRID_COLOR = '#e4e4e0';
-const TEXT_COLOR = '#52514e';
+interface ChartPalette {
+  bar: string;
+  grid: string;
+  text: string;
+}
+
+export const CHART_PALETTES: Record<'light' | 'dark', ChartPalette> = {
+  light: { bar: '#1d6fd1', grid: '#e6e6ea', text: '#55555f' },
+  dark: { bar: '#5b9bf0', grid: '#2a2a30', text: '#a3a3ad' },
+};
 
 interface Entry {
   label: string;
   value: number;
 }
 
-function barChart(entries: Entry[]): ChartConfiguration {
+function barChart(entries: Entry[], palette: ChartPalette): ChartConfiguration {
   return {
     type: 'bar',
     data: {
@@ -33,7 +42,7 @@ function barChart(entries: Entry[]): ChartConfiguration {
         {
           label: 'Tasks',
           data: entries.map((entry) => entry.value),
-          backgroundColor: BAR_COLOR,
+          backgroundColor: palette.bar,
           // Thin bars, rounded at the data end only, square at the baseline.
           maxBarThickness: 24,
           borderRadius: 4,
@@ -46,11 +55,11 @@ function barChart(entries: Entry[]): ChartConfiguration {
       scales: {
         x: {
           beginAtZero: true,
-          ticks: { precision: 0, color: TEXT_COLOR },
-          grid: { color: GRID_COLOR },
+          ticks: { precision: 0, color: palette.text },
+          grid: { color: palette.grid },
           border: { display: false },
         },
-        y: { ticks: { color: TEXT_COLOR }, grid: { display: false } },
+        y: { ticks: { color: palette.text }, grid: { display: false } },
       },
     },
   };
@@ -132,6 +141,10 @@ function barChart(entries: Entry[]): ChartConfiguration {
 export class TaskCharts {
   readonly indicators = input.required<TaskIndicators>();
 
+  private readonly theme = inject(ThemeService);
+  /** Redrawn with the other palette when the theme changes. */
+  private readonly palette = computed(() => CHART_PALETTES[this.theme.isDark() ? 'dark' : 'light']);
+
   protected readonly byStatus = computed<Entry[]>(() =>
     TASK_STATUSES.map((status) => ({
       label: TASK_STATUS_LABELS[status],
@@ -146,6 +159,6 @@ export class TaskCharts {
     })),
   );
 
-  protected readonly statusChart = computed(() => barChart(this.byStatus()));
-  protected readonly priorityChart = computed(() => barChart(this.byPriority()));
+  protected readonly statusChart = computed(() => barChart(this.byStatus(), this.palette()));
+  protected readonly priorityChart = computed(() => barChart(this.byPriority(), this.palette()));
 }

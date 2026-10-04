@@ -21,6 +21,7 @@ import { SprintService } from '../../sprints/sprint.service';
 import { TaskPriorityBadge } from '../../tasks/task-badges';
 import { TaskWorkflow } from '../../tasks/task-workflow';
 import { TaskService } from '../../tasks/task.service';
+import { Avatar } from '../../../shared/components/avatar/avatar';
 
 type BoardOutcome = { ok: true; board: Board } | { ok: false; message: string };
 
@@ -32,6 +33,7 @@ type BoardOutcome = { ok: true; board: Board } | { ok: false; message: string };
 @Component({
   selector: 'app-kanban-board',
   imports: [
+    Avatar,
     DatePipe,
     ReactiveFormsModule,
     RouterLink,
