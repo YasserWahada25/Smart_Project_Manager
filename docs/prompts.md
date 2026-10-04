@@ -72,6 +72,7 @@ Heures locales (Tunis). Les messages sont cités tels qu'ils ont été écrits ;
 | 35 | ≈ 15:00 | « donc on applique 1. Google Gemini » | Fournisseur de LLM rendu configurable (détecté depuis `OPENAI_BASE_URL`, mode compatible sans `strict`), interface qui nomme le vrai fournisseur | Service IA 157 tests |
 | 36 | ≈ 15:06 | « c'est fait » (clé Gemini enregistrée) | Tests réels : AI-01 OK ; AI-04 : `thought_signature` de Gemini à renvoyer (corrigé), modèle `gemini-3.8-flash` saturé → **`gemini-3.5-flash-lite`** ; nouvelle tentative sur les erreurs temporaires | **6/6** de bout en bout avec Gemini |
 | 37 | 04/10 ≈ 11:00 | « maintenant je veux se concentrer sur la partie UI pour optimiser l'experience utilisateur avec notre plateforme inspirer des differents plateforme deja existant et application l'un pour notre application » ; réponses aux questions : **Linear** comme référence, priorité **« Shell and visual identity »** ; puis « logo de notre appliation est …/frontend/public/logo.png Intitulé "Smart Manager" » | Audit comparé (Linear, Jira, Trello, Asana/ClickUp, Notion AI), découpage en lots UX ; lot **UX-1** : identité visuelle aux couleurs du logo, nouvelle barre latérale à la Linear, thème clair / sombre / système, avatars ; nom de l'application « Smart Manager » | Frontend 358 tests ; [livrable UX-1](livrables/UX-1.md) |
+| 38 | 04/10 | « continuer vers les lots suivants » | Lots enchaînés : **UX-2** glisser-déposer sur le Kanban et ajout rapide ; **UX-3** palette Ctrl+K et tâche en panneau latéral ; **UX-4** accueil « Mon travail » et bouton « Ask AI » ; deux vrais bugs trouvés par les tests et corrigés (`ngSubmit` sans groupe de formulaire, `routerLink` qui naviguait en plus du panneau) | Frontend 376 tests ; livrables [UX-2](livrables/UX-2.md), [UX-3](livrables/UX-3.md), [UX-4](livrables/UX-4.md) |
 
 ### A.4 Analyse
 
@@ -80,7 +81,7 @@ Un même prompt peut relever de plusieurs types (le #17, par exemple).
 | Type de prompt | Prompts | Exemples | Effet |
 |---|---|---|---|
 | Contexte | #1 | Prompt initial | Fixe la stack, les règles, la méthode et le format de rapport pour tout le projet |
-| Poursuite | #2, 3, 5, 6, 7, 9, 10, 11, 12, 18, 28, 35, 36 | « continuer », « continuer vers task 02 », « oui continuer » | Une tâche par prompt ; le rapport précédent indique la tâche suivante |
+| Poursuite | #2, 3, 5, 6, 7, 9, 10, 11, 12, 18, 28, 35, 36, 38 | « continuer », « continuer vers task 02 », « oui continuer » | Une tâche par prompt ; le rapport précédent indique la tâche suivante |
 | Information sur l'environnement | #4, 17, 30, 31, 32, 33 | Capture Compass, « python est bien installer » | Débloque une étape (base locale, service IA) |
 | Vérification et état | #14, 15, 16 | « a quel etape… », captures du navigateur, bilan | Contrôle humain du résultat réel |
 | Consigne de méthode | #8, 17, 19, 20, 21, 28 | Phase entière, bilan après chaque tâche, tout le hors-IA, arrêt avant l'IA, ce fichier | Change la façon de travailler de l'agent pour la suite |

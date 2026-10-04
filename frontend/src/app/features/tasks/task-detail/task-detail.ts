@@ -72,6 +72,8 @@ import { Avatar } from '../../../shared/components/avatar/avatar';
 export class TaskDetail {
   /** Route parameter. */
   readonly taskId = input.required<string>();
+  /** Shown in the side panel (TaskPanel): no "All tasks" link. */
+  readonly embedded = input(false);
 
   private readonly context = inject(ProjectContext);
   private readonly taskService = inject(TaskService);

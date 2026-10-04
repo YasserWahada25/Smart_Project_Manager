@@ -30,33 +30,23 @@
         }
       </div>
 
-      @if (compact()) {
-        <a
-          class="nav-item"
-          routerLink="/search"
-          aria-label="Search"
-          matTooltip="Search"
-          matTooltipPosition="right"
-        >
-          <mat-icon aria-hidden="true">search</mat-icon>
-        </a>
-      } @else {
-        <form
-          class="sidebar-search"
-          role="search"
-          (submit)="$event.preventDefault(); search(query.value)"
-        >
-          <mat-icon aria-hidden="true">search</mat-icon>
-          <input
-            #query
-            type="search"
-            maxlength="100"
-            placeholder="Search projects and tasks"
-            aria-label="Search projects and tasks"
-          />
-          <kbd aria-hidden="true">/</kbd>
-        </form>
-      }
+      <!-- Linear-like: the search field opens the command palette (Ctrl+K). -->
+      <button
+        type="button"
+        class="sidebar-search"
+        [class.nav-item]="compact()"
+        aria-label="Search or jump to… (Ctrl+K)"
+        aria-keyshortcuts="Control+K"
+        [matTooltip]="compact() ? 'Search (Ctrl+K)' : ''"
+        matTooltipPosition="right"
+        (click)="openPalette()"
+      >
+        <mat-icon aria-hidden="true">search</mat-icon>
+        @if (!compact()) {
+          <span class="search-label">Search or jump to…</span>
+          <kbd aria-hidden="true">Ctrl K</kbd>
+        }
+      </button>
 
       <nav class="nav" aria-label="Main">
         @for (item of navItems(); track item.path) {
@@ -222,5 +212,37 @@
     <main class="content">
       <router-outlet />
     </main>
+
+    <!-- Global "Ask AI" (Notion AI / ClickUp Brain style): the assistant of a managed project. -->
+    @if (showAskAi()) {
+      <button
+        mat-fab
+        extended
+        type="button"
+        class="ask-ai-fab"
+        [matMenuTriggerFor]="askMenu"
+        aria-label="Ask AI"
+      >
+        <mat-icon>auto_awesome</mat-icon>
+        Ask AI
+      </button>
+      <mat-menu #askMenu="matMenu" xPosition="before" yPosition="above">
+        <div class="menu-section" role="presentation">Ask the AI assistant about…</div>
+        @for (project of askAiProjects(); track project.id) {
+          <button mat-menu-item type="button" (click)="askAi(project)">
+            <span
+              class="project-mark menu-mark"
+              [style.background]="projectColor(project)"
+              aria-hidden="true"
+              >{{ projectInitial(project) }}</span
+            >
+            <span>{{ project.name }}</span>
+            @if (project.id === currentProjectId()) {
+              <span class="menu-role"> · this project</span>
+            }
+          </button>
+        }
+      </mat-menu>
+    }
   </mat-sidenav-content>
 </mat-sidenav-container>

@@ -55,7 +55,7 @@
 
 ## 4. Historique des échanges (résumé)
 
-37 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
+38 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
 
 | Période | Prompts | Résultat |
 |---|---|---|
@@ -70,6 +70,7 @@
 | 03/10 13:13 → 14:10 | « continuer vers Tasks 23-24-25 une fois pour toutes » | TASK 23 (AI-02), 24 (AI-03), 25 (AI-04), chacune testée de bout en bout et documentée ; arrêt avant la TASK 26 |
 | 03/10 14:15 → 15:30 | Plan de test, clé OpenAI sans crédit, passage à Google Gemini | Plan de test manuel ; messages d'erreur clairs ; fournisseur de LLM configurable ; **assistant validé en réel avec Gemini (6/6)** |
 | 04/10 ≈ 11:00 | « se concentrer sur la partie UI… inspirer des plateformes existantes » ; choix : Linear, « Shell and visual identity » ; logo « Smart Manager » | Lot **UX-1** : identité visuelle, barre latérale à la Linear, thème clair / sombre / système, avatars ([livrable](livrables/UX-1.md)) |
+| 04/10 | « continuer vers les lots suivants » | Lots **UX-2** (glisser-déposer, ajout rapide), **UX-3** (palette Ctrl+K, panneau latéral), **UX-4** (accueil « Mon travail », « Ask AI ») — frontend 376 tests |
 
 ### Ce que montre cet échange
 

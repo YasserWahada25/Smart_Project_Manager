@@ -10,6 +10,7 @@ import { Role } from '../../core/models/user';
 import { NotificationService } from '../../core/services/notification.service';
 import { THEME_STORAGE_KEY, ThemeService } from '../../core/services/theme.service';
 import { ToastService } from '../../core/services/toast.service';
+import { CommandPaletteService } from '../../features/command-palette/command-palette.service';
 import { ProjectService } from '../../features/projects/project.service';
 import {
   FakeAuthService,
@@ -25,6 +26,7 @@ describe('MainLayout', () => {
   let toastInfo: ReturnType<typeof vi.fn>;
   let refreshUnreadCount: ReturnType<typeof vi.fn>;
   let listProjects: ReturnType<typeof vi.fn>;
+  let openPalette: ReturnType<typeof vi.fn>;
   const unreadCount = signal(0);
 
   const projects = [
@@ -37,6 +39,7 @@ describe('MainLayout', () => {
     toastInfo = vi.fn();
     refreshUnreadCount = vi.fn(() => of(3));
     listProjects = vi.fn(() => of(testPage(projects, total)));
+    openPalette = vi.fn(() => Promise.resolve());
     unreadCount.set(3);
     TestBed.configureTestingModule({
       imports: [MainLayout],
@@ -46,6 +49,7 @@ describe('MainLayout', () => {
         { provide: ToastService, useValue: { info: toastInfo } },
         { provide: NotificationService, useValue: { unreadCount, refreshUnreadCount } },
         { provide: ProjectService, useValue: { list: listProjects } },
+        { provide: CommandPaletteService, useValue: { open: openPalette } },
         { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         {
           provide: BreakpointObserver,
@@ -132,18 +136,23 @@ describe('MainLayout', () => {
     expect(developer.querySelector('a[aria-label="New project"]')).toBeNull();
   });
 
-  it('searches from the sidebar, and "/" focuses the search field', async () => {
+  it('opens the command palette from the search field, Ctrl+K, Cmd+K and "/"', async () => {
     const fixture = await render(false);
-    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const element: HTMLElement = fixture.nativeElement;
-    const input = element.querySelector<HTMLInputElement>('.sidebar-search input')!;
 
+    element.querySelector<HTMLButtonElement>('.sidebar-search')!.click();
+    expect(element.querySelector('.sidebar-search')?.textContent).toContain('Ctrl K');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'K', metaKey: true }));
     document.dispatchEvent(new KeyboardEvent('keydown', { key: '/' }));
-    expect(document.activeElement).toBe(input);
+    expect(openPalette).toHaveBeenCalledTimes(4);
 
-    input.value = '  payment ';
-    element.querySelector('.sidebar-search')!.dispatchEvent(new Event('submit'));
-    expect(navigate).toHaveBeenCalledWith(['/search'], { queryParams: { q: 'payment' } });
+    // "/" typed in a field is just a character.
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }));
+    input.remove();
+    expect(openPalette).toHaveBeenCalledTimes(4);
   });
 
   it('collapses the sidebar to icons and remembers it', async () => {
@@ -204,5 +213,23 @@ describe('MainLayout', () => {
     expect(toastInfo).toHaveBeenCalledWith('You have been logged out.');
     expect(navigate).toHaveBeenCalledWith('/login');
     TestBed.inject(ThemeService).setMode('system');
+  });
+
+  it('offers "Ask AI" to managers: the assistant of one of their active projects', async () => {
+    const fixture = await render(false);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const element: HTMLElement = fixture.nativeElement;
+
+    element.querySelector<HTMLButtonElement>('button.ask-ai-fab')!.click();
+    await fixture.whenStable();
+    const items = [...document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button')];
+    expect(items).toHaveLength(1);
+    expect(items[0].textContent).toContain('E-commerce platform'); // the archived project is not offered
+    items[0].click();
+    expect(navigate).toHaveBeenCalledWith(['/projects', 'p1', 'assistant']);
+
+    TestBed.resetTestingModule();
+    const developer: HTMLElement = (await render(false, 'DEVELOPER')).nativeElement;
+    expect(developer.querySelector('button.ask-ai-fab')).toBeNull();
   });
 });

@@ -117,7 +117,9 @@ describe('App routing', () => {
     it('renders the home page inside the main layout, with a page title', async () => {
       const harness = await RouterTestingHarness.create('/');
 
-      expect(harness.routeNativeElement?.textContent).toContain('Welcome, Sara');
+      expect(harness.routeNativeElement?.textContent).toMatch(
+        /Good (morning|afternoon|evening), Sara/,
+      );
       expect(harness.routeNativeElement?.querySelector('nav[aria-label="Main"]')).not.toBeNull();
       expect(title()).toBe('Home · Smart Manager');
     });

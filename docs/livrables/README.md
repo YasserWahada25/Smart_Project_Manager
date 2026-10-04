@@ -25,4 +25,7 @@ Les fichiers ne contiennent jamais de secret (aucune valeur des `.env`).
 | TASK 24 | AI-03 risque de retard d'un sprint (régression logistique, jeu de données simulé) | [TASK-24.md](TASK-24.md) | Terminée |
 | TASK 25 | AI-04 assistant du manager (chat OpenAI avec outils, confirmation avant modification) | [TASK-25.md](TASK-25.md) | Terminée |
 | UX-1 | Identité visuelle « Smart Manager » (couleurs du logo), barre latérale à la Linear, thème clair / sombre / système, avatars | [UX-1.md](UX-1.md) | Terminé |
+| UX-2 | Glisser-déposer sur le Kanban et « + Add task » | [UX-2.md](UX-2.md) | Terminé |
+| UX-3 | Palette de commandes Ctrl+K et tâche en panneau latéral | [UX-3.md](UX-3.md) | Terminé |
+| UX-4 | Accueil « Mon travail » et bouton « Ask AI » global | [UX-4.md](UX-4.md) | Terminé |
 | TASK 26 | Docker et Docker Compose | — | Prévue |

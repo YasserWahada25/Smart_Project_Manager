@@ -146,16 +146,7 @@
 }
 
 .assignee {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   font: var(--mat-sys-body-small);
-
-  mat-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-  }
 }
 
 .empty {
@@ -170,4 +161,79 @@
   padding: 8px 16px 4px;
   font: var(--mat-sys-label-medium);
   color: var(--mat-sys-on-surface-variant);
+}
+
+// ---------- drag and drop (UX-2) ----------
+.card.draggable {
+  cursor: grab;
+}
+
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  transform: rotate(2deg);
+}
+
+.placeholder {
+  min-height: 56px;
+  border: 2px dashed var(--mat-sys-primary);
+  background: transparent;
+}
+
+.cards.cdk-drop-list-dragging .card:not(.cdk-drag-placeholder),
+.cdk-drag-animating {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cards {
+  flex: 1;
+  min-height: 48px;
+}
+
+.column {
+  transition: opacity 120ms ease;
+
+  &.drop-allowed {
+    outline: 2px dashed var(--mat-sys-primary);
+    outline-offset: -2px;
+  }
+
+  &.drop-forbidden {
+    opacity: 0.45;
+  }
+}
+
+.inline-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  vertical-align: text-bottom;
+}
+
+// ---------- quick add ----------
+.add-card {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+.quick-add {
+  margin-top: 8px;
+
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--mat-sys-primary);
+    border-radius: 8px;
+    background: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+    font: var(--mat-sys-body-medium);
+  }
+}
+
+.quick-add-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
 }

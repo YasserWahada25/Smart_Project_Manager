@@ -153,3 +153,48 @@ kbd {
   gap: 6px;
   vertical-align: middle;
 }
+
+// Task side panel (TaskPanel): full height on the right, square corners, slides in.
+.side-panel {
+  --mat-dialog-container-shape: 0;
+  --mat-dialog-container-max-width: 100vw;
+
+  .mat-mdc-dialog-surface {
+    border-left: 1px solid var(--spm-border);
+    animation: spm-slide-in 180ms ease-out;
+  }
+}
+
+@keyframes spm-slide-in {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-panel .mat-mdc-dialog-surface {
+    animation: none;
+  }
+}
+
+// Command palette: rounded panel with a subtle border.
+.command-palette-panel {
+  --mat-dialog-container-shape: 12px;
+
+  .mat-mdc-dialog-surface {
+    border: 1px solid var(--spm-border);
+  }
+}
+
+// Global "Ask AI" button (MainLayout), bottom right.
+.ask-ai-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 5;
+}
+
+.menu-mark {
+  margin-right: 12px;
+}

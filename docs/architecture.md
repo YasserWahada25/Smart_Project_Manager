@@ -94,13 +94,13 @@ frontend/
 │   │   ├── layouts/auth-layout/            centered layout of the public pages (Smart Manager logo and tagline)
 │   │   ├── features/
 │   │   │   ├── auth/login, auth/register   sign in / create an account (reactive forms)
-│   │   │   ├── home/                       welcome + system status (frontend → API → MongoDB)
+│   │   │   ├── home/                       greeting, my-work (quick actions, key figures, my tasks / active sprints with AI risk), system status
 │   │   │   ├── profile/                    My profile: account, personal information, skills, password (ProfileService)
 │   │   │   ├── users/                      user administration for ADMIN (UserAdminService, user-list)
 │   │   │   ├── projects/                   project-list, project-form, project-shell (header + tabs, ProjectContext),
 │   │   │   │                               project-overview, add-members-dialog (ProjectService, DeveloperService)
 │   │   │   ├── sprints/                    sprint-list (tab), sprint-form-dialog (SprintService)
-│   │   │   ├── tasks/                      task-list (tab), task-detail, task-form-dialog, block-reason-dialog,
+│   │   │   ├── tasks/                      task-list (tab), task-detail, task-panel (side panel, TaskPanelService), task-form-dialog, block-reason-dialog,
 │   │   │   │                               my-tasks, task badges (TaskService, TaskWorkflow)
 │   │   │   ├── kanban/                     kanban-board (tab)
 │   │   │   ├── comments/                   task-comments (CommentService)
@@ -109,6 +109,7 @@ frontend/
 │   │   │   ├── dashboard/                  dashboard-page, project-dashboard (tab), task-charts, workload-table,
 │   │   │   │                               active-sprint-card (DashboardService, also used by the search)
 │   │   │   ├── search/                     search-page
+│   │   │   ├── command-palette/            Ctrl+K palette (actions, projects, tasks, current project's AI) (CommandPaletteService)
 │   │   │   ├── ai-plan/                    ai-plan-page ("Plan with AI", child route of the project shell) (AiPlanService)
 │   │   │   ├── ai-recommendation/          recommend-dialog (AI-02, opened from the task page) (AiRecommendationService)
 │   │   │   ├── ai-risk/                    sprint-risk indicator (AI-03, on active sprint cards and the Sprints tab) (AiRiskService)
@@ -199,7 +200,7 @@ Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayou
 | Tasks tab | viewers; the manager creates | Filters: title search (debounced), status, priority, type, assignee (or unassigned), sprint (or backlog), overdue; paginated table (status and priority badges, points, assignee, sprint, deadline / overdue); `?sprint=<id>` opens it filtered | `GET /projects/:id/tasks` |
 | Task form (dialog) | manager | Title, description, type, priority, complexity (1, 2, 3, 5, 8, 13 points), sprint (open sprints or backlog), deadline, required skills (chips), assignee (creation only: active members) | `POST /projects/:id/tasks`, `PATCH /tasks/:id` |
 | Task page | viewers; moves: manager and assignee; assignment, edition, deletion: manager | Details, blocked reason, "Move to" buttons limited to the allowed transitions (starting needs an assignee; blocking asks for an optional reason), assignee select, **"Recommend a developer"** (AI-02 dialog: ranked members with score bar, matching / missing skills, explanation, warnings, "Assign"), comments and history | `GET`, `PATCH`, `DELETE /tasks/:id`, `PATCH /tasks/:id/status`, `PATCH /tasks/:id/assignee`, `GET /tasks/:id/ai/recommendations` |
-| Board tab (Kanban) | viewers; moves: manager and assignee | Six columns (To do → Done + Blocked) with counts; cards: title, priority, points, deadline / overdue, blocked reason, assignee; "Move to" menu per card; scope: active sprint by default, `?sprint=`, another sprint, the backlog or all tasks | `GET /projects/:id/board`, `PATCH /tasks/:id/status` |
+| Board tab (Kanban) | viewers; moves: manager and assignee | **Drag and drop** between columns (UX-2: only the allowed columns accept a card and are highlighted, the others dimmed; optimistic move then reload; blocking asks for the reason) and quick **\"+ Add task\"** in To do (manager, backlog or open sprint); a card title opens the **side panel** (UX-3). Six columns (To do → Done + Blocked) with counts; cards: title, priority, points, deadline / overdue, blocked reason, assignee; "Move to" menu per card; scope: active sprint by default, `?sprint=`, another sprint, the backlog or all tasks | `GET /projects/:id/board`, `PATCH /tasks/:id/status` |
 | My tasks (`/my-tasks`, developers' menu) | the signed-in user | Assigned tasks, nearest deadline first, status filter, links to the task pages | `GET /tasks/assigned` |
 | Comments (task page) | manager and members comment (not administrators); the author edits; the author or the manager deletes (moderation); nothing in an archived project | Oldest first with "Show more", edited marker, inline edition | `GET` / `POST /tasks/:id/comments`, `PATCH` / `DELETE /comments/:id` |
 | History (task page) and Activity tab | viewers | Timeline "<actor> <what happened>" built by `describeActivity()` (17 event types, labels instead of codes); filter by event type on the project | `GET /tasks/:id/activities`, `GET /projects/:id/activities` |
@@ -209,7 +210,10 @@ Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayou
 | Search (`/search?q=`) and toolbar field | everyone | Projects (name, description) and tasks (title, description) of the projects the user can see; at least 2 characters; the query is kept in the URL | `GET /search` |
 
 - **Status changes** (`TaskWorkflow`) are shared by the task page and the board: allowed targets from the transition table, assignee required to start, optional blocking reason, backend refusals shown in a toast.
-- **Drag-and-drop** on the board was not requested (project rule: only when explicitly asked); tasks move with the "Move to" menu.
+- **Drag-and-drop** on the board (CDK drag-drop) was added with the UX work requested by the supervisor (UX-2); the "Move to" menu stays as the keyboard / accessible alternative.
+- **Command palette** (UX-3, Linear-like): Ctrl+K / Cmd+K or "/" (or the sidebar search field) opens it; it filters navigation actions, theme switches, projects, the current project's tabs and AI features (manager), finds tasks through `GET /search` (debounced) and offers "Search everywhere"; ↑ ↓ Enter Esc; combobox / listbox ARIA roles.
+- **Task side panel** (UX-3, Linear / Jira peek): clicking a task title in the board or the list opens the task page in a panel on the right (same component, `embedded` mode, opened with the project page's injector for `ProjectContext`); Ctrl/⌘-click keeps the full page in a new tab (plain `href`); the view is reloaded when the panel closes.
+- **Home "My work" and global "Ask AI"** (UX-4): the home page shows quick actions, key figures (open, overdue, blocked tasks, active sprints), the developer's open tasks (nearest deadline first) or the manager's active sprints with their AI risk, and the system status on the side; managers get an **Ask AI** floating button (menu of their active projects, current one first) leading to the project's assistant.
 
 #### Frontend ↔ backend communication
 

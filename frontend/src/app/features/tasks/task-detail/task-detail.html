@@ -1,7 +1,9 @@
-<a mat-button [routerLink]="tasksLink" class="back">
-  <mat-icon>arrow_back</mat-icon>
-  All tasks
-</a>
+@if (!embedded()) {
+  <a mat-button [routerLink]="tasksLink" class="back">
+    <mat-icon>arrow_back</mat-icon>
+    All tasks
+  </a>
+}
 
 @if (loading()) {
   <app-loading-state message="Loading the task…" />

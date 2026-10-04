@@ -1,14 +1,6 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { DOCUMENT } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -26,6 +18,7 @@ import { ROLE_LABELS, Role } from '../../core/models/user';
 import { NotificationService } from '../../core/services/notification.service';
 import { ThemeMode, ThemeService } from '../../core/services/theme.service';
 import { ToastService } from '../../core/services/toast.service';
+import { CommandPaletteService } from '../../features/command-palette/command-palette.service';
 import { ProjectService } from '../../features/projects/project.service';
 import { Avatar } from '../../shared/components/avatar/avatar';
 import { identityColor, initials } from '../../shared/colors';
@@ -97,7 +90,7 @@ export class MainLayout {
   private readonly document = inject(DOCUMENT);
   protected readonly theme = inject(ThemeService);
 
-  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('query');
+  private readonly palette = inject(CommandPaletteService);
 
   protected readonly appName = APP_NAME;
   protected readonly themeOptions = THEME_OPTIONS;
@@ -112,6 +105,31 @@ export class MainLayout {
     const user = this.user();
     return user ? ROLE_LABELS[user.role] : '';
   });
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  /** Project of the current page (/projects/:id/…). */
+  protected readonly currentProjectId = computed(
+    () => /^\/projects\/([a-f\d]{24})/i.exec(this.currentUrl())?.[1] ?? null,
+  );
+  /** "Ask AI" (manager): the projects they manage, the current one first. */
+  protected readonly askAiProjects = computed(() => {
+    const userId = this.user()?.id;
+    const current = this.currentProjectId();
+    return this.projects()
+      .filter((project) => project.manager.id === userId && project.status !== 'ARCHIVED')
+      .sort((a, b) => Number(b.id === current) - Number(a.id === current));
+  });
+  protected readonly showAskAi = computed(
+    () =>
+      this.auth.hasRole('PROJECT_MANAGER') &&
+      this.askAiProjects().length > 0 &&
+      !this.currentUrl().endsWith('/assistant'),
+  );
   protected readonly collapsed = signal(this.readCollapsed());
   protected readonly projects = signal<Project[]>([]);
   protected readonly projectsTotal = signal(0);
@@ -176,22 +194,30 @@ export class MainLayout {
     }
   }
 
-  /** Sidebar search: opens the search page with the query. */
-  protected search(query: string): void {
-    const q = query.trim();
-    void this.router.navigate(['/search'], { queryParams: q ? { q } : {} });
+  protected askAi(project: Project): void {
+    void this.router.navigate(['/projects', project.id, 'assistant']);
   }
 
-  /** "/" focuses the search field (Linear-like shortcut), unless the user is typing somewhere. */
+  protected openPalette(): void {
+    void this.palette.open();
+  }
+
+  /**
+   * Keyboard shortcuts (Linear-like): Ctrl+K / Cmd+K opens the command palette from anywhere;
+   * "/" too, unless the user is typing in a field.
+   */
   protected onKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.openPalette();
+      return;
+    }
     const target = event.target as HTMLElement | null;
     const typing =
       !!target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable);
-    if (event.key !== '/' || typing || event.ctrlKey || event.metaKey || event.altKey) return;
-    const input = this.searchInput()?.nativeElement;
-    if (input) {
+    if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
-      input.focus();
+      this.openPalette();
     }
   }
 
