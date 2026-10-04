@@ -80,6 +80,7 @@ Heures locales (Tunis). Les messages sont cités tels qu'ils ont été écrits ;
 | 43 | 04/10 | Deux captures (bouton « Ask AI » actuel, bouton rond Gemini) : « je veux rendre cette button ia flottante comme illustre dans l'exemple 2éme image modifier » | Lot UX-5 : bulle ronde flottante, dégradé du logo, étoile à quatre branches, infobulle — [livrable](livrables/UX-5.md) | — |
 | 44 | 04/10 | « est-ce-que si je push maintenant elle a le non nadhmi ou yasser ? » | Vérifié : `.git/config` du dépôt → `YasserWahada25 <Yasser.Wahada@esprit.tn>` (prioritaire sur la configuration globale), terminal comme VS Code ; à refaire dans tout autre clone | — |
 | 45 | 04/10 | « maintenant le discours entre l'assistant et le manager n'etait pas enregistrer, a la changement de page tous disparaitre fixer ce probleme » | Correctif FIX-1 : conversation enregistrée dans MongoDB (une par manager et projet), rechargée à l'ouverture de l'onglet, état des propositions enregistré, proposition appliquée une seule fois ; bug `sprintId: 'backlog'` trouvé au test réel et corrigé — [livrable](livrables/FIX-1.md) | — |
+| 46 | 04/10 | Capture du menu du compte (coche du thème entre l'icône et « Light ») : « fixer l'affichage de cette partie » | Lot UX-6 : coche placée dans le libellé et alignée à droite (Material déplace toute `mat-icon` directe avant le texte), thème choisi en couleur principale, menu de 240 px minimum — [livrable](livrables/UX-6.md) | — |
 
 ### A.4 Analyse
 

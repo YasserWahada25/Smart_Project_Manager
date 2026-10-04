@@ -156,7 +156,7 @@
             <mat-icon aria-hidden="true">unfold_more</mat-icon>
           }
         </button>
-        <mat-menu #userMenu="matMenu" xPosition="after" yPosition="above">
+        <mat-menu #userMenu="matMenu" xPosition="after" yPosition="above" class="account-menu">
           <div class="menu-header" role="presentation">
             <span class="menu-name">{{ current.firstName }} {{ current.lastName }}</span>
             <span class="menu-role">{{ roleLabel() }}</span>
@@ -174,13 +174,17 @@
               type="button"
               role="menuitemradio"
               [attr.aria-checked]="theme.mode() === option.mode"
+              [class.selected]="theme.mode() === option.mode"
               (click)="theme.setMode(option.mode)"
             >
               <mat-icon>{{ option.icon }}</mat-icon>
-              <span>{{ option.label }}</span>
-              @if (theme.mode() === option.mode) {
-                <mat-icon class="menu-check" aria-hidden="true">check</mat-icon>
-              }
+              <!-- The check is inside the label: a direct mat-icon child would be moved before the text. -->
+              <span class="menu-option">
+                {{ option.label }}
+                @if (theme.mode() === option.mode) {
+                  <mat-icon class="menu-check" aria-hidden="true">check</mat-icon>
+                }
+              </span>
             </button>
           }
           <mat-divider />

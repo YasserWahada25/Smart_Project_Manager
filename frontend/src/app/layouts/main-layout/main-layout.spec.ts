@@ -205,6 +205,12 @@ describe('MainLayout', () => {
 
     element.querySelector<HTMLButtonElement>('.account')!.click();
     await fixture.whenStable();
+    // Only the selected theme is marked, its check after the label (not between icon and label).
+    const selected = [...document.querySelectorAll('.mat-mdc-menu-panel [role="menuitemradio"]')]
+      .filter((item) => item.classList.contains('selected'))
+      .map((item) => item.querySelector('.menu-option')?.textContent?.replace(/\s+/g, ' ').trim());
+    expect(selected).toEqual(['Dark check']);
+    expect(document.querySelectorAll('.mat-mdc-menu-panel .menu-check')).toHaveLength(1);
     [...document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button')]
       .find((button) => button.textContent?.includes('Log out'))
       ?.click();

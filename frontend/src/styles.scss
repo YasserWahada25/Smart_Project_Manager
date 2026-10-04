@@ -120,8 +120,31 @@ kbd {
   padding: 8px 16px 4px;
 }
 
-.menu-check {
-  margin-left: auto;
+// Option of a choice menu (theme): label on the left, check of the selected one on the right.
+.menu-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mat-mdc-menu-item.selected {
+  color: var(--mat-sys-primary);
+
+  .mat-icon {
+    color: inherit;
+  }
+}
+
+.mat-mdc-menu-item .mat-icon.menu-check {
+  width: 20px;
+  height: 20px;
+  margin: 0 0 0 auto;
+  font-size: 20px;
+  color: var(--mat-sys-primary);
+}
+
+.account-menu.mat-mdc-menu-panel {
+  min-width: 240px;
 }
 
 .visually-hidden {
