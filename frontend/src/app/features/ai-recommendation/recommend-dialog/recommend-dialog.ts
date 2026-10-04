@@ -18,6 +18,7 @@ import { ErrorState } from '../../../shared/components/error-state/error-state';
 import { LoadingState } from '../../../shared/components/loading-state/loading-state';
 import { TaskService } from '../../tasks/task.service';
 import { AiRecommendationService } from '../ai-recommendation.service';
+import { Avatar } from '../../../shared/components/avatar/avatar';
 
 export interface RecommendDialogData {
   taskId: string;
@@ -31,6 +32,7 @@ export interface RecommendDialogData {
 @Component({
   selector: 'app-recommend-dialog',
   imports: [
+    Avatar,
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
@@ -64,6 +66,7 @@ export interface RecommendDialogData {
             <li class="candidate">
               <div class="head">
                 <span class="rank" aria-hidden="true">{{ rank + 1 }}</span>
+                <app-avatar [person]="item.developer" size="large" />
                 <div class="who">
                   <strong>{{ name(item) }}</strong>
                   @if (item.developer.jobTitle) {

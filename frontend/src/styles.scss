@@ -5,36 +5,59 @@
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
+// Visual identity: Linear-like layout (neutral surfaces, Inter, compact density) with the colors of
+// the Smart Manager logo (blue, teal accent),
+// light / dark / system theme (ThemeService sets .theme-light / .theme-dark on <html>).
 html {
   height: 100%;
+  color-scheme: light dark;
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
+        primary: mat.$blue-palette,
+        tertiary: mat.$cyan-palette,
       ),
-      typography: Roboto,
-      density: 0,
+      typography: (
+        plain-family: 'Inter, Roboto, system-ui, sans-serif',
+        brand-family: 'Inter, Roboto, system-ui, sans-serif',
+      ),
+      density: -1,
     )
   );
+
+  // Application tokens (light-dark() follows the active color scheme).
+  --spm-canvas: light-dark(#fbfbfc, #101012);
+  --spm-sidebar: light-dark(#f4f4f6, #17171a);
+  --spm-border: light-dark(#e6e6ea, #2a2a30);
+  --spm-hover: light-dark(rgba(20, 20, 40, 0.05), rgba(255, 255, 255, 0.06));
+  --spm-muted: light-dark(#6b6b76, #9b9ba6);
+  --spm-radius: 8px;
+
+  &.theme-light {
+    color-scheme: light;
+  }
+
+  &.theme-dark {
+    color-scheme: dark;
+  }
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
+  // Default background, font and text colors (Angular Material system variables).
+  background-color: var(--spm-canvas);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
+  -webkit-font-smoothing: antialiased;
 
   // Reset the user agent margin.
   margin: 0;
   height: 100%;
+}
+
+// Flatter, Linear-like surfaces: outlined cards with a thin neutral border.
+.mat-mdc-card-outlined {
+  --mat-card-outlined-outline-color: var(--spm-border);
+  --mat-card-outlined-container-shape: var(--spm-radius);
 }
 
 // ---------- Toasts (ToastService) ----------
@@ -66,4 +89,67 @@ body {
       button-color: var(--mat-sys-error),
     )
   );
+}
+
+// ---------- shared helpers ----------
+kbd {
+  padding: 0 5px;
+  border: 1px solid var(--spm-border);
+  border-radius: 4px;
+  font: 500 11px/16px var(--mat-sys-body-small-font, inherit);
+}
+
+// Header and sections of account / context menus.
+.menu-header {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px 12px;
+}
+
+.menu-name {
+  font: var(--mat-sys-title-small);
+}
+
+.menu-role,
+.menu-section {
+  font: var(--mat-sys-body-small);
+  color: var(--spm-muted);
+}
+
+.menu-section {
+  padding: 8px 16px 4px;
+}
+
+.menu-check {
+  margin-left: auto;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// Colored square with the initial of a project (identity color, see shared/colors.ts).
+.project-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  color: #fff;
+  font: 600 10px/1 var(--mat-sys-body-small-font, inherit);
+}
+
+// Avatar + name on one line (task lists, board cards, details…).
+.person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
 }

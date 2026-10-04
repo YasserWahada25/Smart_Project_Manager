@@ -21,7 +21,8 @@
           </div>
           <div>
             <dt>Project manager</dt>
-            <dd>
+            <dd class="person">
+              <app-avatar [person]="current.manager" size="small" />
               {{ fullName(current.manager) }}
               <span class="muted">{{ current.manager.email }}</span>
             </dd>
@@ -63,6 +64,7 @@
         <ul class="members">
           @for (member of current.members; track member.id) {
             <li class="member">
+              <app-avatar [person]="member" size="large" />
               <div class="member-text">
                 <span class="member-name">
                   {{ fullName(member) }}

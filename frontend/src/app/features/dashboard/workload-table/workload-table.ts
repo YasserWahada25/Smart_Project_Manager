@@ -2,10 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import { WorkloadRow } from '../../../core/models/dashboard';
 import { fullName } from '../../../core/models/user';
+import { Avatar } from '../../../shared/components/avatar/avatar';
 
 /** Open work per person (tasks not DONE), with a bar proportional to the open story points. */
 @Component({
   selector: 'app-workload-table',
+  imports: [Avatar],
   template: `
     @if (rows().length === 0) {
       <p class="empty">No open task assigned.</p>
@@ -24,7 +26,12 @@ import { fullName } from '../../../core/models/user';
           <tbody>
             @for (row of rows(); track row.user.id) {
               <tr>
-                <th scope="row">{{ fullName(row.user) }}</th>
+                <th scope="row">
+                  <span class="person">
+                    <app-avatar [person]="row.user" size="small" />
+                    {{ fullName(row.user) }}
+                  </span>
+                </th>
                 <td class="points">
                   <span class="bar" [style.width.%]="share(row)"></span>
                   <span>{{ row.openPoints }}</span>

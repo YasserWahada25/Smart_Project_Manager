@@ -44,6 +44,7 @@ import { SprintService } from '../../sprints/sprint.service';
 import { TaskPriorityBadge, TaskStatusBadge } from '../task-badges';
 import { TaskFormData, TaskFormDialog } from '../task-form-dialog/task-form-dialog';
 import { TaskQuery, TaskService } from '../task.service';
+import { Avatar } from '../../../shared/components/avatar/avatar';
 
 /**
  * "Tasks" tab of a project: filters (search, status, priority, type, assignee, sprint,
@@ -53,6 +54,7 @@ import { TaskQuery, TaskService } from '../task.service';
 @Component({
   selector: 'app-task-list',
   imports: [
+    Avatar,
     DatePipe,
     ReactiveFormsModule,
     RouterLink,

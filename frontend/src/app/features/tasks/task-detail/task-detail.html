@@ -123,7 +123,10 @@
                   Recommend a developer
                 </button>
               } @else {
-                {{ current.assignee ? fullName(current.assignee) : 'Unassigned' }}
+                <span class="person">
+                  <app-avatar [person]="current.assignee" size="small" />
+                  {{ current.assignee ? fullName(current.assignee) : 'Unassigned' }}
+                </span>
               }
             </dd>
           </div>
@@ -139,7 +142,12 @@
           </div>
           <div>
             <dt>Created by</dt>
-            <dd>{{ fullName(current.createdBy) }}, {{ current.createdAt | date: 'medium' }}</dd>
+            <dd>
+              <span class="person">
+                <app-avatar [person]="current.createdBy" size="small" />
+                {{ fullName(current.createdBy) }}, {{ current.createdAt | date: 'medium' }}
+              </span>
+            </dd>
           </div>
           @if (current.completedAt) {
             <div>

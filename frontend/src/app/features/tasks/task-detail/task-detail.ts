@@ -40,6 +40,7 @@ import { TaskPriorityBadge, TaskStatusBadge } from '../task-badges';
 import { TaskFormData, TaskFormDialog } from '../task-form-dialog/task-form-dialog';
 import { TaskWorkflow } from '../task-workflow';
 import { TaskService } from '../task.service';
+import { Avatar } from '../../../shared/components/avatar/avatar';
 
 /**
  * Task page (`/projects/:id/tasks/:taskId`): details, workflow moves (manager and assignee),
@@ -48,6 +49,7 @@ import { TaskService } from '../task.service';
 @Component({
   selector: 'app-task-detail',
   imports: [
+    Avatar,
     DatePipe,
     ReactiveFormsModule,
     RouterLink,

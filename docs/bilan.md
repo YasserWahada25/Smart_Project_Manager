@@ -55,7 +55,7 @@
 
 ## 4. Historique des échanges (résumé)
 
-28 prompts du 2 au 3 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
+37 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
 
 | Période | Prompts | Résultat |
 |---|---|---|
@@ -68,6 +68,8 @@
 | 03/10 11:09 → 12:01 | Idée d'AI-01 (cahier des charges → sprints), idée du chat (AI-04), limite hebdomadaire de l'agent | Choix du superviseur : hybride, OpenAI, texte + fichiers, relecture puis validation ; TASK 20 et 21 ; TASK 22 côté service IA et backend ; [handoff.md](handoff.md) |
 | 03/10 ≈ 12:20 → 12:50 | Reprise par un nouvel agent (« Tu reprends le projet… »), demande de livrables par tâche, « attend je vus ajoute les env », erreur `ng serve` (version de Node) | Fin de la TASK 22 : écran Angular, 17/17 de bout en bout, correction de l'analyseur, documentation, [livrables/](livrables/README.md) |
 | 03/10 13:13 → 14:10 | « continuer vers Tasks 23-24-25 une fois pour toutes » | TASK 23 (AI-02), 24 (AI-03), 25 (AI-04), chacune testée de bout en bout et documentée ; arrêt avant la TASK 26 |
+| 03/10 14:15 → 15:30 | Plan de test, clé OpenAI sans crédit, passage à Google Gemini | Plan de test manuel ; messages d'erreur clairs ; fournisseur de LLM configurable ; **assistant validé en réel avec Gemini (6/6)** |
+| 04/10 ≈ 11:00 | « se concentrer sur la partie UI… inspirer des plateformes existantes » ; choix : Linear, « Shell and visual identity » ; logo « Smart Manager » | Lot **UX-1** : identité visuelle, barre latérale à la Linear, thème clair / sombre / système, avatars ([livrable](livrables/UX-1.md)) |
 
 ### Ce que montre cet échange
 

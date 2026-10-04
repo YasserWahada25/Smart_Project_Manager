@@ -24,4 +24,5 @@ Les fichiers ne contiennent jamais de secret (aucune valeur des `.env`).
 | TASK 23 | AI-02 recommandation de développeur (score transparent compétences / charge / expérience) | [TASK-23.md](TASK-23.md) | Terminée |
 | TASK 24 | AI-03 risque de retard d'un sprint (régression logistique, jeu de données simulé) | [TASK-24.md](TASK-24.md) | Terminée |
 | TASK 25 | AI-04 assistant du manager (chat OpenAI avec outils, confirmation avant modification) | [TASK-25.md](TASK-25.md) | Terminée |
+| UX-1 | Identité visuelle « Smart Manager » (couleurs du logo), barre latérale à la Linear, thème clair / sombre / système, avatars | [UX-1.md](UX-1.md) | Terminé |
 | TASK 26 | Docker et Docker Compose | — | Prévue |

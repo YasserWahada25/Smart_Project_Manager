@@ -4,7 +4,7 @@ import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
 import { APP_NAME } from '../app.constants';
 
-/** Browser tab title: "<route title> · Smart Project Manager". */
+/** Browser tab title: "<route title> · Smart Manager". */
 @Injectable()
 export class AppTitleStrategy extends TitleStrategy {
   private readonly title = inject(Title);

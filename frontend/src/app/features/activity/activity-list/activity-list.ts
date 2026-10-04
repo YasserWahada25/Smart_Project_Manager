@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { Activity, ActivityType, describeActivity } from '../../../core/models/activity';
 import { fullName } from '../../../core/models/user';
+import { Avatar } from '../../../shared/components/avatar/avatar';
 
 const ICONS: Partial<Record<ActivityType, string>> = {
   PROJECT_CREATED: 'add_circle',
@@ -24,7 +25,7 @@ const ICONS: Partial<Record<ActivityType, string>> = {
 /** Timeline of activity entries: "<actor> <what happened> — <date>". */
 @Component({
   selector: 'app-activity-list',
-  imports: [DatePipe, MatIconModule],
+  imports: [Avatar, DatePipe, MatIconModule],
   template: `
     <ol class="timeline">
       @for (activity of activities(); track activity.id) {
@@ -32,6 +33,7 @@ const ICONS: Partial<Record<ActivityType, string>> = {
           <mat-icon aria-hidden="true">{{ icon(activity) }}</mat-icon>
           <div class="text">
             <p>
+              <app-avatar class="actor" [person]="activity.actor" size="small" />
               <strong>{{ fullName(activity.actor) }}</strong> {{ describe(activity) }}
             </p>
             <time [attr.datetime]="activity.createdAt">{{
@@ -57,6 +59,10 @@ const ICONS: Partial<Record<ActivityType, string>> = {
     mat-icon {
       flex: none;
       color: var(--mat-sys-primary);
+    }
+    .actor {
+      vertical-align: middle;
+      margin-right: 6px;
     }
     p {
       margin: 0;

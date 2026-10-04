@@ -1,1 +1,1 @@
-export const APP_NAME = 'Smart Project Manager';
+export const APP_NAME = 'Smart Manager';

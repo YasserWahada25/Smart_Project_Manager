@@ -10,6 +10,7 @@
     @for (comment of list.items(); track comment.id) {
       <li class="comment">
         <div class="comment-header">
+          <app-avatar [person]="comment.author" size="small" />
           <strong>{{ fullName(comment.author) }}</strong>
           <time [attr.datetime]="comment.createdAt">{{ comment.createdAt | date: 'medium' }}</time>
           @if (comment.editedAt) {
