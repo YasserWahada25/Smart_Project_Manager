@@ -1,6 +1,6 @@
 # Livrable — UX-2 : glisser-déposer sur le Kanban et ajout rapide
 
-> Le tableau Kanban fonctionne comme Trello / Linear : on **fait glisser** une carte vers une autre colonne, et le manager **ajoute une tâche** directement dans « To do ». Réalisé le 4 octobre 2026. **Non commité.**
+> Le tableau Kanban fonctionne comme Trello / Linear : on **fait glisser** une carte vers une autre colonne, et le manager **ajoute une tâche** directement dans « To do ». Réalisé le 4 octobre 2026. Commit `abda49f`.
 
 ## 1. Prompts à l'origine
 

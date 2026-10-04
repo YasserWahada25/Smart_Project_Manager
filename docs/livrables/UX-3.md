@@ -1,6 +1,6 @@
 # Livrable — UX-3 : palette de commandes Ctrl+K et tâche en panneau latéral
 
-> Deux réflexes de Linear : **Ctrl+K** pour tout trouver et tout lancer, et la **tâche ouverte à droite** sans quitter le tableau ou la liste. Réalisé le 4 octobre 2026. **Non commité.**
+> Deux réflexes de Linear : **Ctrl+K** pour tout trouver et tout lancer, et la **tâche ouverte à droite** sans quitter le tableau ou la liste. Réalisé le 4 octobre 2026. Commit `abda49f`.
 
 ## 1. Prompts à l'origine
 

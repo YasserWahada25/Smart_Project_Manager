@@ -1,6 +1,6 @@
 # Livrable — UX-4 : accueil « Mon travail » et bouton « Ask AI » global
 
-> L'accueil n'affiche plus seulement l'état technique : il montre **le travail de la personne** (Asana / ClickUp, « My issues » de Linear) ; les managers ont un bouton **Ask AI** partout (Notion AI, ClickUp Brain). Réalisé le 4 octobre 2026. **Non commité.**
+> L'accueil n'affiche plus seulement l'état technique : il montre **le travail de la personne** (Asana / ClickUp, « My issues » de Linear) ; les managers ont un bouton **Ask AI** partout (Notion AI, ClickUp Brain). Réalisé le 4 octobre 2026. Commit `abda49f`.
 
 ## 1. Prompts à l'origine
 

@@ -1,7 +1,7 @@
 # Livrable — TASK 25 : AI-04 assistant du manager (chat)
 
 > Un onglet « Assistant » (réservé au manager) : on pose des questions sur le projet ou on demande des modifications ; l'assistant lit les données par des outils exécutés par le backend, et **chaque modification est présentée avec « Confirm » / « Dismiss »** — rien n'est appliqué sans le clic du manager. Aucune suppression possible.
-> Réalisée le 3 octobre 2026 (13 h 40 → 14 h 10). Code commité en partie par le superviseur : service IA dans `36888e4`, backend et écran dans `242f6eb` (« fix angular UI ») ; **la correction de typage de `assistant-page.ts` et la documentation ne sont pas commitées**.
+> Réalisée le 3 octobre 2026 (13 h 40 → 14 h 10). Code commité en partie par le superviseur : service IA dans `e822517`, backend et écran dans `3c420cb` (« fix angular UI ») ; **la correction de typage de `assistant-page.ts` et la documentation ne sont pas commitées**.
 
 ## 1. Prompts à l'origine
 

@@ -1,7 +1,7 @@
 # Livrable — TASK 23 : AI-02 recommandation de développeur
 
 > Le manager ouvre une tâche, clique sur « Recommend a developer » : les membres actifs du projet sont classés selon leurs compétences, leur charge et leur expérience, avec un score sur 100 et une explication ; un clic sur « Assign » attribue la tâche.
-> Réalisée le 3 octobre 2026 (13 h 13 → 13 h 25). Code commité par le superviseur dans `36888e4` (« first steps for 23-24 tasks »).
+> Réalisée le 3 octobre 2026 (13 h 13 → 13 h 25). Code commité par le superviseur dans `e822517` (« first steps for 23-24 tasks »).
 
 ## 1. Prompts à l'origine
 

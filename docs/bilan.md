@@ -15,7 +15,7 @@
 | Service IA (Python / FastAPI) | Santé, jeton de service, AI-01 à AI-04 ; 2 modèles ML (Naive Bayes, régression logistique) ; **146 tests automatisés** |
 | Vérifications de bout en bout | Sur la vraie base : 22/22 (backend), 21/21, 26/26, 35/35 (interface), **17/17 (TASK 22), 10/10 (TASK 23), 11/11 (TASK 24), 12/12 (TASK 25)** ; données de test supprimées à chaque fois |
 | Docker / Compose | Pas commencé (TASK 26) |
-| Git | Le superviseur a commité jusqu'à `242f6eb` (« fix angular UI »). **Non commités** : la documentation des TASK 23–25, les livrables et une correction de typage de `assistant-page.ts` **sans laquelle le frontend commité ne compile pas** |
+| Git | Tout est commité (dernier lot : `abda49f`, lots UX-1 à UX-4), au nom de **YasserWahada25** (identité propre au dépôt ; auteur des commits depuis `a8470b0` réécrit le 4 octobre, contenu identique) |
 
 ## 2. Le but : les 4 livrables attendus
 
@@ -55,7 +55,7 @@
 
 ## 4. Historique des échanges (résumé)
 
-38 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
+40 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
 
 | Période | Prompts | Résultat |
 |---|---|---|
@@ -71,6 +71,7 @@
 | 03/10 14:15 → 15:30 | Plan de test, clé OpenAI sans crédit, passage à Google Gemini | Plan de test manuel ; messages d'erreur clairs ; fournisseur de LLM configurable ; **assistant validé en réel avec Gemini (6/6)** |
 | 04/10 ≈ 11:00 | « se concentrer sur la partie UI… inspirer des plateformes existantes » ; choix : Linear, « Shell and visual identity » ; logo « Smart Manager » | Lot **UX-1** : identité visuelle, barre latérale à la Linear, thème clair / sombre / système, avatars ([livrable](livrables/UX-1.md)) |
 | 04/10 | « continuer vers les lots suivants » | Lots **UX-2** (glisser-déposer, ajout rapide), **UX-3** (palette Ctrl+K, panneau latéral), **UX-4** (accueil « Mon travail », « Ask AI ») — frontend 376 tests |
+| 04/10 | Commits affichés au nom de Nadhmi (PC utilisé) ; choix « b) » | Identité Git propre au dépôt (YasserWahada25) ; auteur des 6 commits réécrit, contenu identique ; push forcé après accord |
 
 ### Ce que montre cet échange
 
@@ -202,7 +203,7 @@ Idée du superviseur (prompt #23) : un chat dans l'application qui discute avec 
 
 ### À fournir par le superviseur
 
-- **Commiter** la documentation des TASK 23–25, les livrables et la correction de typage de `assistant-page.ts` (le commit `242f6eb` contient une version qui ne compile pas).
+- **Commiter** la documentation des TASK 23–25, les livrables et la correction de typage de `assistant-page.ts` (le commit `3c420cb` contient une version qui ne compile pas).
 - **Une clé OpenAI** dans `ai-service/.env` (`OPENAI_API_KEY`) pour activer l'assistant (AI-04) et le chemin LLM d'AI-01 ; sans clé, AI-01 (analyseur local), AI-02 et AI-03 fonctionnent.
 - **Docker Desktop** démarré avant la TASK 26 ; **le dépôt GitHub** ; `ADMIN_EMAIL` / `ADMIN_PASSWORD` pour `npm run create-admin`.
 
@@ -216,6 +217,6 @@ Idée du superviseur (prompt #23) : un chat dans l'application qui discute avec 
 
 ## 9. Prochaines étapes recommandées
 
-1. **Commiter** les fichiers non commités (voir § 1, ligne Git).
+1. Après le push forcé, sur tout autre clone : `git fetch` puis `git reset --hard origin/main`.
 2. Parcourir dans le navigateur les étapes 7 à 9 de [demo.md](demo.md) (Plan with AI, Recommend a developer, risque des sprints) et, avec une clé OpenAI, l'onglet **Assistant**.
 3. **Démarrer Docker Desktop**, puis « continuer » : **TASK 26 — Docker et Docker Compose**.
