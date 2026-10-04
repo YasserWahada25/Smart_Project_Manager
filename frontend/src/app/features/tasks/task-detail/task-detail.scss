@@ -1,3 +1,9 @@
+// The layout follows the width available (full page or side panel), not the screen width.
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
 .back {
   margin-left: -12px;
 }
@@ -80,9 +86,36 @@
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 16px;
   align-items: start;
+}
 
-  @media (max-width: 959px) {
+// Narrow (side panel, small screen): one column, details first as "label | value" rows.
+@container (max-width: 759px) {
+  .layout,
+  .collaboration {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .details {
+    order: -1;
+  }
+
+  .facts {
+    gap: 10px;
+
+    > div {
+      display: grid;
+      grid-template-columns: 104px minmax(0, 1fr);
+      align-items: baseline;
+      column-gap: 12px;
+    }
+
+    dd {
+      margin: 0;
+    }
+  }
+
+  .workflow .hint {
+    flex-basis: 100%;
   }
 }
 
@@ -139,6 +172,11 @@ h4 {
 
 .assignee {
   width: 100%;
+}
+
+.recommend {
+  margin: 4px 0 0 -12px;
+  white-space: nowrap;
 }
 
 .overdue-text {

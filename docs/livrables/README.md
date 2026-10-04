@@ -30,5 +30,6 @@ Les fichiers ne contiennent jamais de secret (aucune valeur des `.env`).
 | UX-4 | Accueil « Mon travail » et bouton « Ask AI » global | [UX-4.md](UX-4.md) | Terminé |
 | UX-5 | Bouton « Ask AI » rond et flottant (style Gemini) | [UX-5.md](UX-5.md) | Terminé |
 | UX-6 | Menu du compte : choix du thème aligné, coche à droite | [UX-6.md](UX-6.md) | Terminé |
+| UX-7 | Panneau latéral de la tâche : une colonne, détails compacts | [UX-7.md](UX-7.md) | Terminé |
 | FIX-1 | Conversation de l'assistant enregistrée (ne disparaît plus au changement de page) | [FIX-1.md](FIX-1.md) | Terminé |
 | TASK 26 | Docker et Docker Compose | — | Prévue |

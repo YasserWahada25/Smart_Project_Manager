@@ -92,7 +92,7 @@
       </mat-card-content>
     </mat-card>
 
-    <mat-card appearance="outlined">
+    <mat-card appearance="outlined" class="details">
       <mat-card-header>
         <mat-card-title><h3>Details</h3></mat-card-title>
       </mat-card-header>
@@ -147,14 +147,15 @@
             <dd>
               <span class="person">
                 <app-avatar [person]="current.createdBy" size="small" />
-                {{ fullName(current.createdBy) }}, {{ current.createdAt | date: 'medium' }}
+                {{ fullName(current.createdBy) }},
+                {{ current.createdAt | date: 'MMM d, y, h:mm a' }}
               </span>
             </dd>
           </div>
           @if (current.completedAt) {
             <div>
               <dt>Completed</dt>
-              <dd>{{ current.completedAt | date: 'medium' }}</dd>
+              <dd>{{ current.completedAt | date: 'MMM d, y, h:mm a' }}</dd>
             </div>
           }
         </dl>
