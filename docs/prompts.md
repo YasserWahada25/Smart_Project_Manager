@@ -2,7 +2,7 @@
 
 This file has two parts:
 
-- **Part A — Development prompts** (in French, like the exchanges): the prompts exchanged between the human supervisor and the AI development agents (Claude Code) to build the project, from the start (2 October 2026) to the UX work (4 October 2026). Kept up to date with the progress report [bilan.md](bilan.md) and the per-task deliverables in [livrables/](livrables/README.md).
+- **Part A — Development prompts** (in French, like the exchanges): the prompts exchanged between the human supervisor and the AI development agents (Claude Code) to build the project, from the start (2 October 2026) to the UX work (4 October 2026). A formatted Word version of the AI prompts and models (deliverable 3) is [Smart_Manager_Prompts_et_Modeles_IA.docx](Smart_Manager_Prompts_et_Modeles_IA.docx). Kept up to date with the progress report [bilan.md](bilan.md) and the per-task deliverables in [livrables/](livrables/README.md).
 - **Part B — LLM prompts of the application** (deliverable 3): the prompts the application itself sends to an LLM. Implemented: **AI-01** (planning from the specification, TASK 22) and **AI-04** (manager assistant with tools, TASK 25). AI-02 and AI-03 use no LLM (transparent scoring and a logistic regression, see [ai.md](ai.md)).
 
 ---
@@ -82,6 +82,7 @@ Heures locales (Tunis). Les messages sont cités tels qu'ils ont été écrits ;
 | 45 | 04/10 | « maintenant le discours entre l'assistant et le manager n'etait pas enregistrer, a la changement de page tous disparaitre fixer ce probleme » | Correctif FIX-1 : conversation enregistrée dans MongoDB (une par manager et projet), rechargée à l'ouverture de l'onglet, état des propositions enregistré, proposition appliquée une seule fois ; bug `sprintId: 'backlog'` trouvé au test réel et corrigé — [livrable](livrables/FIX-1.md) | — |
 | 46 | 04/10 | Capture du menu du compte (coche du thème entre l'icône et « Light ») : « fixer l'affichage de cette partie » | Lot UX-6 : coche placée dans le libellé et alignée à droite (Material déplace toute `mat-icon` directe avant le texte), thème choisi en couleur principale, menu de 240 px minimum — [livrable](livrables/UX-6.md) | — |
 | 47 | 04/10 | Capture du panneau latéral d'une tâche : « meme fixer l'affichage de cette partie » | Lot UX-7 : mise en page selon la largeur disponible (requête de conteneur) ; dans le panneau, une colonne, Details en premier en lignes « libellé | valeur », History sous Comments ; dates sans secondes — [livrable](livrables/UX-7.md) | — |
+| 48 | 04/10 | « maintenant et finalement je veux Présentation des prompts et/ou modèles IA utilisés sous forme d'un document word bien presenter et d'une facon propre qui nous guide a nos livrable actuelle » | Document Word du livrable 3 : [Smart_Manager_Prompts_et_Modeles_IA.docx](Smart_Manager_Prompts_et_Modeles_IA.docx) (26 pages) — vue d'ensemble, LLM utilisés (Gemini, OpenAI), AI-01 à AI-04 (prompts exacts, modèles, métriques), prompts de développement, guide vers les livrables, chronologie des prompts et schémas JSON en annexe ; prompts et chronologie repris de ce fichier ; deux lignes périmées de ai.md corrigées (conversation enregistrée, tests réels Gemini) | — |
 
 ### A.4 Analyse
 
