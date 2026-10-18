@@ -73,6 +73,12 @@
               <mat-icon>view_kanban</mat-icon>
               Board
             </a>
+            @if (sprint.status === 'COMPLETED') {
+              <button mat-button type="button" (click)="openRetrospective(sprint)">
+                <mat-icon>auto_awesome</mat-icon>
+                Retrospective
+              </button>
+            }
             @if (canEdit()) {
               <span class="spacer"></span>
               @if (sprint.status === 'PLANNED') {

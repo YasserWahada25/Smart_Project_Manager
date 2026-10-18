@@ -1,0 +1,136 @@
+.busy p,
+.source,
+.muted {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: var(--mat-sys-primary);
+  }
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    border: 1px solid var(--spm-border);
+    border-radius: var(--spm-radius);
+  }
+
+  strong {
+    font: var(--mat-sys-title-large);
+  }
+
+  span {
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  .alert strong,
+  .down {
+    color: var(--mat-sys-error);
+  }
+}
+
+.warning {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.summary {
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-large);
+}
+
+section {
+  margin-top: 12px;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 4px;
+    font: var(--mat-sys-title-small);
+
+    mat-icon {
+      color: var(--mat-sys-primary);
+    }
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 32px;
+  }
+}
+
+.actions ul {
+  padding: 0;
+  list-style: none;
+}
+
+.action {
+  padding: 10px 0;
+  border-top: 1px solid var(--spm-border);
+
+  p {
+    margin: 4px 0 0;
+  }
+}
+
+.action-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+
+  strong {
+    margin-right: 4px;
+  }
+}
+
+.chip {
+  padding: 1px 8px;
+  border-radius: 8px;
+  font: var(--mat-sys-label-small);
+  background: var(--mat-sys-surface-container-high);
+}
+
+.to-task,
+.created {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.to-task mat-form-field {
+  width: 200px;
+}
+
+.created {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-primary);
+}

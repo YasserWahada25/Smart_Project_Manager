@@ -9,13 +9,13 @@
 
 | Élément | État |
 |---|---|
-| Avancement | 25 tâches sur 29 : **phases 1 à 4 terminées** (backend, interface, service IA et ses quatre fonctions) |
-| Backend Express | 59 endpoints REST, 8 collections MongoDB ; **364 tests automatisés** |
-| Frontend Angular | Tous les écrans + « Plan with AI », recommandation de développeur, indicateur de risque, onglet « Assistant » ; **349 tests automatisés** |
-| Service IA (Python / FastAPI) | Santé, jeton de service, AI-01 à AI-04 ; 2 modèles ML (Naive Bayes, régression logistique) ; **146 tests automatisés** |
+| Avancement | 25 tâches sur 29 : **phases 1 à 4 terminées** (backend, interface, service IA) ; **5 fonctions IA** (AI-05 « rétrospective de sprint » ajoutée le 18 octobre) |
+| Backend Express | 62 endpoints REST, 9 collections MongoDB ; **377 tests automatisés** |
+| Frontend Angular | Tous les écrans + « Plan with AI », recommandation de développeur, indicateur de risque, onglet « Assistant », rétrospective de sprint ; **386 tests automatisés** |
+| Service IA (Python / FastAPI) | Santé, jeton de service, AI-01 à AI-05 ; 2 modèles ML (Naive Bayes, régression logistique) ; **181 tests automatisés** |
 | Vérifications de bout en bout | Sur la vraie base : 22/22 (backend), 21/21, 26/26, 35/35 (interface), **17/17 (TASK 22), 10/10 (TASK 23), 11/11 (TASK 24), 12/12 (TASK 25)** ; données de test supprimées à chaque fois |
 | Docker / Compose | Pas commencé (TASK 26) |
-| Git | Tout est commité (dernier lot : `abda49f`, lots UX-1 à UX-4), au nom de **YasserWahada25** (identité propre au dépôt ; auteur des commits depuis `a8470b0` réécrit le 4 octobre, contenu identique) |
+| Git | Commité jusqu'à `079c12c` au nom de **YasserWahada25** ; **AI-05 non commité** (18 octobre) |
 
 ## 2. Le but : les 4 livrables attendus
 
@@ -55,7 +55,7 @@
 
 ## 4. Historique des échanges (résumé)
 
-48 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
+59 prompts du 2 au 18 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
 
 | Période | Prompts | Résultat |
 |---|---|---|
@@ -73,6 +73,7 @@
 | 04/10 | « continuer vers les lots suivants » | Lots **UX-2** (glisser-déposer, ajout rapide), **UX-3** (palette Ctrl+K, panneau latéral), **UX-4** (accueil « Mon travail », « Ask AI ») — frontend 376 tests |
 | 04/10 | Commits affichés au nom de Nadhmi (PC utilisé) ; choix « b) » | Identité Git propre au dépôt (YasserWahada25) ; auteur des 6 commits réécrit, contenu identique ; push forcé après accord |
 | 04/10 | Bouton « Ask AI » comme celui de Gemini ; conversation de l'assistant perdue au changement de page | **UX-5** (bulle ronde flottante) ; **FIX-1** (conversation enregistrée dans MongoDB, état des propositions) — backend 364 tests, frontend 378 tests |
+| 18/10 | Fonctions IA existantes ; il en faut 5 ; choix de la « rétrospective de sprint automatique » ; même clé Gemini ? | **AI-05** : rétrospective générée à la clôture d'un sprint (Gemini, règles sans clé), enregistrée, actions → tâches — service IA 181, backend 377, frontend 386 tests ; [livrable](livrables/AI-05.md) |
 
 ### Ce que montre cet échange
 

@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from .config import get_settings
 from .errors import register_error_handlers
-from .routes import assistant, health, planning, recommendation, risk
+from .routes import assistant, health, planning, recommendation, retrospective, risk
 
 
 def create_app() -> FastAPI:
@@ -15,7 +15,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="Smart Project Manager — AI service",
-        version="0.5.0",
+        version="0.6.0",
         description="Internal API called by the Express backend only.",
     )
     register_error_handlers(app)
@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
     app.include_router(recommendation.router)
     app.include_router(risk.router)
     app.include_router(assistant.router)
+    app.include_router(retrospective.router)
     return app
 
 

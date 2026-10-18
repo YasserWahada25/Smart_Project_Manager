@@ -33,7 +33,7 @@
 |--------------------|----------------|--------|
 | Angular frontend   | User interface, routing, forms, guards, HTTP calls to the backend. | Setup done (shell, routing, error handling, system status page) |
 | Express.js backend | Main REST API: authentication, authorization, business rules, validation, persistence, orchestration of AI calls. | Complete for non-AI features |
-| MongoDB            | Main application database. | 8 collections (users, projects, sprints, tasks, comments, activities, notifications, assistantconversations) |
+| MongoDB            | Main application database. | 9 collections (users, projects, sprints, tasks, comments, activities, notifications, assistantconversations, sprintretrospectives) |
 | FastAPI AI service | Stateless AI operations (generation, recommendation, prediction). Does not access MongoDB directly. | Implemented: health, AI-01 (TASK 20–22) |
 
 ## 3. Communication rules
@@ -113,6 +113,7 @@ frontend/
 │   │   │   ├── ai-plan/                    ai-plan-page ("Plan with AI", child route of the project shell) (AiPlanService)
 │   │   │   ├── ai-recommendation/          recommend-dialog (AI-02, opened from the task page) (AiRecommendationService)
 │   │   │   ├── ai-risk/                    sprint-risk indicator (AI-03, on active sprint cards and the Sprints tab) (AiRiskService)
+│   │   │   ├── ai-retrospective/           retrospective-dialog (AI-05, completed sprints of the Sprints tab) (AiRetrospectiveService)
 │   │   │   ├── ai-assistant/               assistant-page (AI-04 "Assistant" tab, manager only) (AiAssistantService)
 │   │   │   └── not-found/                  404 page
 │   │   ├── app.config.ts                   providers (router + input binding, HttpClient + interceptors, title, icons)
@@ -193,7 +194,7 @@ Routes: `/login` and `/register` are **top-level** routes rendered in `AuthLayou
 
 | Screen | Who / rules (mirroring the backend) | Content | API used |
 |--------|-------------------------------------|---------|----------|
-| Sprints tab | viewers; the manager creates, edits (open sprints), starts, completes, cancels (confirmations), deletes (PLANNED only) | Sprints in chronological order: dates, objective, progress in story points, task counts (done, blocked), **AI delay risk of the active sprint** (level, probability, factors); links to the tasks and the board of the sprint | `GET /projects/:id/sprints`, `POST`, `PATCH /sprints/:id`, `PATCH /sprints/:id/status`, `DELETE /sprints/:id` |
+| Sprints tab | viewers; the manager creates, edits (open sprints), starts, completes, cancels (confirmations), deletes (PLANNED only) | Sprints in chronological order: dates, objective, progress in story points, task counts (done, blocked), **AI delay risk of the active sprint** (level, probability, factors); links to the tasks and the board of the sprint; **Retrospective** of completed sprints (AI-05 dialog: figures, summary, sections, actions → **Create task**), generated and opened right after **Complete** | `GET /projects/:id/sprints`, `POST`, `PATCH /sprints/:id`, `PATCH /sprints/:id/status`, `DELETE /sprints/:id`, `GET` / `POST /sprints/:id/ai/retrospective`, `POST /sprints/:id/ai/retrospective/actions/:actionId/task` |
 | Plan with AI (`ai-plan`, TASK 22) | manager of a non-archived project (others see a message) | **Step 1**: specification textarea + file (`.txt .md .pdf .docx`, 5 MB, checked before upload), first sprint date (empty = automatic), sprint length, capacity in story points; the analyzer in use ("OpenAI <model>" — the document is sent to OpenAI — or "local") from `GET /ai/status`; spinner up to 90 s; errors shown on the page with the input kept. **Step 2 (review)**: method, stats, warnings; one card per sprint (editable name, dates, objective; points vs capacity), then the backlog; each task can be edited (title, description, type, priority, story points, skills), moved to another sprint or the backlog, or deleted; sprints can be removed (tasks → backlog) or added; "Apply the plan" validates, creates, shows a toast and opens the Sprints tab; "Back" keeps the input | `GET /ai/status`, `POST /projects/:id/ai/plan` (multipart), `POST /projects/:id/ai/plan/apply` |
 | Assistant tab (`assistant`, TASK 25) | manager of a non-archived project | Chat: suggestions, messages, "thinking" bar; each proposed change shown with **Confirm** / **Dismiss** (applied → result message and toast; refused → reason); the outcome of each proposal is sent back with the history so the assistant knows what was applied; "New conversation" (deletes the saved one); unavailable message without LLM key; the **saved conversation is loaded back** when the tab opens, with the state of each proposal | `GET /ai/status`, `POST /projects/:id/ai/assistant/chat`, `POST /projects/:id/ai/assistant/actions`, `GET` / `DELETE /projects/:id/ai/assistant/conversation`, `POST /projects/:id/ai/assistant/proposals/:proposalId/dismiss` |
 | Sprint form (dialog) | manager | Name, objective, start date (today) and end date (two weeks by default, ≥ start) | `POST /projects/:id/sprints`, `PATCH /sprints/:id` |
@@ -315,7 +316,8 @@ backend/
 │   │   ├── aiPlan.service.js    AI-01: extract + plan, strict validation of the AI answer, all-or-nothing creation
 │   │   ├── aiRecommendation.service.js AI-02: members, workload and experience → AI service → validated ranking
 │   │   ├── aiRisk.service.js    AI-03: sprint measures + velocity of past sprints → AI service → validated risk
-│   │   └── aiAssistant.service.js AI-04: chat loop (read tools run, write tools → proposals), confirmed actions
+│   │   ├── aiAssistant.service.js AI-04: chat loop (read tools run, write tools → proposals), confirmed actions
+│   │   └── aiRetrospective.service.js AI-05: facts of a completed sprint → AI service → validated, saved retrospective; action → task
 │   ├── validators/
 │   │   ├── auth.validator.js    register & login rules
 │   │   ├── user.validator.js    list filters, status & role update rules
@@ -328,6 +330,7 @@ backend/
 │   │   ├── dashboard.validator.js project dashboard & search rules
 │   │   ├── aiPlan.validator.js  AI-01 rules and PLAN_LIMITS (options, reviewed plan)
 │   │   ├── aiAssistant.validator.js AI-04 conversation and confirmed-action rules
+│   │   ├── aiRetrospective.validator.js AI-05 sprint id, action id and destination sprint rules
 │   │   ├── common.validator.js  reusable rules (ids, pagination, text, dates, string lists)
 │   │   └── password.policy.js   password rules shared by registration and admin bootstrap
 │   ├── utils/
@@ -421,8 +424,9 @@ ai-service/
 │   │   ├── planning.py          POST /api/v1/ai/documents/extract, POST /api/v1/ai/projects/plan
 │   │   ├── recommendation.py    POST /api/v1/ai/developers/recommend
 │   │   ├── risk.py              POST /api/v1/ai/sprints/predict-risk
-│   │   └── assistant.py         POST /api/v1/ai/assistant/chat
-│   ├── schemas/                 Pydantic models: common (enums, limits), health, documents, planning, llm, recommendation, risk, assistant
+│   │   ├── assistant.py         POST /api/v1/ai/assistant/chat
+│   │   └── retrospective.py     POST /api/v1/ai/sprints/retrospective
+│   ├── schemas/                 Pydantic models: common (enums, limits), health, documents, planning, llm, recommendation, risk, assistant, retrospective
 │   ├── services/
 │   │   ├── text_extraction.py   .txt/.md/.pdf/.docx → text with Markdown-like structure
 │   │   ├── planning_service.py  hybrid analysis (OpenAI, else / on failure local) + sprint planning
@@ -432,9 +436,11 @@ ai-service/
 │   │   ├── sprint_planner.py    deterministic split into sprints (capacity, priority, ≤ 20 sprints)
 │   │   ├── developer_scoring.py AI-02 transparent scoring (skills, workload, experience) + explanation
 │   │   ├── sprint_risk.py       AI-03 prediction: features, probability → level, factors, rules
-│   │   └── assistant.py         AI-04 one chat turn: messages → OpenAI with tools → validated tool calls
+│   │   ├── assistant.py         AI-04 one chat turn: messages → OpenAI with tools → validated tool calls
+│   │   └── retrospective.py     AI-05 metrics (code) + text (LLM, else rules), language detection
 │   ├── prompts/project_plan.py  AI-01 system prompt, user prompt, JSON schema (docs/prompts.md Part B)
 │   ├── prompts/assistant.py     AI-04 system prompt and the 9 tool schemas (strict)
+│   ├── prompts/retrospective.py AI-05 system prompt, facts between markers, JSON schema
 │   └── ml/
 │       ├── data/task_types.csv  155 labelled FR/EN sentences (synthetic dataset)
 │       ├── data/sprint_risk.csv 2 000 simulated sprints (AI-03 synthetic dataset)

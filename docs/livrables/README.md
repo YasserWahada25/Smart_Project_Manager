@@ -31,6 +31,8 @@ Les fichiers ne contiennent jamais de secret (aucune valeur des `.env`).
 | UX-5 | Bouton « Ask AI » rond et flottant (style Gemini) | [UX-5.md](UX-5.md) | Terminé |
 | UX-6 | Menu du compte : choix du thème aligné, coche à droite | [UX-6.md](UX-6.md) | Terminé |
 | UX-7 | Panneau latéral de la tâche : une colonne, détails compacts | [UX-7.md](UX-7.md) | Terminé |
-| Livrable 3 | Présentation des prompts et modèles IA (document Word, 26 pages, guide vers les livrables) | [Smart_Manager_Prompts_et_Modeles_IA.docx](../Smart_Manager_Prompts_et_Modeles_IA.docx) | Terminé |
+| Rapport technique | Rapport Word des 5 étudiants (architecture, frameworks, API, modèles IA, prompts ; contribution de chacun) | [Smart_Manager_Rapport_Technique.docx](../Smart_Manager_Rapport_Technique.docx) | Terminé |
+| AI-05 | Rétrospective de sprint automatique (Gemini ou règles), enregistrée ; actions → tâches | [AI-05.md](AI-05.md) | Terminé |
+| Livrable 3 | Présentation des prompts et modèles IA (document Word, 30 pages, version 1.1 avec AI-05, guide vers les livrables) | [Smart_Manager_Prompts_et_Modeles_IA.docx](../Smart_Manager_Prompts_et_Modeles_IA.docx) | Terminé |
 | FIX-1 | Conversation de l'assistant enregistrée (ne disparaît plus au changement de page) | [FIX-1.md](FIX-1.md) | Terminé |
 | TASK 26 | Docker et Docker Compose | — | Prévue |

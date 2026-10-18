@@ -2,6 +2,7 @@ const { matchedData } = require('express-validator');
 const aiClient = require('../services/aiClient.service');
 const aiAssistantService = require('../services/aiAssistant.service');
 const aiRecommendationService = require('../services/aiRecommendation.service');
+const aiRetrospectiveService = require('../services/aiRetrospective.service');
 const aiRiskService = require('../services/aiRisk.service');
 
 async function getStatus(req, res) {
@@ -42,6 +43,22 @@ async function dismissAssistantProposal(req, res) {
   res.json(await aiAssistantService.dismissProposal(req.user, req.params.id, req.params.proposalId));
 }
 
+/** AI-05: the saved retrospective of a sprint (project viewers), or null. */
+async function sprintRetrospective(req, res) {
+  res.json(await aiRetrospectiveService.getRetrospective(req.user, req.params.id));
+}
+
+/** AI-05: generates (or regenerates) the retrospective of a completed sprint (manager). */
+async function generateSprintRetrospective(req, res) {
+  res.status(201).json(await aiRetrospectiveService.generateRetrospective(req.user, req.params.id));
+}
+
+/** AI-05: a task created from an action of the retrospective (manager, once per action). */
+async function retrospectiveActionTask(req, res) {
+  const { sprint = null } = matchedData(req, { locations: ['body'] });
+  res.status(201).json(await aiRetrospectiveService.createTaskFromAction(req.user, req.params.id, req.params.actionId, { sprint }));
+}
+
 module.exports = {
   getStatus,
   recommendDevelopers,
@@ -51,4 +68,7 @@ module.exports = {
   assistantConversation,
   clearAssistantConversation,
   dismissAssistantProposal,
+  sprintRetrospective,
+  generateSprintRetrospective,
+  retrospectiveActionTask,
 };

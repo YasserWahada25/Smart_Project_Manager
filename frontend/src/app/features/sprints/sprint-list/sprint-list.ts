@@ -22,6 +22,10 @@ import { ConfirmService } from '../../../shared/components/confirm-dialog/confir
 import { ErrorState } from '../../../shared/components/error-state/error-state';
 import { LoadingState } from '../../../shared/components/loading-state/loading-state';
 import { SprintRiskIndicator } from '../../ai-risk/sprint-risk/sprint-risk';
+import {
+  RetrospectiveDialog,
+  RetrospectiveDialogData,
+} from '../../ai-retrospective/retrospective-dialog/retrospective-dialog';
 import { ProjectContext } from '../../projects/project-context';
 import { SprintFormData, SprintFormDialog } from '../sprint-form-dialog/sprint-form-dialog';
 import { SprintService } from '../sprint.service';
@@ -41,7 +45,8 @@ const STATUS_CONFIRMATIONS: Partial<Record<SprintStatus, { title: string; messag
 /**
  * "Sprints" tab of a project: sprints in chronological order with their progress (story
  * points), and for the project manager the lifecycle actions (start, complete, cancel),
- * edition and deletion of planned sprints.
+ * edition and deletion of planned sprints. Completed sprints have their AI retrospective (AI-05),
+ * generated as soon as the manager completes the sprint.
  */
 @Component({
   selector: 'app-sprint-list',
@@ -139,7 +144,27 @@ export class SprintList {
       .subscribe((updated) => {
         this.toast.success(`Sprint "${updated.name}": ${SPRINT_STATUS_LABELS[updated.status]}.`);
         this.load();
+        if (updated.status === 'COMPLETED') this.openRetrospective(updated, true);
       });
+  }
+
+  /** AI-05: the retrospective of a completed sprint; `generate` = write it at once if missing. */
+  protected openRetrospective(sprint: Sprint, generate = false): void {
+    const openSprints = this.sprints()
+      .filter((item) => item.id !== sprint.id && isSprintOpen(item))
+      .map(({ id, name, status }) => ({ id, name, status }));
+    this.dialog.open<RetrospectiveDialog, RetrospectiveDialogData>(RetrospectiveDialog, {
+      data: {
+        sprintId: sprint.id,
+        sprintName: sprint.name,
+        canEdit: this.canEdit(),
+        generate,
+        openSprints,
+      },
+      width: '760px',
+      maxWidth: 'calc(100vw - 32px)',
+      autoFocus: false,
+    });
   }
 
   protected deleteSprint(sprint: Sprint): void {

@@ -1,6 +1,6 @@
 # Database Design (MongoDB)
 
-> Current state: **collections `users`, `projects`, `sprints`, `tasks`, `comments`, `activities`, `notifications` and `assistantconversations`.**
+> Current state: **collections `users`, `projects`, `sprints`, `tasks`, `comments`, `activities`, `notifications`, `assistantconversations` and `sprintretrospectives`.**
 > Each collection is documented here (schema, validation, references, indexes) when its task implements it.
 
 ## 1. Technology
@@ -45,6 +45,7 @@ Tests use `mongodb-memory-server` (an in-memory MongoDB started by Jest), so no 
 | `activities` | Activity history | Implemented |
 | `notifications` | User notifications | Implemented |
 | `assistantconversations` | AI-04: conversation of a manager with the assistant of a project | Implemented |
+| `sprintretrospectives` | AI-05: retrospective of a completed sprint | Implemented |
 
 ## 4. Enumerations (from requirements)
 
@@ -250,3 +251,29 @@ One document per manager and project (AI-04 assistant). Deleted with the project
 | Index | Justification |
 |-------|---------------|
 | `{ project: 1, user: 1 }` unique | One conversation per manager and project, read and updated by this key |
+
+### 5.9 `sprintretrospectives` — model `SprintRetrospective` (`backend/src/models/sprintRetrospective.model.js`)
+
+One document per completed sprint (AI-05), replaced when the manager regenerates it. Completed sprints cannot be deleted, so no cascade is needed.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `sprint` | ObjectId → `sprints` | required, unique | |
+| `project` | ObjectId → `projects` | required | |
+| `method` | String | `llm` / `local` | Written by the LLM, or built by rules |
+| `model` | String | default `null` | LLM model name |
+| `summary` | String | required, max 1 200 | |
+| `delivered`, `slipped`, `blockers` | [String] | ≤ 6 items of ≤ 300 characters (checked by the backend) | |
+| `wentWell`, `toImprove` | [String] | ≤ 5 items of ≤ 300 characters | |
+| `actions[]` | embedded | ≤ 5 | `id` (UUID), `title` (≤ 120), `description` (≤ 500), `type`, `priority` (task enums), `task` (ObjectId → `tasks`, set once when the manager creates the task) |
+| `metrics` | Mixed | required | Computed by code: tasks / points done, completion, duration, velocity and its change, blocked, added after the start, late, unassigned |
+| `warnings` | [String] | ≤ 500 characters each | |
+| `generatedBy` | ObjectId → `users` | required | The manager |
+| `createdAt`, `updatedAt` | Date | auto | `updatedAt` = last generation |
+
+**Indexes**
+
+| Index | Justification |
+|-------|---------------|
+| `{ sprint: 1 }` unique | One retrospective per sprint, read and replaced by this key |
+| `{ project: 1 }` | Retrospectives of a project |

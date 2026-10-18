@@ -959,6 +959,35 @@ The backend saves the conversation of each manager with the assistant of each pr
 
 Each manager only sees their own conversation (403 for the other users of the project). The conversations of a deleted project are deleted with it.
 
+#### Sprint retrospective (AI-05)
+
+| Method | Path | Who | Result |
+|---|---|---|---|
+| GET | `/api/v1/sprints/:id/ai/retrospective` | project viewers | **200** `{ "retrospective": { … } \| null }` |
+| POST | `/api/v1/sprints/:id/ai/retrospective` | manager, project not archived | **201** `{ "retrospective": { … } }` — generates or replaces it; **409** if the sprint is not COMPLETED |
+| POST | `/api/v1/sprints/:id/ai/retrospective/actions/:actionId/task` | manager, project not archived | Body `{ "sprint": "<open sprint id>" \| null }` (null = backlog) → **201** `{ "task", "retrospective" }`; **409** if a task was already created from this action or the sprint is closed; 404 unknown action; 400 invalid ids |
+
+```json
+{
+  "retrospective": {
+    "id": "...",
+    "sprint": { "id": "...", "name": "Sprint 2", "status": "COMPLETED", "startDate": "...", "endDate": "..." },
+    "method": "llm",
+    "model": "gemini-3.5-flash-lite",
+    "summary": "L'objectif du Sprint 2 n'a pas été atteint : 2 tâches et 13 story points livrés sur 29…",
+    "delivered": ["Formulaire de paiement par carte"], "slipped": ["…"], "blockers": ["…"], "wentWell": ["…"], "toImprove": ["…"],
+    "actions": [{ "id": "<uuid>", "title": "Vérifier l'accès au bac à sable de la banque", "description": "…", "type": "DEVOPS", "priority": "HIGH", "task": null }],
+    "metrics": { "totalTasks": 5, "doneTasks": 2, "totalPoints": 29, "donePoints": 13, "completionRate": 0.448, "durationDays": 14, "velocity": 0.93,
+                 "historicalVelocity": 1.5, "velocityChange": -0.38, "blockedTasks": 1, "blockedDuringSprint": 2, "addedAfterStart": 1, "lateTasks": 1, "unassignedOpen": 1 },
+    "warnings": [],
+    "generatedBy": { "id": "...", "firstName": "Sara", "lastName": "Manager" },
+    "createdAt": "...", "updatedAt": "..."
+  }
+}
+```
+
+`method`: `llm` (written by the language model) or `local` (rules, without a key or when the LLM fails). The metrics are computed by code. A task created from an action gets the action's title, type and priority, and the description followed by "From the retrospective of «Sprint 2»."; AI errors: 503 / 504 / 502 as for the other AI routes. Approach: [ai.md](ai.md) § 4.5.
+
 ## 2. FastAPI AI service (internal API)
 
 Called only by the Express backend, never by the browser. Base URL `AI_SERVICE_URL` (default `http://localhost:8000`). Interactive documentation (Swagger UI) at `/docs` while the service runs.
@@ -976,7 +1005,8 @@ Called only by the Express backend, never by the browser. Base URL `AI_SERVICE_U
 | POST | `/api/v1/ai/developers/recommend` | AI-02 Developer recommendation | Done (TASK 23) |
 | POST | `/api/v1/ai/sprints/predict-risk` | AI-03 Sprint delay risk | Done (TASK 24) |
 | POST | `/api/v1/ai/assistant/chat` | AI-04 Manager assistant (one turn) | Done (TASK 25) |
-| POST | `/api/v1/ai/sprints/summary` | Optional: sprint summary | Covered by AI-04 ("Summarize the sprint") |
+| POST | `/api/v1/ai/sprints/retrospective` | AI-05 Sprint retrospective | Done (AI-05) |
+| POST | `/api/v1/ai/sprints/summary` | Optional: sprint summary | Covered by AI-05 and AI-04 ("Summarize the sprint") |
 
 ### 2.2 Details
 
@@ -1054,3 +1084,19 @@ Rules: `endDate` ≥ `startDate`; done values ≤ totals; blocked, high-complexi
 ```
 
 1–80 messages (`user`, `assistant` with optional `toolCalls`, `tool` with `toolCallId`; ≤ 20 000 characters each). → `{ "type": "message" | "tool_calls", "content", "toolCalls": [{ "id", "name", "arguments", "error", "extra" }], "model" }`; `error` is set when the arguments do not match the tool schema; `extra` carries provider data that must be sent back unchanged with the tool call on the next turn (Gemini `thought_signature`). 503 `LLM_NOT_CONFIGURED` without `OPENAI_API_KEY`; 502 when OpenAI fails.
+
+#### `POST /api/v1/ai/sprints/retrospective`
+
+```json
+{
+  "sprint": { "name": "Sprint 2", "objective": "Checkout", "startDate": "2026-10-01", "endDate": "2026-10-14" },
+  "tasks": [
+    { "title": "Payment API", "type": "FEATURE", "priority": "HIGH", "points": 8, "status": "BLOCKED", "assignee": "Alice Smith",
+      "blockedReason": "Waiting for the bank", "wasBlocked": true, "addedAfterStart": false, "late": false }
+  ],
+  "team": [{ "name": "Alice Smith", "donePoints": 0, "openPoints": 8 }],
+  "historicalVelocity": 1.5
+}
+```
+
+≤ 300 tasks (statuses and enums of the backend, points 0–13), ≤ 100 members, `endDate` ≥ `startDate`. → `{ "method": "llm" | "local", "model", "summary", "delivered", "slipped", "blockers", "wentWell", "toImprove", "actions": [{ "title", "description", "type", "priority" }], "metrics": { … }, "warnings" }` (≤ 6 items for delivered / slipped / blockers, ≤ 5 for wentWell / toImprove / actions). The LLM is called only when a key is configured and the sprint has tasks; any LLM failure falls back to the rules with a warning. Prompt: [prompts.md](prompts.md) Part B.
