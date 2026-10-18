@@ -43,10 +43,12 @@ const STATUS_CONFIRMATIONS: Partial<Record<SprintStatus, { title: string; messag
 };
 
 /**
- * "Sprints" tab of a project: sprints in chronological order with their progress (story
- * points), and for the project manager the lifecycle actions (start, complete, cancel),
- * edition and deletion of planned sprints. Completed sprints have their AI retrospective (AI-05),
- * generated as soon as the manager completes the sprint.
+ * Onglet « Sprints » d’un projet : affichage des sprints par ordre chronologique
+ * avec leur progression (points d’histoire). Le chef de projet dispose des actions
+ * de gestion du cycle de vie des sprints (démarrer, terminer, annuler), ainsi que
+ * des fonctionnalités de modification et de suppression des sprints planifiés.
+ * Les sprints terminés disposent de leur rétrospective générée par l’IA (AI-05),
+ * créée automatiquement dès que le chef de projet termine le sprint.
  */
 @Component({
   selector: 'app-sprint-list',
