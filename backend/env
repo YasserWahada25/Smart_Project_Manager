@@ -1,0 +1,28 @@
+# ==================================================
+# Smart Project Manager - backend environment template
+# ==================================================
+# Copy to `backend/.env` and adjust. NEVER commit `.env`.
+
+# development | production | test
+NODE_ENV=development
+
+# HTTP port of the Express API
+PORT=3000
+
+# MongoDB connection string (required)
+MONGODB_URI=mongodb://localhost:27017/smart_project_manager
+
+# Allowed frontend origin(s), comma-separated
+CORS_ORIGIN=http://localhost:4200
+
+# Secret used to sign JWTs (required, at least 32 characters)
+JWT_SECRET=e8a2e9c0955f75c8c2355e1db283a7b456c94fe0ec86aebba1b32beb01cc423095d6099dea670bf6d5c23f0dd946f20e
+JWT_EXPIRES_IN=1d
+BCRYPT_SALT_ROUNDS=12
+
+# AI service (FastAPI)
+AI_SERVICE_URL=http://localhost:8000
+AI_SERVICE_TOKEN=e1c1f2b56246345acc56cfa2c0db81f7820d0eb625fa369ec9148a05915df1ee
+AI_TIMEOUT_MS=90000
+ADMIN_EMAIL=admin@gmail.com
+ADMIN_PASSWORD=admin123
