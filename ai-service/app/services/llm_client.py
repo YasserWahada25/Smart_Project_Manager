@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 """OpenAI-compatible Chat Completions client (OpenAI, Google Gemini, Groq, Ollama…), used by AI-01 and AI-04.
+=======
+"""OpenAI-compatible Chat Completions client (OpenAI, Google Gemini, Groq, Ollama…), used by AI-01, AI-04 and AI-05.
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 - OpenAI: structured outputs and tools in strict mode, `max_completion_tokens`.
 - Other providers ("compatible" mode): the same requests without the `strict` flags and with `max_tokens`,
@@ -83,9 +87,17 @@ class OpenAiClient:
             response = self._post(payload)
         return response
 
+<<<<<<< HEAD
     def complete_json(self, system: str, user: str, schema_name: str, schema: dict) -> dict:
         payload = self._payload(
             MAX_COMPLETION_TOKENS,
+=======
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict, max_tokens: int = MAX_COMPLETION_TOKENS
+    ) -> dict:
+        payload = self._payload(
+            max_tokens,
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
             response_format={
                 "type": "json_schema",

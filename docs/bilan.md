@@ -9,6 +9,7 @@
 
 | Élément | État |
 |---|---|
+<<<<<<< HEAD
 | Avancement | 25 tâches sur 29 : **phases 1 à 4 terminées** (backend, interface, service IA et ses quatre fonctions) |
 | Backend Express | 56 endpoints REST, 7 collections MongoDB ; **357 tests automatisés** |
 | Frontend Angular | Tous les écrans + « Plan with AI », recommandation de développeur, indicateur de risque, onglet « Assistant » ; **349 tests automatisés** |
@@ -16,6 +17,15 @@
 | Vérifications de bout en bout | Sur la vraie base : 22/22 (backend), 21/21, 26/26, 35/35 (interface), **17/17 (TASK 22), 10/10 (TASK 23), 11/11 (TASK 24), 12/12 (TASK 25)** ; données de test supprimées à chaque fois |
 | Docker / Compose | Pas commencé (TASK 26) |
 | Git | Le superviseur a commité jusqu'à `242f6eb` (« fix angular UI »). **Non commités** : la documentation des TASK 23–25, les livrables et une correction de typage de `assistant-page.ts` **sans laquelle le frontend commité ne compile pas** |
+=======
+| Avancement | 25 tâches sur 29 : **phases 1 à 4 terminées** (backend, interface, service IA) ; **5 fonctions IA** (AI-05 « rétrospective de sprint » ajoutée le 18 octobre) |
+| Backend Express | 62 endpoints REST, 9 collections MongoDB ; **377 tests automatisés** |
+| Frontend Angular | Tous les écrans + « Plan with AI », recommandation de développeur, indicateur de risque, onglet « Assistant », rétrospective de sprint ; **386 tests automatisés** |
+| Service IA (Python / FastAPI) | Santé, jeton de service, AI-01 à AI-05 ; 2 modèles ML (Naive Bayes, régression logistique) ; **181 tests automatisés** |
+| Vérifications de bout en bout | Sur la vraie base : 22/22 (backend), 21/21, 26/26, 35/35 (interface), **17/17 (TASK 22), 10/10 (TASK 23), 11/11 (TASK 24), 12/12 (TASK 25)** ; données de test supprimées à chaque fois |
+| Docker / Compose | Pas commencé (TASK 26) |
+| Git | Commité jusqu'à `079c12c` au nom de **YasserWahada25** ; **AI-05 non commité** (18 octobre) |
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 ## 2. Le but : les 4 livrables attendus
 
@@ -55,7 +65,11 @@
 
 ## 4. Historique des échanges (résumé)
 
+<<<<<<< HEAD
 37 prompts du 2 au 4 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
+=======
+59 prompts du 2 au 18 octobre 2026. La liste complète, citée mot pour mot avec les heures, est dans [prompts.md](prompts.md) (§ A.3).
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 | Période | Prompts | Résultat |
 |---|---|---|
@@ -70,6 +84,13 @@
 | 03/10 13:13 → 14:10 | « continuer vers Tasks 23-24-25 une fois pour toutes » | TASK 23 (AI-02), 24 (AI-03), 25 (AI-04), chacune testée de bout en bout et documentée ; arrêt avant la TASK 26 |
 | 03/10 14:15 → 15:30 | Plan de test, clé OpenAI sans crédit, passage à Google Gemini | Plan de test manuel ; messages d'erreur clairs ; fournisseur de LLM configurable ; **assistant validé en réel avec Gemini (6/6)** |
 | 04/10 ≈ 11:00 | « se concentrer sur la partie UI… inspirer des plateformes existantes » ; choix : Linear, « Shell and visual identity » ; logo « Smart Manager » | Lot **UX-1** : identité visuelle, barre latérale à la Linear, thème clair / sombre / système, avatars ([livrable](livrables/UX-1.md)) |
+<<<<<<< HEAD
+=======
+| 04/10 | « continuer vers les lots suivants » | Lots **UX-2** (glisser-déposer, ajout rapide), **UX-3** (palette Ctrl+K, panneau latéral), **UX-4** (accueil « Mon travail », « Ask AI ») — frontend 376 tests |
+| 04/10 | Commits affichés au nom de Nadhmi (PC utilisé) ; choix « b) » | Identité Git propre au dépôt (YasserWahada25) ; auteur des 6 commits réécrit, contenu identique ; push forcé après accord |
+| 04/10 | Bouton « Ask AI » comme celui de Gemini ; conversation de l'assistant perdue au changement de page | **UX-5** (bulle ronde flottante) ; **FIX-1** (conversation enregistrée dans MongoDB, état des propositions) — backend 364 tests, frontend 378 tests |
+| 18/10 | Fonctions IA existantes ; il en faut 5 ; choix de la « rétrospective de sprint automatique » ; même clé Gemini ? | **AI-05** : rétrospective générée à la clôture d'un sprint (Gemini, règles sans clé), enregistrée, actions → tâches — service IA 181, backend 377, frontend 386 tests ; [livrable](livrables/AI-05.md) |
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 ### Ce que montre cet échange
 
@@ -169,7 +190,11 @@ Idée du superviseur (prompt #23) : un chat dans l'application qui discute avec 
 - **Sécurité :** aucune suppression sans confirmation ; nombre d'appels d'outils limité ; le texte des tâches et des commentaires est traité comme des données (protection contre l'injection de prompt) ; la clé OpenAI reste dans `ai-service/.env`.
 - **Limites assumées :** le chat agit sur les **données** de la plateforme, **pas sur le code source** ; il exige une clé OpenAI (sans clé, le panneau indique que l'assistant est indisponible).
 
+<<<<<<< HEAD
 Écarts par rapport au plan : la confirmation se fait proposition par proposition (boutons « Confirm » / « Dismiss ») ; la conversation n'est pas stockée ; cinq types de modification (pas de gestion de l'équipe ni des statuts de sprint).
+=======
+Écarts par rapport au plan : la confirmation se fait proposition par proposition (boutons « Confirm » / « Dismiss ») ; la conversation est enregistrée par manager et par projet (FIX-1, ajouté le 4 octobre) ; cinq types de modification (pas de gestion de l'équipe ni des statuts de sprint).
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 ### Phase 5 — Livraison
 
@@ -201,7 +226,11 @@ Idée du superviseur (prompt #23) : un chat dans l'application qui discute avec 
 
 ### À fournir par le superviseur
 
+<<<<<<< HEAD
 - **Commiter** la documentation des TASK 23–25, les livrables et la correction de typage de `assistant-page.ts` (le commit `242f6eb` contient une version qui ne compile pas).
+=======
+- **Commiter** la documentation des TASK 23–25, les livrables et la correction de typage de `assistant-page.ts` (le commit `3c420cb` contient une version qui ne compile pas).
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 - **Une clé OpenAI** dans `ai-service/.env` (`OPENAI_API_KEY`) pour activer l'assistant (AI-04) et le chemin LLM d'AI-01 ; sans clé, AI-01 (analyseur local), AI-02 et AI-03 fonctionnent.
 - **Docker Desktop** démarré avant la TASK 26 ; **le dépôt GitHub** ; `ADMIN_EMAIL` / `ADMIN_PASSWORD` pour `npm run create-admin`.
 
@@ -215,6 +244,10 @@ Idée du superviseur (prompt #23) : un chat dans l'application qui discute avec 
 
 ## 9. Prochaines étapes recommandées
 
+<<<<<<< HEAD
 1. **Commiter** les fichiers non commités (voir § 1, ligne Git).
+=======
+1. Après le push forcé, sur tout autre clone : `git fetch` puis `git reset --hard origin/main`.
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 2. Parcourir dans le navigateur les étapes 7 à 9 de [demo.md](demo.md) (Plan with AI, Recommend a developer, risque des sprints) et, avec une clé OpenAI, l'onglet **Assistant**.
 3. **Démarrer Docker Desktop**, puis « continuer » : **TASK 26 — Docker et Docker Compose**.

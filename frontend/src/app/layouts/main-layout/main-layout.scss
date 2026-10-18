@@ -71,6 +71,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
+<<<<<<< HEAD
+=======
+  width: 100%;
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
   height: 32px;
   margin-bottom: 8px;
   padding: 0 8px;
@@ -78,6 +82,7 @@
   border-radius: 6px;
   background: var(--mat-sys-surface);
   color: var(--spm-muted);
+<<<<<<< HEAD
 
   input {
     flex: 1;
@@ -92,6 +97,26 @@
   &:focus-within {
     border-color: var(--mat-sys-primary);
   }
+=======
+  font: var(--mat-sys-body-medium);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--mat-sys-primary);
+    outline: none;
+  }
+
+  &.nav-item {
+    border: 0;
+    background: transparent;
+  }
+}
+
+.search-label {
+  flex: 1;
+  text-align: left;
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 }
 
 .nav,

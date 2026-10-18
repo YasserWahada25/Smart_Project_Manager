@@ -1,6 +1,10 @@
 # AI Features and Models
 
+<<<<<<< HEAD
 > Current state: **AI-01 (planning from the specification, TASK 22), AI-02 (developer recommendation, TASK 23) and AI-03 (sprint delay risk, TASK 24) and AI-04 (manager assistant, TASK 25) are implemented.**
+=======
+> Current state: **AI-01 (planning from the specification, TASK 22), AI-02 (developer recommendation, TASK 23) AI-03 (sprint delay risk, TASK 24), AI-04 (manager assistant, TASK 25) and AI-05 (sprint retrospective) are implemented.**
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 > Each feature section is completed (approach, data, model, metrics, endpoint) when the feature is implemented.
 
 ## 1. Principles
@@ -18,8 +22,14 @@
 | AI-02 | Developer recommendation | Task required skills (or skills found in its text), developer skills and levels, current workload, previous experience | Ranked developers: compatibility score 0–100, matching / missing skills, score breakdown, explanation | **Done** (TASK 23) |
 | AI-03 | Sprint delay risk prediction | Total/completed/blocked/unassigned tasks, open high-complexity tasks, story points, dates, team size, velocity of the previous sprints | Risk level (`LOW`/`MEDIUM`/`HIGH`), probability, main contributing factors | **Done** (TASK 24) |
 | AI-04 | Manager assistant (chat) | Manager message + project data (through backend tools) | Answers, and changes proposed then applied only after the manager confirms | **Done** (TASK 25) |
+<<<<<<< HEAD
 | OPT-1 | Task complexity estimation | — | — | Covered by AI-01 (story points per task) |
 | OPT-2 | Automatic sprint summary | — | — | Optional |
+=======
+| AI-05 | Sprint retrospective | Facts of a completed sprint: tasks and outcome, blocks (history), tasks added after the start, late tasks, workload per member, velocity of the previous sprints | Metrics, summary, delivered / not finished / blockers / what went well / what to improve, 1–5 actions that can become tasks | **Done** (AI-05) |
+| OPT-1 | Task complexity estimation | — | — | Covered by AI-01 (story points per task) |
+| OPT-2 | Automatic sprint summary | — | — | Covered by AI-05 (sprint retrospective) and AI-04 ("Summarize the sprint") |
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 | OPT-3 | Intelligent task prioritization | — | — | Optional |
 
 The technical approach (ML vs. LLM vs. rule-based scoring) is decided and justified in each feature's task.
@@ -230,8 +240,39 @@ There is **no delete tool**. The chat acts on the project **data**, never on the
 
 **Why no local fallback.** Unlike AI-01, understanding free questions and choosing tools requires an LLM; without `OPENAI_API_KEY` the backend answers 503 `LLM_NOT_CONFIGURED` and the page explains how to enable the assistant (AI-01 to AI-03 keep working).
 
+<<<<<<< HEAD
 **Safeguards.** Manager of a non-archived project only; ≤ 20 messages of ≤ 4 000 characters per request, no `system` message accepted from the browser; ≤ 6 model calls and ≤ 12 tool calls per message; tool arguments validated by Pydantic (AI service) then every id checked inside the project (backend); invalid calls are returned to the model as errors (it can correct itself); untrusted data rule in the prompt; the conversation is kept in the page only (not stored).
 
 **Evaluation.** No key was available during development: the behaviour of a real model is **not measured**. The loop, the proposals, the confirmations and the safeguards are verified by automated tests with a mocked OpenAI (pytest, Jest, Vitest) and by an end-to-end run of the real services against a **simulated OpenAI server** that calls the tools (12/12 checks, [testing.md](testing.md)).
 
 **Limits.** Quality depends on the model; answers are not cached; the conversation is lost when leaving the page; only five kinds of change are possible (no deletion, no member management, no sprint status change).
+=======
+**Safeguards.** Manager of a non-archived project only; ≤ 20 messages of ≤ 4 000 characters per request, no `system` message accepted from the browser; ≤ 6 model calls and ≤ 12 tool calls per message; tool arguments validated by Pydantic (AI service) then every id checked inside the project (backend); invalid calls are returned to the model as errors (it can correct itself); untrusted data rule in the prompt. The conversation is **saved per manager and project** (`assistantconversations`, 200 messages max) with the outcome of each proposal: it is still there after leaving the page or reloading; a saved proposal is applied with its stored arguments, and only once (api.md § 1.17).
+
+**Evaluation.** The loop is verified with **Google Gemini** (`gemini-3.5-flash-lite`): 6/6 end-to-end checks on 3 October 2026, then the saved conversation (FIX-1, 4 October: question → proposal → confirmation → reload); the quality of the answers is not measured on a benchmark. The loop, the proposals, the confirmations and the safeguards are verified by automated tests with a mocked OpenAI (pytest, Jest, Vitest) and by an end-to-end run of the real services against a **simulated OpenAI server** that calls the tools (12/12 checks, [testing.md](testing.md)).
+
+**Limits.** Quality depends on the model; answers are not cached; one saved conversation per manager and project (no list of past conversations); only five kinds of change are possible (no deletion, no member management, no sprint status change).
+
+### 4.5 AI-05 — Sprint retrospective (LLM + rules)
+
+**Problem.** At the end of a sprint, agile teams hold a retrospective: what was delivered, what slipped and why, what slowed the team down, what to change. It is usually written by hand from memory. AI-05 writes it from the facts recorded by the platform, as soon as the manager completes the sprint, and saves it with the sprint; each proposed action can become a task of the next sprint in one click. Chosen by the supervisor (prompt #53 of [prompts.md](prompts.md)).
+
+**Approach: figures by code, text by the LLM, rules as a fallback.**
+
+| Step | Where | What |
+|---|---|---|
+| 1. Facts | backend `aiRetrospective.service.js` | Tasks of the sprint (title, type, priority, points, status, assignee, blocked reason), **blocked at some point** (`TASK_STATUS_CHANGED` → BLOCKED in the history), **added after the start** (created after the first day), **late** (finished after the deadline, or still open with the deadline passed at closing), workload per active member, velocity of the 3 previous completed sprints (this one excluded) |
+| 2. Metrics | AI service `services/retrospective.py` | Computed by code, never by the model: tasks and points done, completion (share of the committed points), duration, velocity (points/day) and its change vs the previous sprints, blocked tasks, added tasks, late tasks, unfinished unassigned tasks |
+| 3a. Text — LLM | `prompts/retrospective.py`, `llm_client.py` | Same key and model as AI-01 / AI-04 (Gemini on the development machine). Structured output (JSON schema): summary, delivered, slipped, blockers, wentWell, toImprove, actions. The facts are given with explicit names and **ready-made percentages**, and the **language** is detected from the titles and the objective (French / English) |
+| 3b. Text — rules | `services/retrospective.py` | Without a key, **or when the LLM fails**: the same sections built by rules from the metrics (e.g. completion < 80 % → "Re-plan the N tasks not finished" and "Commit to about X points"; blocks → "Review the causes of the blocked tasks"; scope growth > 20 % → "Freeze the sprint scope"; one member > 50 % of the points in a team of 3+ → "Balance the workload"). `method: "local"`, with a warning explaining a fallback |
+| 4. Validation, storage | backend | Strict contract (lengths, counts, enums, metric types) → otherwise **502**; saved in `sprintretrospectives` (one per sprint, replaced when regenerated) |
+| 5. Interface | Angular `features/ai-retrospective/` | Sprints tab: generated and opened right after **Complete**; **Retrospective** button on completed sprints (every member reads it; the manager regenerates); **Create task** on each action (next planned sprint by default, or another open sprint, or the backlog) |
+
+**Why an LLM here.** A retrospective is mostly text: summarising, grouping similar tasks, linking a block to its consequence, phrasing actions. The facts and numbers stay deterministic (code), so the model only writes; and the rules guarantee a useful result without a key.
+
+**Real run (Gemini `gemini-3.5-flash-lite`, 18 October 2026)**, sprint of 5 French tasks (2 done, 1 blocked "Accès au bac à sable de la banque non reçu", 1 added after the start, 1 late), previous velocity 1.5 points/day: answer in **2.9 s**, in French, with the exact figures (2 tasks, 13 of 29 points, velocity −38 %), the blocker and its reason, and two actions ("Vérifier l'accès au bac à sable de la banque", "Attribuer les tâches non assignées avant le début du sprint"); the first was turned into a task of the next sprint. The first run of the prompt revealed two defects, fixed in `sprint-retrospective-v2`: the model wrote "448 %" for a ratio of 0.448 (the facts now carry ready-made percentages) and answered in English for French tasks (the language is now detected and given).
+
+**Safeguards.** Manager of a non-archived project to generate or create tasks; any project member can read; completed sprints only (409 otherwise); facts between markers and declared untrusted (task titles, objective and blocked reasons are written by users); the model never changes data — an action becomes a task only when the manager clicks **Create task**, once (the action is reserved atomically; it is released if the task cannot be created), through the normal task creation (validation, history, notifications).
+
+**Limits.** The facts come from the platform only (no team feelings, no meeting notes); "added after the start" relies on the creation date (a task moved into the sprint later is not detected); regenerating replaces the text and the actions (tasks already created are kept); the quality of the LLM text is checked on real runs, not on a benchmark.
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b

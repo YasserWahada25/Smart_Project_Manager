@@ -25,4 +25,17 @@ Les fichiers ne contiennent jamais de secret (aucune valeur des `.env`).
 | TASK 24 | AI-03 risque de retard d'un sprint (régression logistique, jeu de données simulé) | [TASK-24.md](TASK-24.md) | Terminée |
 | TASK 25 | AI-04 assistant du manager (chat OpenAI avec outils, confirmation avant modification) | [TASK-25.md](TASK-25.md) | Terminée |
 | UX-1 | Identité visuelle « Smart Manager » (couleurs du logo), barre latérale à la Linear, thème clair / sombre / système, avatars | [UX-1.md](UX-1.md) | Terminé |
+<<<<<<< HEAD
+=======
+| UX-2 | Glisser-déposer sur le Kanban et « + Add task » | [UX-2.md](UX-2.md) | Terminé |
+| UX-3 | Palette de commandes Ctrl+K et tâche en panneau latéral | [UX-3.md](UX-3.md) | Terminé |
+| UX-4 | Accueil « Mon travail » et bouton « Ask AI » global | [UX-4.md](UX-4.md) | Terminé |
+| UX-5 | Bouton « Ask AI » rond et flottant (style Gemini) | [UX-5.md](UX-5.md) | Terminé |
+| UX-6 | Menu du compte : choix du thème aligné, coche à droite | [UX-6.md](UX-6.md) | Terminé |
+| UX-7 | Panneau latéral de la tâche : une colonne, détails compacts | [UX-7.md](UX-7.md) | Terminé |
+| Rapport technique | Rapport Word des 5 étudiants (architecture, frameworks, API, modèles IA, prompts ; contribution de chacun) | [Smart_Manager_Rapport_Technique.docx](../Smart_Manager_Rapport_Technique.docx) | Terminé |
+| AI-05 | Rétrospective de sprint automatique (Gemini ou règles), enregistrée ; actions → tâches | [AI-05.md](AI-05.md) | Terminé |
+| Livrable 3 | Présentation des prompts et modèles IA (document Word, 30 pages, version 1.1 avec AI-05, guide vers les livrables) | [Smart_Manager_Prompts_et_Modeles_IA.docx](../Smart_Manager_Prompts_et_Modeles_IA.docx) | Terminé |
+| FIX-1 | Conversation de l'assistant enregistrée (ne disparaît plus au changement de page) | [FIX-1.md](FIX-1.md) | Terminé |
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 | TASK 26 | Docker et Docker Compose | — | Prévue |

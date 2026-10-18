@@ -19,9 +19,20 @@ const LEVELS = ['LOW', 'MEDIUM', 'HIGH'];
 
 const isoDate = (date) => date.toISOString().slice(0, 10);
 
+<<<<<<< HEAD
 /** Story points per day delivered in the last completed sprints of the project (null if none). */
 async function historicalVelocity(projectId) {
   const sprints = await Sprint.find({ project: projectId, status: SPRINT_STATUSES.COMPLETED })
+=======
+/**
+ * Story points per day delivered in the last completed sprints of the project (null if none).
+ * `exclude`: a sprint left out (AI-05 compares a completed sprint with the previous ones).
+ */
+async function historicalVelocity(projectId, { exclude } = {}) {
+  const filter = { project: projectId, status: SPRINT_STATUSES.COMPLETED };
+  if (exclude) filter._id = { $ne: exclude };
+  const sprints = await Sprint.find(filter)
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
     .sort({ endDate: -1 })
     .limit(VELOCITY_SPRINTS)
     .select('startDate endDate');

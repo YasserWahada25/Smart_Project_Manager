@@ -1,7 +1,11 @@
 # Livrable — TASK 24 : AI-03 prédiction du risque de retard d'un sprint
 
 > Sur chaque sprint actif (onglet Sprints, tableau de bord du projet, tableau de bord général) : « Delay risk (AI): High (82 %) » et jusqu'à trois raisons chiffrées. Modèle de Machine Learning : régression logistique entraînée sur des sprints simulés.
+<<<<<<< HEAD
 > Réalisée le 3 octobre 2026 (13 h 25 → 13 h 40). Code commité par le superviseur dans `36888e4`.
+=======
+> Réalisée le 3 octobre 2026 (13 h 25 → 13 h 40). Code commité par le superviseur dans `e822517`.
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 ## 1. Prompts à l'origine
 

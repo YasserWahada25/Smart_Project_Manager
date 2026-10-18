@@ -81,7 +81,9 @@
       <ng-container matColumnDef="title">
         <th mat-header-cell *matHeaderCellDef>Task</th>
         <td mat-cell *matCellDef="let task">
-          <a class="title" [routerLink]="[task.id]">{{ task.title }}</a>
+          <a class="title" [attr.href]="taskUrl(task.id)" (click)="openTask($event, task.id)">{{
+            task.title
+          }}</a>
           <span class="type">{{ typeLabel(task.type) }}</span>
         </td>
       </ng-container>

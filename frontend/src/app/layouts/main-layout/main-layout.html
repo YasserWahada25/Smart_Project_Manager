@@ -30,6 +30,7 @@
         }
       </div>
 
+<<<<<<< HEAD
       @if (compact()) {
         <a
           class="nav-item"
@@ -150,6 +151,118 @@
 
       <span class="grow"></span>
 
+=======
+      <!-- Linear-like: the search field opens the command palette (Ctrl+K). -->
+      <button
+        type="button"
+        class="sidebar-search"
+        [class.nav-item]="compact()"
+        aria-label="Search or jump to… (Ctrl+K)"
+        aria-keyshortcuts="Control+K"
+        [matTooltip]="compact() ? 'Search (Ctrl+K)' : ''"
+        matTooltipPosition="right"
+        (click)="openPalette()"
+      >
+        <mat-icon aria-hidden="true">search</mat-icon>
+        @if (!compact()) {
+          <span class="search-label">Search or jump to…</span>
+          <kbd aria-hidden="true">Ctrl K</kbd>
+        }
+      </button>
+
+      <nav class="nav" aria-label="Main">
+        @for (item of navItems(); track item.path) {
+          <a
+            class="nav-item"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+            [attr.aria-label]="
+              item.inbox && unreadCount() > 0
+                ? item.label + ', ' + unreadCount() + ' unread'
+                : compact()
+                  ? item.label
+                  : null
+            "
+            [matTooltip]="compact() ? item.label : ''"
+            matTooltipPosition="right"
+            (click)="isHandset() && drawer.close()"
+          >
+            <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+            @if (!compact()) {
+              <span class="label">{{ item.label }}</span>
+            }
+            @if (item.inbox && unreadCount() > 0) {
+              <span class="count" [class.dot]="compact()" aria-hidden="true">{{
+                compact() ? '' : unreadCount()
+              }}</span>
+            }
+          </a>
+        }
+      </nav>
+
+      <section class="projects" aria-labelledby="sidebar-projects">
+        <div class="section-header">
+          @if (!compact()) {
+            <h2 id="sidebar-projects">Projects</h2>
+          } @else {
+            <h2 id="sidebar-projects" class="visually-hidden">Projects</h2>
+          }
+          @if (canCreateProject() && !compact()) {
+            <a
+              mat-icon-button
+              class="add-button"
+              routerLink="/projects/new"
+              aria-label="New project"
+              matTooltip="New project"
+            >
+              <mat-icon>add</mat-icon>
+            </a>
+          }
+        </div>
+        <ul>
+          @for (project of projects(); track project.id) {
+            <li>
+              <a
+                class="nav-item project-item"
+                [class.archived]="project.status === 'ARCHIVED'"
+                [routerLink]="['/projects', project.id]"
+                routerLinkActive="active"
+                [attr.aria-label]="compact() ? project.name : null"
+                [matTooltip]="compact() ? project.name : ''"
+                matTooltipPosition="right"
+                (click)="isHandset() && drawer.close()"
+              >
+                <span
+                  class="project-mark"
+                  [style.background]="projectColor(project)"
+                  aria-hidden="true"
+                  >{{ projectInitial(project) }}</span
+                >
+                @if (!compact()) {
+                  <span class="label">{{ project.name }}</span>
+                }
+              </a>
+            </li>
+          } @empty {
+            @if (!compact()) {
+              <li class="empty">
+                No project yet.
+                @if (canCreateProject()) {
+                  <a routerLink="/projects/new">Create one</a>
+                }
+              </li>
+            }
+          }
+        </ul>
+        @if (projectsTotal() > projects().length && !compact()) {
+          <a class="more" routerLink="/projects">All projects ({{ projectsTotal() }})</a>
+        }
+      </section>
+
+      <span class="grow"></span>
+
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
       @if (user(); as current) {
         <button
           type="button"
@@ -166,7 +279,11 @@
             <mat-icon aria-hidden="true">unfold_more</mat-icon>
           }
         </button>
+<<<<<<< HEAD
         <mat-menu #userMenu="matMenu" xPosition="after" yPosition="above">
+=======
+        <mat-menu #userMenu="matMenu" xPosition="after" yPosition="above" class="account-menu">
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
           <div class="menu-header" role="presentation">
             <span class="menu-name">{{ current.firstName }} {{ current.lastName }}</span>
             <span class="menu-role">{{ roleLabel() }}</span>
@@ -184,6 +301,7 @@
               type="button"
               role="menuitemradio"
               [attr.aria-checked]="theme.mode() === option.mode"
+<<<<<<< HEAD
               (click)="theme.setMode(option.mode)"
             >
               <mat-icon>{{ option.icon }}</mat-icon>
@@ -191,6 +309,19 @@
               @if (theme.mode() === option.mode) {
                 <mat-icon class="menu-check" aria-hidden="true">check</mat-icon>
               }
+=======
+              [class.selected]="theme.mode() === option.mode"
+              (click)="theme.setMode(option.mode)"
+            >
+              <mat-icon>{{ option.icon }}</mat-icon>
+              <!-- The check is inside the label: a direct mat-icon child would be moved before the text. -->
+              <span class="menu-option">
+                {{ option.label }}
+                @if (theme.mode() === option.mode) {
+                  <mat-icon class="menu-check" aria-hidden="true">check</mat-icon>
+                }
+              </span>
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
             </button>
           }
           <mat-divider />
@@ -222,5 +353,40 @@
     <main class="content">
       <router-outlet />
     </main>
+
+    <!-- Global "Ask AI" (Notion AI / ClickUp Brain style): the assistant of a managed project. -->
+    @if (showAskAi()) {
+      <button
+        type="button"
+        class="ask-ai-fab"
+        [matMenuTriggerFor]="askMenu"
+        matTooltip="Ask AI"
+        matTooltipPosition="left"
+        aria-label="Ask AI"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 2C12.6 7.4 16.6 11.4 22 12C16.6 12.6 12.6 16.6 12 22C11.4 16.6 7.4 12.6 2 12C7.4 11.4 11.4 7.4 12 2Z"
+          />
+        </svg>
+      </button>
+      <mat-menu #askMenu="matMenu" xPosition="before" yPosition="above">
+        <div class="menu-section" role="presentation">Ask the AI assistant about…</div>
+        @for (project of askAiProjects(); track project.id) {
+          <button mat-menu-item type="button" (click)="askAi(project)">
+            <span
+              class="project-mark menu-mark"
+              [style.background]="projectColor(project)"
+              aria-hidden="true"
+              >{{ projectInitial(project) }}</span
+            >
+            <span>{{ project.name }}</span>
+            @if (project.id === currentProjectId()) {
+              <span class="menu-role"> · this project</span>
+            }
+          </button>
+        }
+      </mat-menu>
+    }
   </mat-sidenav-content>
 </mat-sidenav-container>

@@ -8,6 +8,7 @@ const { containsInsensitive } = require('../utils/regex');
 const { sameId } = require('../utils/ids');
 const { Activity, ACTIVITY_TYPES } = require('../models/activity.model');
 const { Notification } = require('../models/notification.model');
+const { AssistantConversation } = require('../models/assistantConversation.model');
 const access = require('./projectAccess.service');
 const activityService = require('./activity.service');
 
@@ -112,10 +113,11 @@ async function deleteProject(actor, projectId) {
     throw ApiError.conflict('The project still has sprints or tasks: archive it instead of deleting it');
   }
   await project.deleteOne();
-  // The history and the notifications of a deleted project would point to nothing.
+  // The history, notifications and assistant conversations of a deleted project would point to nothing.
   await Promise.all([
     Activity.deleteMany({ project: project._id }),
     Notification.deleteMany({ project: project._id }),
+    AssistantConversation.deleteMany({ project: project._id }),
   ]);
 }
 

@@ -18,8 +18,19 @@
   }
 }
 
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+
+  @media (max-width: 1099px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .status-card {
-  max-width: 640px;
+  font-size: 13px;
 }
 
 .rows {

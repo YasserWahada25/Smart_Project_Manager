@@ -1,7 +1,11 @@
 # Livrable — TASK 22 : AI-01 « Plan with AI »
 
 > Planification d'un projet depuis son cahier des charges : le manager colle le texte et/ou dépose un fichier, l'IA propose les sprints et les tâches, le manager relit, modifie puis valide la création.
+<<<<<<< HEAD
 > Réalisée le 3 octobre 2026 en deux sessions : agent 1 (service IA et backend, commit `a8470b0` du superviseur), agent 2 (écran Angular, vérification de bout en bout, correction, documentation — **non commité**, à valider par le superviseur).
+=======
+> Réalisée le 3 octobre 2026 en deux sessions : agent 1 (service IA et backend, commit `a8470b0` du superviseur), agent 2 (écran Angular, vérification de bout en bout, correction, documentation — commit `f38333c`).
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 ## 1. Prompts à l'origine
 
@@ -49,7 +53,11 @@
 | `backend/tests/aiPlan.test.js` | 343 | Tests Jest / Supertest |
 | `docs/handoff.md` | 87 | Passation vers l'agent 2 |
 
+<<<<<<< HEAD
 ### Agent 2 — interface Angular et livrables (non commité)
+=======
+### Agent 2 — interface Angular et livrables (commit `f38333c`)
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 | Fichier | Lignes | Rôle |
 |---|---|---|
@@ -76,7 +84,11 @@
 | `.gitignore` | `ai-service/app/ml/models/` (modèle généré) |
 | `README.md`, `docs/bilan.md`, `docs/prompts.md` | État intermédiaire |
 
+<<<<<<< HEAD
 ### Agent 2 (non commité)
+=======
+### Agent 2 (commit `f38333c`)
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 | Fichier | Modification |
 |---|---|

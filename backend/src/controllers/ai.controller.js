@@ -2,6 +2,10 @@ const { matchedData } = require('express-validator');
 const aiClient = require('../services/aiClient.service');
 const aiAssistantService = require('../services/aiAssistant.service');
 const aiRecommendationService = require('../services/aiRecommendation.service');
+<<<<<<< HEAD
+=======
+const aiRetrospectiveService = require('../services/aiRetrospective.service');
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 const aiRiskService = require('../services/aiRisk.service');
 
 async function getStatus(req, res) {
@@ -28,4 +32,50 @@ async function assistantAction(req, res) {
   res.status(201).json(await aiAssistantService.executeAction(req.user, req.params.id, req.body));
 }
 
+<<<<<<< HEAD
 module.exports = { getStatus, recommendDevelopers, sprintRisk, assistantChat, assistantAction };
+=======
+/** AI-04: the saved conversation of the manager with the assistant of the project. */
+async function assistantConversation(req, res) {
+  res.json(await aiAssistantService.getConversation(req.user, req.params.id));
+}
+
+async function clearAssistantConversation(req, res) {
+  await aiAssistantService.clearConversation(req.user, req.params.id);
+  res.status(204).end();
+}
+
+async function dismissAssistantProposal(req, res) {
+  res.json(await aiAssistantService.dismissProposal(req.user, req.params.id, req.params.proposalId));
+}
+
+/** AI-05: the saved retrospective of a sprint (project viewers), or null. */
+async function sprintRetrospective(req, res) {
+  res.json(await aiRetrospectiveService.getRetrospective(req.user, req.params.id));
+}
+
+/** AI-05: generates (or regenerates) the retrospective of a completed sprint (manager). */
+async function generateSprintRetrospective(req, res) {
+  res.status(201).json(await aiRetrospectiveService.generateRetrospective(req.user, req.params.id));
+}
+
+/** AI-05: a task created from an action of the retrospective (manager, once per action). */
+async function retrospectiveActionTask(req, res) {
+  const { sprint = null } = matchedData(req, { locations: ['body'] });
+  res.status(201).json(await aiRetrospectiveService.createTaskFromAction(req.user, req.params.id, req.params.actionId, { sprint }));
+}
+
+module.exports = {
+  getStatus,
+  recommendDevelopers,
+  sprintRisk,
+  assistantChat,
+  assistantAction,
+  assistantConversation,
+  clearAssistantConversation,
+  dismissAssistantProposal,
+  sprintRetrospective,
+  generateSprintRetrospective,
+  retrospectiveActionTask,
+};
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b

@@ -25,6 +25,7 @@ import {
 import { HealthService } from '../../core/services/health.service';
 import { ErrorState } from '../../shared/components/error-state/error-state';
 import { LoadingState } from '../../shared/components/loading-state/loading-state';
+import { MyWork } from './my-work/my-work';
 
 interface StatusRow {
   label: string;
@@ -33,12 +34,20 @@ interface StatusRow {
 }
 
 /**
- * Landing page. Shows whether the whole chain works: Angular → Express API → MongoDB.
- * (Replaced by the dashboard once authentication and the dashboard UI exist.)
+ * Home page: greeting, "My work" (quick actions, key figures, my tasks or the active sprints with
+ * their AI risk) and, on the side, whether the whole chain works (Angular → Express → MongoDB → AI).
  */
 @Component({
   selector: 'app-home',
-  imports: [DatePipe, MatCardModule, MatIconModule, MatButtonModule, LoadingState, ErrorState],
+  imports: [
+    DatePipe,
+    MatCardModule,
+    MatIconModule,
+    MatButtonModule,
+    LoadingState,
+    ErrorState,
+    MyWork,
+  ],
   templateUrl: './home.html',
   styleUrl: './home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,6 +57,12 @@ export class Home {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly appName = APP_NAME;
+  protected readonly today = new Date();
+  /** "Good morning / afternoon / evening" from the local time. */
+  protected readonly greeting = computed(() => {
+    const hour = this.today.getHours();
+    return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  });
   protected readonly user = inject(AuthService).currentUser;
   protected readonly roleLabel = computed(() => {
     const user = this.user();

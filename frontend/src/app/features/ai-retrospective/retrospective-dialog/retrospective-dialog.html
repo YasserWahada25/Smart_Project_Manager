@@ -1,0 +1,138 @@
+<h2 mat-dialog-title>Retrospective — {{ data.sprintName }}</h2>
+<mat-dialog-content>
+  @if (loading()) {
+    <app-loading-state message="Loading the retrospective…" />
+  } @else if (generating()) {
+    <div class="busy" role="status">
+      <mat-progress-bar mode="indeterminate" aria-label="Writing the retrospective" />
+      <p>The AI is reviewing the sprint: delivered work, blocks, velocity…</p>
+    </div>
+  } @else if (errorMessage(); as message) {
+    <app-error-state [message]="message" (retry)="retry()" />
+  } @else if (retrospective(); as retro) {
+    <p class="source">
+      <mat-icon aria-hidden="true">auto_awesome</mat-icon>
+      <span>{{ source(retro) }} · {{ retro.updatedAt | date: 'medium' }}</span>
+    </p>
+
+    <ul class="figures" aria-label="Sprint figures">
+      <li>
+        <strong>{{ retro.metrics.doneTasks }} / {{ retro.metrics.totalTasks }}</strong>
+        <span>tasks done</span>
+      </li>
+      <li>
+        <strong>{{ retro.metrics.completionRate | percent }}</strong>
+        <span>{{ retro.metrics.donePoints }} / {{ retro.metrics.totalPoints }} points</span>
+      </li>
+      <li>
+        <strong>{{ retro.metrics.velocity }}</strong>
+        <span>
+          points / day
+          @if (retro.metrics.velocityChange !== null) {
+            <span [class.down]="retro.metrics.velocityChange < 0">
+              ({{ retro.metrics.velocityChange > 0 ? '+' : ''
+              }}{{ retro.metrics.velocityChange | percent }})
+            </span>
+          }
+        </span>
+      </li>
+      <li [class.alert]="retro.metrics.blockedDuringSprint > 0">
+        <strong>{{ retro.metrics.blockedDuringSprint }}</strong>
+        <span>blocked</span>
+      </li>
+    </ul>
+
+    @for (warning of retro.warnings; track $index) {
+      <p class="warning" role="status">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <span>{{ warning }}</span>
+      </p>
+    }
+
+    <p class="summary">{{ retro.summary }}</p>
+
+    @for (section of sections; track section.key) {
+      @if (retro[section.key].length > 0) {
+        <section [attr.data-section]="section.key">
+          <h3>
+            <mat-icon aria-hidden="true">{{ section.icon }}</mat-icon
+            >{{ section.title }}
+          </h3>
+          <ul>
+            @for (item of retro[section.key]; track $index) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </section>
+      }
+    }
+
+    @if (retro.actions.length > 0) {
+      <section class="actions">
+        <h3><mat-icon aria-hidden="true">checklist</mat-icon>Actions for the next sprint</h3>
+        <ul>
+          @for (action of retro.actions; track action.id) {
+            <li class="action">
+              <div class="action-head">
+                <strong>{{ action.title }}</strong>
+                <span class="chip">{{ typeLabels[action.type] }}</span>
+                <span class="chip">{{ priorityLabels[action.priority] }}</span>
+              </div>
+              @if (action.description) {
+                <p class="muted">{{ action.description }}</p>
+              }
+              @if (action.task) {
+                <span class="created"
+                  ><mat-icon aria-hidden="true">check_circle</mat-icon>Task created</span
+                >
+              } @else if (data.canEdit) {
+                <div class="to-task">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Add to</mat-label>
+                    <mat-select
+                      [value]="target(action)"
+                      [attr.aria-label]="'Destination of ' + action.title"
+                      (selectionChange)="setTarget(action, $event.value)"
+                    >
+                      @for (sprint of data.openSprints; track sprint.id) {
+                        <mat-option [value]="sprint.id">{{ sprint.name }}</mat-option>
+                      }
+                      <mat-option value="">Backlog</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    [disabled]="creating() !== null"
+                    [attr.aria-label]="'Create a task: ' + action.title"
+                    (click)="createTask(action)"
+                  >
+                    <mat-icon>add_task</mat-icon>
+                    Create task
+                  </button>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  } @else {
+    <p class="empty">No retrospective yet for this sprint.</p>
+    @if (data.canEdit) {
+      <p class="muted">
+        The AI reviews the sprint from its tasks — delivered work, unfinished tasks, blocks,
+        velocity compared with the previous sprints — and proposes actions for the next one.
+      </p>
+    }
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  @if (data.canEdit && !loading() && !generating()) {
+    <button mat-button type="button" (click)="generate()">
+      <mat-icon>auto_awesome</mat-icon>
+      {{ retrospective() ? 'Regenerate' : 'Generate the retrospective' }}
+    </button>
+  }
+  <button mat-flat-button type="button" mat-dialog-close>Close</button>
+</mat-dialog-actions>

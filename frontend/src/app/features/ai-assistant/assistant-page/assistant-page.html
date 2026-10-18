@@ -4,7 +4,11 @@
     Assistant
   </h2>
   @if (entries().length > 0) {
+<<<<<<< HEAD
     <button mat-button type="button" [disabled]="thinking()" (click)="clear()">
+=======
+    <button mat-button type="button" [disabled]="thinking() || clearing()" (click)="clear()">
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
       <mat-icon>restart_alt</mat-icon>
       New conversation
     </button>
@@ -81,7 +85,16 @@
         }
       </article>
     } @empty {
+<<<<<<< HEAD
       @if (available()) {
+=======
+      @if (loading()) {
+        <div class="thinking" role="status">
+          <mat-progress-bar mode="indeterminate" aria-label="Loading the conversation" />
+          <span class="hint">Loading the conversation…</span>
+        </div>
+      } @else if (available()) {
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
         <div class="suggestions">
           <span class="hint">Try:</span>
           @for (suggestion of suggestions; track suggestion) {
@@ -119,7 +132,11 @@
     <button
       mat-flat-button
       type="submit"
+<<<<<<< HEAD
       [disabled]="thinking() || !available() || !question.value.trim()"
+=======
+      [disabled]="thinking() || loading() || !available() || !question.value.trim()"
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
     >
       <mat-icon>send</mat-icon>
       Send

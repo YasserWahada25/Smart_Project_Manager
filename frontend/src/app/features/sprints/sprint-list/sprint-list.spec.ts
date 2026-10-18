@@ -17,6 +17,10 @@ import {
   testUser,
 } from '../../../testing/test-data';
 import { AiRiskService } from '../../ai-risk/ai-risk.service';
+<<<<<<< HEAD
+=======
+import { RetrospectiveDialog } from '../../ai-retrospective/retrospective-dialog/retrospective-dialog';
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 import { ProjectContext } from '../../projects/project-context';
 import { SprintFormDialog } from '../sprint-form-dialog/sprint-form-dialog';
 import { SprintService } from '../sprint.service';
@@ -129,6 +133,48 @@ describe('SprintList', () => {
     expect(confirm.confirm).not.toHaveBeenCalled();
     expect(sprintService.setStatus).toHaveBeenCalledWith('s3', 'ACTIVE');
     expect(toast.error).toHaveBeenCalledWith('The project already has an active sprint: Sprint 2');
+  });
+
+  it('opens the AI retrospective of completed sprints, generated right after completion', async () => {
+    await render();
+    expect(button(cards()[1], 'Retrospective')).toBeUndefined();
+    button(cards()[0], 'Retrospective')!.click();
+    expect(dialog.open).toHaveBeenLastCalledWith(
+      RetrospectiveDialog,
+      expect.objectContaining({
+        data: {
+          sprintId: 's1',
+          sprintName: 'Sprint 1',
+          canEdit: true,
+          generate: false,
+          openSprints: [
+            { id: 's2', name: 'Sprint 2', status: 'ACTIVE' },
+            { id: 's3', name: 'Sprint 3', status: 'PLANNED' },
+          ],
+        },
+      }),
+    );
+
+    sprintService.setStatus.mockReturnValue(
+      of(testSprint({ id: 's2', name: 'Sprint 2', status: 'COMPLETED' })),
+    );
+    button(cards()[1], 'Complete')!.click();
+    await fixture.whenStable();
+    expect(dialog.open).toHaveBeenLastCalledWith(
+      RetrospectiveDialog,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          sprintId: 's2',
+          generate: true,
+          openSprints: [{ id: 's3', name: 'Sprint 3', status: 'PLANNED' }],
+        }),
+      }),
+    );
+
+    TestBed.resetTestingModule();
+    await render(testUser({ id: 'd1', role: 'DEVELOPER' }));
+    button(cards()[0], 'Retrospective')!.click();
+    expect(dialog.open.mock.lastCall![1].data.canEdit).toBe(false);
   });
 
   it('completes, cancels and deletes after confirmation, then reloads', async () => {

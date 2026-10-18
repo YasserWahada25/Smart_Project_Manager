@@ -1,7 +1,11 @@
 # Livrable — UX-1 : identité visuelle et nouvelle interface (inspirée de Linear)
 
 > Premier lot d'amélioration de l'expérience utilisateur : l'application devient **« Smart Manager »**, aux couleurs de son logo, avec une barre latérale à la Linear, un thème clair / sombre / système et des avatars.
+<<<<<<< HEAD
 > Réalisé le 4 octobre 2026. **Non commité.**
+=======
+> Réalisé le 4 octobre 2026. Commit `abda49f`.
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 ## 1. Prompts à l'origine
 

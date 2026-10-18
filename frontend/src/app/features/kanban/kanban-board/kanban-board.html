@@ -23,23 +23,48 @@
     }
     @if (board(); as current) {
       <p class="summary">
-        {{ current.totalTasks }} {{ current.totalTasks === 1 ? 'task' : 'tasks' }}
+        {{ current.totalTasks }} {{ current.totalTasks === 1 ? 'task' : 'tasks' }} · drag a card to
+        another column (only the allowed columns accept it), or use its
+        <mat-icon class="inline-icon" aria-hidden="true">swap_horiz</mat-icon> "Move to" menu
       </p>
-      <div class="columns">
+      <div class="columns" cdkDropListGroup>
         @for (column of current.columns; track column.status) {
           <section
             class="column"
             [attr.data-status]="column.status"
             [attr.aria-labelledby]="'column-' + column.status"
+            [class.drop-allowed]="isDropAllowed(column.status)"
+            [class.drop-forbidden]="isDropForbidden(column.status)"
           >
             <h3 [id]="'column-' + column.status">
               {{ statusLabels[column.status] }}
               <span class="count">{{ column.count }}</span>
             </h3>
-            <ul class="cards">
+            <ul
+              class="cards"
+              cdkDropList
+              [cdkDropListData]="column.status"
+              [cdkDropListEnterPredicate]="canEnter"
+              [cdkDropListSortingDisabled]="true"
+              (cdkDropListDropped)="drop($event)"
+            >
               @for (task of column.tasks; track task.id) {
-                <li class="card" [class.overdue]="task.isOverdue">
-                  <a class="card-title" [routerLink]="['/projects', projectId, 'tasks', task.id]">
+                <li
+                  class="card"
+                  [class.overdue]="task.isOverdue"
+                  [class.draggable]="canMove(task)"
+                  cdkDrag
+                  [cdkDragData]="task"
+                  [cdkDragDisabled]="!canMove(task) || movingId() === task.id"
+                  (cdkDragStarted)="dragged.set(task)"
+                  (cdkDragEnded)="dragged.set(null)"
+                >
+                  <div class="card placeholder" *cdkDragPlaceholder></div>
+                  <a
+                    class="card-title"
+                    [attr.href]="taskUrl(task.id)"
+                    (click)="openTask($event, task.id)"
+                  >
                     {{ task.title }}
                   </a>
                   <div class="card-meta">
@@ -80,6 +105,34 @@
                 <li class="empty">No task</li>
               }
             </ul>
+            @if (column.status === 'TODO' && canQuickAdd()) {
+              @if (adding()) {
+                <form class="quick-add" (submit)="$event.preventDefault(); addTask()">
+                  <input
+                    [formControl]="newTitle"
+                    placeholder="Task title, then Enter"
+                    aria-label="Title of the new task"
+                    [attr.maxlength]="titleMaxLength"
+                    (keydown.escape)="cancelAdding()"
+                  />
+                  <div class="quick-add-actions">
+                    <button
+                      mat-flat-button
+                      type="submit"
+                      [disabled]="newTitle.invalid || creating()"
+                    >
+                      Add
+                    </button>
+                    <button mat-button type="button" (click)="cancelAdding()">Cancel</button>
+                  </div>
+                </form>
+              } @else {
+                <button mat-button type="button" class="add-card" (click)="startAdding()">
+                  <mat-icon>add</mat-icon>
+                  Add task
+                </button>
+              }
+            }
           </section>
         }
       </div>

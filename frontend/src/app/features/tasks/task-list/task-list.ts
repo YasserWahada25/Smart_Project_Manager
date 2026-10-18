@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Injector,
   computed,
   inject,
   signal,
@@ -19,7 +20,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { debounceTime, distinctUntilChanged, filter, merge } from 'rxjs';
 
 import { Sprint } from '../../../core/models/sprint';
@@ -39,6 +40,7 @@ import { fullName } from '../../../core/models/user';
 import { ToastService } from '../../../core/services/toast.service';
 import { ErrorState } from '../../../shared/components/error-state/error-state';
 import { PagedList } from '../../../shared/data/paged-list';
+import { TaskPanelService } from '../task-panel/task-panel';
 import { ProjectContext } from '../../projects/project-context';
 import { SprintService } from '../../sprints/sprint.service';
 import { TaskPriorityBadge, TaskStatusBadge } from '../task-badges';
@@ -57,7 +59,6 @@ import { Avatar } from '../../../shared/components/avatar/avatar';
     Avatar,
     DatePipe,
     ReactiveFormsModule,
-    RouterLink,
     MatTableModule,
     MatPaginatorModule,
     MatProgressBarModule,
@@ -82,6 +83,8 @@ export class TaskList {
   private readonly dialog = inject(MatDialog);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly taskPanel = inject(TaskPanelService);
+  private readonly injector = inject(Injector);
 
   protected readonly columns = [
     'title',
@@ -163,6 +166,25 @@ export class TaskList {
       sprint: sprint || undefined,
       overdue: overdue || undefined,
     });
+  }
+
+  /** Full page of a task: plain href (Ctrl/⌘-click opens it in a new tab; a click opens the panel). */
+  protected taskUrl(taskId: string): string {
+    return `/projects/${this.context.current.id}/tasks/${taskId}`;
+  }
+
+  /**
+   * Opens the task in the side panel (Linear / Jira "peek"); Ctrl/⌘-click or middle click keep the
+   * link's default behaviour (full page, new tab). The view is refreshed when the panel closes.
+   */
+  protected openTask(event: MouseEvent, taskId: string): void {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
+      return;
+    event.preventDefault();
+    this.taskPanel
+      .open({ projectId: this.context.current.id, taskId }, this.injector)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.load());
   }
 
   protected changePage({ pageIndex, pageSize }: PageEvent): void {

@@ -4,8 +4,14 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { ApiError } from '../../core/models/api-error';
 import { AiStatus, SystemStatus } from '../../core/models/system-status';
 import { AuthService } from '../../core/auth/auth.service';
+import { provideRouter } from '@angular/router';
+
 import { HealthService } from '../../core/services/health.service';
-import { fakeAuthService, testUser } from '../../testing/test-data';
+import { testDashboard } from '../../testing/dashboard-data';
+import { fakeAuthService, testPage, testUser } from '../../testing/test-data';
+import { CommandPaletteService } from '../command-palette/command-palette.service';
+import { DashboardService } from '../dashboard/dashboard.service';
+import { TaskService } from '../tasks/task.service';
 import { Home } from './home';
 
 describe('Home', () => {
@@ -27,7 +33,11 @@ describe('Home', () => {
     TestBed.configureTestingModule({
       imports: [Home],
       providers: [
+        provideRouter([]),
         { provide: HealthService, useValue: { check, checkAi } },
+        { provide: DashboardService, useValue: { get: () => of(testDashboard()) } },
+        { provide: TaskService, useValue: { assigned: () => of(testPage([])) } },
+        { provide: CommandPaletteService, useValue: { open: vi.fn() } },
         { provide: AuthService, useValue: fakeAuthService(testUser({ role: 'DEVELOPER' })) },
       ],
     });
@@ -46,8 +56,9 @@ describe('Home', () => {
   it('greets the signed-in user with their role', async () => {
     const fixture = await render(of(status('up')));
 
-    expect(text(fixture)).toContain('Welcome, Sara');
+    expect(text(fixture)).toMatch(/Good (morning|afternoon|evening), Sara/);
     expect(text(fixture)).toContain('Signed in as Developer · sara@example.com');
+    expect(text(fixture)).toContain('Assigned to me');
   });
 
   it('shows a loading state while the services are being checked', async () => {

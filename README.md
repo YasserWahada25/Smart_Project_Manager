@@ -1,72 +1,117 @@
-# Smart Project Manager
+<p align="center">
+  <img src="frontend/public/logo.png" alt="Smart Manager logo" width="140">
+</p>
 
-**Intelligent Software Project Management Platform**
+<h1 align="center">Smart Manager</h1>
 
-University mini-project — *AI for Software Engineering*.
+<p align="center">
+  <strong>Intelligent software project management platform</strong><br>
+  Mini project — module <em>AI for Software Engineering</em>
+</p>
 
-Smart Project Manager is a web platform that helps software teams manage projects, teams, sprints, tasks, priorities, deadlines and workload. An AI module assists the team with automatic task generation, developer recommendation and sprint delay-risk prediction.
+Smart Manager is a web platform that helps agile software teams manage their projects, teams, sprints, tasks, deadlines and workload. **Five AI features** assist the team: they generate the sprints and tasks from the specification, recommend the right developer for a task, predict the delay risk of a sprint, answer the manager's questions and propose changes, and write the retrospective of each completed sprint.
 
+<<<<<<< HEAD
 > **Project status:** the Express.js REST API and the Angular frontend cover every non-AI feature (authentication, users, profiles & skills, projects & teams, sprints, tasks & Kanban, comments, activity history, notifications, dashboards, search). The **FastAPI AI service** provides the four AI features: **AI-01 "Plan with AI"** (specification → sprints and tasks reviewed by the manager; OpenAI or a local analyzer with a Naive Bayes classifier), **AI-02** developer recommendation (transparent scoring), **AI-03** sprint delay risk (logistic regression) and **AI-04** manager assistant (OpenAI with tools; changes applied only after confirmation). Next: delivery (Docker, demo data, security and CI, final report).
 > See [Development progress](#development-progress) for what is actually implemented.
+=======
+**Team:** Ayoub Amiri · Med Rayen Jbili · Balkis Saidi · Nihel Hassad · Yasser Wahada
+
+> **Status:** every functional requirement and the five AI features are implemented and tested (944 automated tests). Remaining: Docker, demo data, CI. See [Roadmap](#roadmap).
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
 ---
 
-## Technology stack (fixed)
+## Features
 
-| Layer       | Technology                                   |
-|-------------|----------------------------------------------|
-| Frontend    | Angular (TypeScript)                         |
-| Backend     | Node.js + Express.js (JavaScript), REST API  |
-| Database    | MongoDB + Mongoose                           |
-| Auth        | JWT                                          |
-| AI service  | Python + FastAPI                             |
-| DevOps      | Git, GitHub, Docker, Docker Compose          |
+| Area | What users can do |
+|------|-------------------|
+| Accounts | Sign up as a developer or project manager, sign in (JWT), role-based access; administrators manage accounts and roles |
+| Profile & skills | Edit their information and password, manage their skills (name, level, years of experience) |
+| Projects & teams | Create, edit, archive projects with a status lifecycle; build the team from a developer directory searchable by skill |
+| Sprints | Plan, start, complete or cancel sprints (one active sprint per project), progress in story points |
+| Tasks & Kanban | Create and assign tasks, move them through the workflow (TODO → IN_PROGRESS → CODE_REVIEW → TESTING → DONE, or BLOCKED), drag and drop on the Kanban board |
+| Collaboration | Comments on tasks, activity history of projects and tasks, notifications with an unread counter |
+| Dashboards & search | Global and project dashboards (Chart.js), team workload, global search and a Ctrl+K command palette |
+| Interface | Angular Material 3 in the logo colours, light / dark / system theme, task side panel, keyboard accessible |
+
+## AI features
+
+| ID | Feature | Where | Approach |
+|----|---------|-------|----------|
+| **AI-01** | Planning from the specification | "Plan with AI" tab of a project | The LLM turns a pasted or uploaded specification (`.txt`, `.md`, `.pdf`, `.docx`) into epics, tasks and sprints; a local analyzer with a **Naive Bayes** classifier takes over without a key. The manager reviews everything before creation |
+| **AI-02** | Developer recommendation | "Recommend a developer" on a task | Transparent **score** (skills 60 %, workload 25 %, experience 15 %) with an explanation per developer |
+| **AI-03** | Sprint delay risk | Active sprints, dashboards, home page | **Logistic regression** on 7 sprint measures (ROC AUC 0.934 on simulated data): level, probability and causes |
+| **AI-04** | Manager assistant | "Assistant" tab and floating "Ask AI" button | LLM with **9 tools**: reads the project data, and every change it prepares is applied only after the manager confirms; the conversation is saved |
+| **AI-05** | Sprint retrospective | Opens when a sprint is completed; "Retrospective" button | Figures computed by code, text written by the LLM in the language of the tasks (rules without a key); actions become tasks in one click |
+
+The LLM is **Google Gemini** (`gemini-3.5-flash-lite`) through the OpenAI-compatible API, so the provider can be changed by configuration (OpenAI, Groq, Ollama…). AI-01 and AI-05 keep working without a key. Details: [docs/ai.md](docs/ai.md), prompts: [docs/prompts.md](docs/prompts.md).
+
+## Team and responsibilities
+
+| Student | Functional requirements | AI feature |
+|---------|-------------------------|------------|
+| Ayoub Amiri | Authentication, user management, profiles, developer skills | AI-02 Developer recommendation |
+| Yasser Wahada | Projects, teams | AI-01 Planning from the specification |
+| Nihel Hassad | Sprints, dashboards | AI-03 Sprint delay risk |
+| Balkis Saidi | Tasks, Kanban board, comments | AI-04 Manager assistant |
+| Med Rayen Jbili | Activity history, notifications, search | AI-05 Sprint retrospective |
+
+## Technology stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Angular 22 (TypeScript, standalone components, signals), Angular Material 3, CDK, Chart.js |
+| Backend | Node.js + Express 5 (JavaScript), REST API, express-validator, JWT, bcrypt, helmet |
+| Database | MongoDB 7+ with Mongoose 9 |
+| AI service | Python 3.12 + FastAPI, Pydantic 2, pure-Python ML models, OpenAI-compatible LLM client |
+| Tests & quality | Vitest, Jest + Supertest + in-memory MongoDB, pytest; ESLint, Prettier, flake8 |
+| DevOps | Git, GitHub (Docker and Docker Compose planned) |
 
 ## Architecture
 
 ```
-                 USER
-                   |
-                   v
-           Angular Frontend
-                   |
-               REST API
-                   |
-                   v
-          Express.js Backend (Node.js)
-                   |
-          +--------+--------+
-          |                 |
-          v                 v
-       MongoDB         AI Service
-       (Mongoose)      (Python / FastAPI)
-                            |
-                  +---------+---------+
-                  v                   v
-          Machine Learning          LLM
-           (if required)       (if required)
+            Browser
+               │  HTTP
+               ▼
+     Angular frontend (port 4200)
+               │  REST /api/v1 + JWT
+               ▼
+     Express backend (port 3000) ───────────► MongoDB (port 27017)
+               │  HTTP + X-AI-Service-Token
+               ▼
+     FastAPI AI service (port 8000) ────────► LLM: Google Gemini (HTTPS)
+       prompts · ML models · rules
 ```
 
 - The Angular frontend talks **only** to the Express backend.
-- The Express backend is the main API and the only component that reads/writes MongoDB.
-- The Express backend calls the FastAPI AI service when an AI operation is needed.
+- The backend is the only component that reads and writes MongoDB and calls the AI service; it validates every input, including the AI answers.
+- The AI service never touches the database; it holds the prompts, the ML models and the LLM key.
 
-Details: [docs/architecture.md](docs/architecture.md).
+Details: [docs/architecture.md](docs/architecture.md) and chapter 4 of the technical report (logical and physical architecture).
 
 ## Repository structure
 
 ```
 .
+<<<<<<< HEAD
 ├── frontend/          Angular application          (all screens, incl. "Plan with AI")
 ├── backend/           Express.js REST API           (all features + AI gateway)
 ├── ai-service/        FastAPI AI service            (health, AI-01 planning, AI-02 recommendation, AI-03 risk model, AI-04 assistant)
 ├── docs/              Project documentation
 ├── docker-compose.yml Docker orchestration          (not created yet)
 ├── .env.example       Environment variable template
+=======
+├── frontend/      Angular application (all screens and the AI screens)
+├── backend/       Express.js REST API (62 routes, AI gateway)
+├── ai-service/    FastAPI AI service (AI-01 to AI-05, ML models)
+├── docs/          Documentation, deliverables and Word reports
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 ├── .gitignore
 └── README.md
 ```
 
+<<<<<<< HEAD
 Folders are created by the task that needs them.
 
 ## Prerequisites
@@ -80,57 +125,58 @@ Folders are created by the task that needs them.
 | MongoDB          | 7+ (local install or Docker)                 |
 | Docker / Compose | Docker 29+ (required from the Docker task)   |
 
+=======
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 ## Getting started
 
+### Prerequisites
+
+| Tool | Version |
+|------|---------|
+| Node.js | 22.22.3+ or 24.15+ (Angular 22 requirement) |
+| npm | 10+ |
+| Python | 3.11+ (checked with 3.12) |
+| MongoDB | 7+ (local install or Docker), running on port 27017 |
+
+Each service has its own `.env` file, created from `.env.example` and **never committed**.
+
+### 1. AI service (FastAPI, port 8000)
+
 ```bash
-git clone <repository-url>
-cd smart-project-manager
+cd ai-service
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r requirements-dev.txt   # Linux/macOS: .venv/bin/python
+cp .env.example .env    # AI_SERVICE_TOKEN; for the LLM: OPENAI_BASE_URL, OPENAI_MODEL, OPENAI_API_KEY
+.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000
 ```
 
-### Backend (Express.js)
+Generate the shared token with `python -c "import secrets; print(secrets.token_hex(32))"` and put it in **both** `ai-service/.env` and `backend/.env`. For Google Gemini: `OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/` and `OPENAI_MODEL=gemini-3.5-flash-lite` (other providers in `ai-service/.env.example`). Check: `GET http://localhost:8000/api/v1/health`.
 
-Requires a running MongoDB instance (local install or Docker).
+### 2. Backend (Express, port 3000)
 
 ```bash
 cd backend
-npm install
-cp .env.example .env    # set JWT_SECRET, adjust MONGODB_URI if needed (never commit .env)
-npm run dev             # or: npm start
+npm ci
+cp .env.example .env    # JWT_SECRET, AI_SERVICE_TOKEN (same value), MONGODB_URI if needed
+npm run create-admin    # optional: first administrator from ADMIN_EMAIL / ADMIN_PASSWORD
+npm run dev
 ```
 
-Generate a `JWT_SECRET` with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
+Generate a `JWT_SECRET` with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. Check: `GET http://localhost:3000/api/v1/health`.
 
-Check it is running: `GET http://localhost:3000/api/v1/health` → `200 {"status":"ok", ...}`.
-
-| Script                  | Purpose |
-|-------------------------|---------|
-| `npm start`             | Start the API |
-| `npm run dev`           | Start with auto-restart on file changes (`node --watch`) |
-| `npm test`              | Run the Jest test suite (uses an in-memory MongoDB, no local DB needed; the first `npm install` downloads its binary, ~800 MB on Windows) |
-| `npm run test:coverage` | Tests with coverage report |
-| `npm run lint`          | ESLint |
-| `npm run create-admin`  | Create the first `ADMIN` account from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` (idempotent) |
-
-### Frontend (Angular)
-
-Requires the backend running on port 3000 (the dev server forwards `/api` to it).
+### 3. Frontend (Angular, port 4200)
 
 ```bash
 cd frontend
-npm install
-npm start               # http://localhost:4200
+npm ci
+npm start               # http://localhost:4200 (forwards /api to the backend)
 ```
 
-Open http://localhost:4200: you are sent to the sign-in page. Create an account on **Create an account** (developer or project manager), or sign in with the administrator created by `npm run create-admin`. The home page then shows the status of the frontend, the backend API and MongoDB. Every user edits their information, skills and password on **My profile**; administrators manage the accounts on **Users**. Project managers create projects on **Projects** and build their team from the developer directory (search by name or skill); each project has tabs for its sprints, tasks, Kanban board, activity and dashboard. Developers find their work in **My tasks**; everyone has a **Dashboard**, **Notifications** (bell in the toolbar) and the global **search**.
+Open http://localhost:4200, create an account (developer or project manager) or sign in with the administrator.
 
-| Script                  | Purpose |
-|-------------------------|---------|
-| `npm start`             | Dev server with live reload and `/api` proxy to the backend |
-| `npm run build`         | Production build (`dist/smart-project-manager/`) |
-| `npm test` / `npm run test:ci` | Unit tests (Vitest), watch mode / single run |
-| `npm run lint`          | ESLint (angular-eslint, incl. template accessibility rules) |
-| `npm run format`        | Prettier |
+### Useful scripts
 
+<<<<<<< HEAD
 ### AI service (FastAPI)
 
 Called only by the backend. Requires Python 3.11+.
@@ -154,23 +200,34 @@ Check it is running: `GET http://localhost:8000/api/v1/health` → `200 {"status
 | `.venv/Scripts/python.exe -m app.ml.task_type_model` | Re-train the task type classifier and print its metrics |
 
 Details: [docs/deployment.md](docs/deployment.md#33-ai-service-fastapi), [docs/ai.md](docs/ai.md).
+=======
+| Where | Command | Purpose |
+|-------|---------|---------|
+| backend | `npm run dev` / `npm start` | API with auto-restart / without |
+| backend | `npm test`, `npm run lint` | Jest tests (in-memory MongoDB), ESLint |
+| frontend | `npm start`, `npm run build` | Dev server, production build |
+| frontend | `npm run test:ci`, `npm run lint`, `npm run format` | Vitest, ESLint (incl. accessibility rules), Prettier |
+| ai-service | `.venv/Scripts/python.exe -m pytest` | Tests (LLM mocked) |
+| ai-service | `.venv/Scripts/python.exe -m flake8 app tests` | Lint |
+| ai-service | `.venv/Scripts/python.exe -m app.ml.task_type_model` / `app.ml.sprint_risk_model` | Re-train the ML models and print their metrics |
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
-## Development progress
+More: [docs/deployment.md](docs/deployment.md).
 
-The project is developed **task by task**. Only tasks marked **Done** exist in the repository; the others are the plan.
+## Tests
 
-### Phase 1 — Backend foundation
+| Component | Tests |
+|-----------|-------|
+| Frontend (Vitest) | 386 |
+| Backend (Jest) | 377 |
+| AI service (pytest) | 181 |
+| **Total** | **944**, all passing |
 
-| Task    | Scope                                                        | Status |
-|---------|--------------------------------------------------------------|--------|
-| TASK 01 | Repository initialization (Git, root config, documentation skeleton) | Done   |
-| TASK 02 | Backend setup (Express.js skeleton, MongoDB connection, health endpoint, error handling, tests) | Done   |
-| TASK 03 | Authentication API (User model, register/login/me, JWT, authenticate & authorize middleware, validation) | Done   |
-| TASK 04 | User management API (admin bootstrap CLI, list/search/filter users, activate/deactivate, change role) | Done   |
-| TASK 05 | Profile & skills API (view/update own profile, change password with token invalidation, manage skills) | Done   |
+The backend tests use an in-memory MongoDB and a mocked AI service; the AI service tests mock the LLM. End-to-end runs against the real database and Gemini are recorded in [docs/testing.md](docs/testing.md).
 
-### Phase 2 — Backend business features
+## Deliverables
 
+<<<<<<< HEAD
 | Task    | Scope                                                        | Status |
 |---------|--------------------------------------------------------------|--------|
 | TASK 06 | Project & team API (project CRUD, statuses, members, developer directory) | Done |
@@ -229,28 +286,43 @@ The project is developed **task by task**. Only tasks marked **Done** exist in t
 | [docs/bilan.md](docs/bilan.md)                   | Progress report, updated after each task, and log of the supervisor ↔ AI agent exchanges (in French) |
 | [docs/handoff.md](docs/handoff.md)               | Resume point for the next agent: rules, current state, next task, commands, pitfalls |
 | [docs/livrables/](docs/livrables/README.md)      | One deliverable per task (in French): files added / modified and the supervisor prompts that led to the feature |
+=======
+| Deliverable | Where |
+|-------------|-------|
+| Technical report (architecture, frameworks, API, AI models, prompts, contribution of each student) | [docs/Smart_Manager_Rapport_Technique.docx](docs/Smart_Manager_Rapport_Technique.docx) |
+| Prompts and AI models | [docs/Smart_Manager_Prompts_et_Modeles_IA.docx](docs/Smart_Manager_Prompts_et_Modeles_IA.docx) |
+| Demonstration scenario | [docs/demo.md](docs/demo.md) |
+| One deliverable per task (files and prompts behind each feature, in French) | [docs/livrables/](docs/livrables/README.md) |
 
-### Technical report mapping
+## Documentation
 
-The final technical report is built from these documents:
+| Document | Content |
+|----------|---------|
+| [docs/requirements.md](docs/requirements.md) | Context, actors, functional and non-functional requirements |
+| [docs/architecture.md](docs/architecture.md) | Functional and technical architecture |
+| [docs/database.md](docs/database.md) | MongoDB design (9 collections, schemas, indexes) |
+| [docs/api.md](docs/api.md) | REST API reference and internal AI service API |
+| [docs/ai.md](docs/ai.md) | The five AI features, data, models, metrics |
+| [docs/prompts.md](docs/prompts.md) | Part A: development prompts (in French); Part B: LLM prompts of AI-01, AI-04 and AI-05 |
+| [docs/testing.md](docs/testing.md) | Test strategy and results |
+| [docs/deployment.md](docs/deployment.md) | Environment variables and local deployment |
+| [docs/demo.md](docs/demo.md) | Step-by-step demonstration |
+| [docs/bilan.md](docs/bilan.md) | Progress report (in French) |
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
-| Report chapter                                        | Source |
-|-------------------------------------------------------|--------|
-| 1–7. Introduction, context, problem, objectives, requirements, actors | `requirements.md` |
-| 8–11. Functional, technical, Angular, Express architecture | `architecture.md` |
-| 12. MongoDB database design                           | `database.md` |
-| 13. FastAPI AI architecture, 15. AI models            | `architecture.md`, `ai.md` |
-| 14. REST API documentation                            | `api.md` |
-| 16. LLM prompts                                       | `prompts.md` (part B; part A documents how the project was developed with an AI agent) |
-| 17. Security                                          | `requirements.md`, `architecture.md` |
-| 18. Testing                                           | `testing.md` |
-| 19. Docker and deployment                             | `deployment.md` |
-| 20–21. Functional demonstration, results              | `demo.md` |
-| 22–24. Limitations, future improvements, conclusion   | All documents (written at the end) |
+## Roadmap
+
+| Phase | Content | Status |
+|-------|---------|--------|
+| 1–2. Backend | Express API: authentication, users, profiles, projects, sprints, tasks, Kanban, comments, history, notifications, dashboards, search (TASK 01–11) | Done |
+| 3. Frontend | Angular screens for every feature (TASK 12–19), then UX improvements (UX-1 to UX-7) | Done |
+| 4. AI | FastAPI service and gateway (TASK 20–21), AI-01 to AI-04 (TASK 22–25), AI-05 | Done |
+| 5. Delivery | Technical report and AI deliverable | Done |
+| 5. Delivery | Docker & Docker Compose (TASK 26), demo data (TASK 27), security hardening & CI (TASK 28) | Planned |
 
 ## Conventions
 
-- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) — e.g. `feat(auth): implement JWT authentication`, `test(tasks): add task API tests`, `docs(api): document task endpoints`.
+- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/), e.g. `feat(ai): add sprint retrospective`.
 - **Branch:** `main`.
-- **Secrets:** never committed. Configuration comes from environment variables (`.env`, git-ignored).
-- **Documentation:** always reflects the real implementation; planned items are explicitly marked as planned.
+- **Secrets:** never committed; configuration comes from environment variables (`.env`, git-ignored).
+- **Documentation:** reflects the real implementation; planned items are marked as planned.

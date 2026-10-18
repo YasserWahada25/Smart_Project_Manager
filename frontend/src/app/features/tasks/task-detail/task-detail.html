@@ -1,7 +1,9 @@
-<a mat-button [routerLink]="tasksLink" class="back">
-  <mat-icon>arrow_back</mat-icon>
-  All tasks
-</a>
+@if (!embedded()) {
+  <a mat-button [routerLink]="tasksLink" class="back">
+    <mat-icon>arrow_back</mat-icon>
+    All tasks
+  </a>
+}
 
 @if (loading()) {
   <app-loading-state message="Loading the task…" />
@@ -90,7 +92,7 @@
       </mat-card-content>
     </mat-card>
 
-    <mat-card appearance="outlined">
+    <mat-card appearance="outlined" class="details">
       <mat-card-header>
         <mat-card-title><h3>Details</h3></mat-card-title>
       </mat-card-header>
@@ -145,14 +147,19 @@
             <dd>
               <span class="person">
                 <app-avatar [person]="current.createdBy" size="small" />
+<<<<<<< HEAD
                 {{ fullName(current.createdBy) }}, {{ current.createdAt | date: 'medium' }}
+=======
+                {{ fullName(current.createdBy) }},
+                {{ current.createdAt | date: 'MMM d, y, h:mm a' }}
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
               </span>
             </dd>
           </div>
           @if (current.completedAt) {
             <div>
               <dt>Completed</dt>
-              <dd>{{ current.completedAt | date: 'medium' }}</dd>
+              <dd>{{ current.completedAt | date: 'MMM d, y, h:mm a' }}</dd>
             </div>
           }
         </dl>

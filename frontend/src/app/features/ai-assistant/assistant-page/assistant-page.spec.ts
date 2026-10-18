@@ -6,7 +6,11 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
 import { apiErrorInterceptor } from '../../../core/http/api-error.interceptor';
+<<<<<<< HEAD
 import { AssistantReply } from '../../../core/models/ai-assistant';
+=======
+import { AssistantConversation, AssistantReply } from '../../../core/models/ai-assistant';
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 import { ApiError } from '../../../core/models/api-error';
 import { AiStatus } from '../../../core/models/system-status';
 import { User } from '../../../core/models/user';
@@ -43,6 +47,7 @@ const PROPOSAL = {
 
 describe('AssistantPage', () => {
   let fixture: ComponentFixture<AssistantPage>;
+<<<<<<< HEAD
   let chat: ReturnType<typeof vi.fn>;
   let apply: ReturnType<typeof vi.fn>;
   let toast: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
@@ -52,13 +57,42 @@ describe('AssistantPage', () => {
   ) {
     chat = vi.fn(() => of(reply()));
     apply = vi.fn();
+=======
+  let conversation: ReturnType<typeof vi.fn>;
+  let chat: ReturnType<typeof vi.fn>;
+  let apply: ReturnType<typeof vi.fn>;
+  let dismiss: ReturnType<typeof vi.fn>;
+  let clear: ReturnType<typeof vi.fn>;
+  let toast: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
+
+  async function render(
+    options: {
+      status?: Observable<AiStatus>;
+      user?: User;
+      archived?: boolean;
+      saved?: Observable<AssistantConversation>;
+    } = {},
+  ) {
+    chat = vi.fn(() => of(reply()));
+    apply = vi.fn();
+    dismiss = vi.fn(() => of({}));
+    clear = vi.fn(() => of(undefined));
+    conversation = vi.fn(() => options.saved ?? of({ messages: [] }));
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
     toast = { success: vi.fn(), error: vi.fn() };
     TestBed.configureTestingModule({
       imports: [AssistantPage],
       providers: [
         ProjectContext,
         { provide: AuthService, useValue: fakeAuthService(options.user ?? testUser()) },
+<<<<<<< HEAD
         { provide: AiAssistantService, useValue: { chat, apply } },
+=======
+        {
+          provide: AiAssistantService,
+          useValue: { chat, apply, dismiss, clear, conversation },
+        },
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
         { provide: HealthService, useValue: { checkAi: () => options.status ?? of(READY) } },
         { provide: ToastService, useValue: toast },
         { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
@@ -177,6 +211,10 @@ describe('AssistantPage', () => {
 
     await say('Do it');
     await click('Dismiss: Assign');
+<<<<<<< HEAD
+=======
+    expect(dismiss).toHaveBeenCalledWith('p1', 'p-1');
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
     expect(text()).toContain('Dismissed');
     await click('Confirm: Move');
     expect(text()).toContain('Not applied — Invalid status transition: TODO → DONE');
@@ -194,6 +232,7 @@ describe('AssistantPage', () => {
     expect(textarea().value).toBe('Summarize the sprint');
   });
 
+<<<<<<< HEAD
   it('starts a new conversation', async () => {
     await render();
     await say('Hello');
@@ -201,10 +240,72 @@ describe('AssistantPage', () => {
     expect(element().querySelectorAll('.message')).toHaveLength(0);
   });
 
+=======
+  it('starts a new conversation (the saved one is deleted)', async () => {
+    await render();
+    await say('Hello');
+    await click('New conversation');
+    expect(clear).toHaveBeenCalledWith('p1');
+    expect(element().querySelectorAll('.message')).toHaveLength(0);
+  });
+
+  it('loads the saved conversation back, with the outcome of each proposal', async () => {
+    const saved = new Subject<AssistantConversation>();
+    await render({ saved });
+    expect(conversation).toHaveBeenCalledWith('p1');
+    expect(text()).toContain('Loading the conversation');
+    expect(text()).not.toContain('Try:');
+    expect(button('Send')!.disabled).toBe(true);
+
+    saved.next({
+      messages: [
+        { role: 'user', content: 'Assign the login page', proposals: [], createdAt: '2026-10-04' },
+        {
+          role: 'assistant',
+          content: 'Two changes to confirm.',
+          createdAt: '2026-10-04',
+          proposals: [
+            { ...PROPOSAL, state: 'APPLIED', result: '«Login page» assigned.' },
+            { ...PROPOSAL, id: 'p-2', summary: 'Create the task «Cart»', state: 'PENDING' },
+          ],
+        },
+      ],
+    });
+    saved.complete();
+    await fixture.whenStable();
+
+    expect(element().querySelectorAll('.message')).toHaveLength(2);
+    expect(text()).toContain('Applied — «Login page» assigned.');
+    expect(button('Confirm: Assign')).toBeUndefined();
+    expect(button('Confirm: Create')).toBeDefined();
+
+    await say('Thanks');
+    expect(chat.mock.lastCall![1]).toEqual([
+      { role: 'user', content: 'Assign the login page' },
+      {
+        role: 'assistant',
+        content:
+          'Two changes to confirm.\n[Confirmed and applied by the manager: Assign «Login page» to Youssef Alami]',
+      },
+      { role: 'user', content: 'Thanks' },
+    ]);
+  });
+
+  it('says when the saved conversation cannot be loaded', async () => {
+    await render({ saved: throwError(() => new Error('down')) });
+    expect(text()).toContain('The previous conversation could not be loaded.');
+    expect(text()).toContain('Try:');
+  });
+
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
   it('is reserved to the manager of an active project', async () => {
     await render({ user: testUser({ id: 'd1', role: 'DEVELOPER' }) });
     expect(text()).toContain('available to the manager of an active project');
     expect(element().querySelector('textarea')).toBeNull();
+<<<<<<< HEAD
+=======
+    expect(conversation).not.toHaveBeenCalled();
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 
     TestBed.resetTestingModule();
     await render({ archived: true });
@@ -213,7 +314,11 @@ describe('AssistantPage', () => {
 });
 
 describe('AiAssistantService', () => {
+<<<<<<< HEAD
   it('posts the conversation (no global toast) and the confirmed proposal', () => {
+=======
+  it('posts the conversation (no global toast), the confirmed proposal and manages the saved conversation', () => {
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
     const toastError = vi.fn();
     TestBed.configureTestingModule({
       providers: [
@@ -238,11 +343,31 @@ describe('AiAssistantService', () => {
 
     service.apply('p1', PROPOSAL).subscribe();
     const applyRequest = http.expectOne('/api/v1/projects/p1/ai/assistant/actions');
+<<<<<<< HEAD
     expect(applyRequest.request.body).toEqual({
       tool: 'assign_task',
       arguments: PROPOSAL.arguments,
     });
     applyRequest.flush({ tool: 'assign_task', message: 'ok' });
+=======
+    expect(applyRequest.request.body).toEqual({ proposalId: 'p-1' });
+    applyRequest.flush({ tool: 'assign_task', message: 'ok' });
+
+    service.conversation('p1').subscribe({ error: () => undefined });
+    http
+      .expectOne({ method: 'GET', url: '/api/v1/projects/p1/ai/assistant/conversation' })
+      .flush({ error: { code: 'X', message: 'down' } }, { status: 500, statusText: 'Error' });
+    expect(toastError).not.toHaveBeenCalled();
+
+    service.clear('p1').subscribe();
+    http
+      .expectOne({ method: 'DELETE', url: '/api/v1/projects/p1/ai/assistant/conversation' })
+      .flush(null, { status: 204, statusText: 'No Content' });
+    service.dismiss('p1', 'p-1').subscribe();
+    http
+      .expectOne({ method: 'POST', url: '/api/v1/projects/p1/ai/assistant/proposals/p-1/dismiss' })
+      .flush({ id: 'p-1', state: 'DISMISSED' });
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
     http.verify();
   });
 });

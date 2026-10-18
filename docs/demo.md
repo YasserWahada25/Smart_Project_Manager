@@ -75,6 +75,16 @@ Prerequisites: the AI service is running; a project with an **active** sprint co
 2. The same indicator appears on the active sprint of the project **Dashboard** tab and of the global **Dashboard** page.
 3. Move tasks to Done (or unblock them), reload: the risk goes down. A sprint whose end date is passed with points left is HIGH; an empty sprint is LOW.
 
+<<<<<<< HEAD
+=======
+### Step 10 — Sprint retrospective (AI-05)
+
+1. As the manager, open the **Sprints** tab and click **Complete** on the active sprint, then confirm.
+2. The **Retrospective** opens and is written at once (a few seconds with Gemini): figures (tasks and points done, velocity compared with the previous sprints, blocked tasks), a summary, what was delivered, what was not finished and why, what slowed the team down, what went well, what to improve. The line under the title says whether it was written by the AI or built from the figures (no key).
+3. On an action (e.g. "Review the causes of the blocked tasks"), keep the next sprint as destination and click **Create task**: a toast confirms, the action shows "Task created", and the task is in the next sprint with "From the retrospective of «…»" in its description.
+4. Any member can reopen it later with the **Retrospective** button of the completed sprint; the manager can **Regenerate** it.
+
+>>>>>>> 1703821937e40442e522b5f7a255b6c3c63d056b
 ### Bonus — Manager assistant (AI-04)
 
 Prerequisites: `OPENAI_API_KEY` set in `ai-service/.env` (without it, the **Assistant** tab explains that a key is needed).
